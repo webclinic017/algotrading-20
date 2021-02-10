@@ -9,6 +9,8 @@ class movingAverages():
     close_to_use = 'fClose'
     ma_list = [10, 20, 50, 200]
     df = pd.DataFrame()
+    cma_crossovers = []
+    cma_differences = []
 
     def __init__(self, df):
         df = self.basic_col_calc(df)
@@ -16,7 +18,9 @@ class movingAverages():
         df = self.cma(self, df, self.close_to_use)
 
         (ma_crossovers, ma_differences,
-         cma_crossovers, cma_differences) = self.build_ma_lists(df, self.ma_list)
+         cma_crossovers, cma_differences) = self.build_ma_lists(
+                                                    df, self.ma_list
+                                                    )
 
         f_price_levels, f_price_dict = self.build_ma_lists_diff(self)
         df = self.add_ma_columns(self, df,
@@ -26,20 +30,23 @@ class movingAverages():
         df = self.ma_cross(df, cma_crossovers, cma_differences)
         # Store df in local variable
         self.df = df
+        # Store crossovers
+        self.cma_crossovers = cma_crossovers
+        self.cma_differences = cma_differences
 
     @classmethod
     def basic_col_calc(cls, df):
         """Basic column calculations."""
-        df['fRange'] = df['fHigh'] - df['fLow']
+        df.loc[:, 'fRange'] = df['fHigh'] - df['fLow']
         return df
 
     @classmethod
     def sma(cls, self, df, close_to_use):
         """Simple Moving Averages."""
-        df['sma_10'] = df[close_to_use].rolling(window=10).mean()
-        df['sma_20'] = df[close_to_use].rolling(window=20).mean()
-        df['sma_50'] = df[close_to_use].rolling(window=50).mean()
-        df['sma_200'] = df[close_to_use].rolling(window=200).mean()
+        df.loc[:, 'sma_10'] = df[close_to_use].rolling(window=10).mean()
+        df.loc[:, 'sma_20'] = df[close_to_use].rolling(window=20).mean()
+        df.loc[:, 'sma_50'] = df[close_to_use].rolling(window=50).mean()
+        df.loc[:, 'sma_200'] = df[close_to_use].rolling(window=200).mean()
 
         df = self.sma_diff(self, df)
         return df
@@ -47,28 +54,28 @@ class movingAverages():
     @classmethod
     def sma_diff(cls, self, df):
         """SMA differences."""
-        df['sma_diff_10_20'] = df['sma_10'] - df['sma_20']
-        df['sma_diff_10_50'] = df['sma_10'] - df['sma_50']
-        df['sma_diff_10_200'] = df['sma_10'] - df['sma_200']
-        df['sma_diff_20_50'] = df['sma_20'] - df['sma_50']
-        df['sma_diff_20_200'] = df['sma_20'] - df['sma_200']
-        df['sma_diff_50_200'] = df['sma_50'] - df['sma_200']
+        df.loc[:, 'sma_diff_10_20'] = df['sma_10'] - df['sma_20']
+        df.loc[:, 'sma_diff_10_50'] = df['sma_10'] - df['sma_50']
+        df.loc[:, 'sma_diff_10_200'] = df['sma_10'] - df['sma_200']
+        df.loc[:, 'sma_diff_20_50'] = df['sma_20'] - df['sma_50']
+        df.loc[:, 'sma_diff_20_200'] = df['sma_20'] - df['sma_200']
+        df.loc[:, 'sma_diff_50_200'] = df['sma_50'] - df['sma_200']
 
         return df
 
     @classmethod
     def cma(cls, self, df, close_to_use):
         """Exponential Moving Average."""
-        df['cma_10'] = df[close_to_use].ewm(
+        df.loc[:, 'cma_10'] = df[close_to_use].ewm(
             span=10, min_periods=10, adjust=False, ignore_na=False
             ).mean()
-        df['cma_20'] = df[close_to_use].ewm(
+        df.loc[:, 'cma_20'] = df[close_to_use].ewm(
             span=20, min_periods=20, adjust=False, ignore_na=False
             ).mean()
-        df['cma_50'] = df[close_to_use].ewm(
+        df.loc[:, 'cma_50'] = df[close_to_use].ewm(
             span=50, min_periods=50, adjust=False, ignore_na=False
             ).mean()
-        df['cma_200'] = df[close_to_use].ewm(
+        df.loc[:, 'cma_200'] = df[close_to_use].ewm(
             span=200, min_periods=200, adjust=False, ignore_na=False
             ).mean()
 
@@ -78,12 +85,12 @@ class movingAverages():
     @classmethod
     def cma_diff(cls, self, df):
         """Exponential Moving Average Differences."""
-        df['cma_diff_10_20'] = df['cma_10'] - df['cma_20']
-        df['cma_diff_10_50'] = df['cma_10'] - df['cma_50']
-        df['cma_diff_10_200'] = df['cma_10'] - df['cma_200']
-        df['cma_diff_20_50'] = df['cma_20'] - df['cma_50']
-        df['cma_diff_20_200'] = df['cma_20'] - df['cma_200']
-        df['cma_diff_50_200'] = df['cma_50'] - df['cma_200']
+        df.loc[:, 'cma_diff_10_20'] = df['cma_10'] - df['cma_20']
+        df.loc[:, 'cma_diff_10_50'] = df['cma_10'] - df['cma_50']
+        df.loc[:, 'cma_diff_10_200'] = df['cma_10'] - df['cma_200']
+        df.loc[:, 'cma_diff_20_50'] = df['cma_20'] - df['cma_50']
+        df.loc[:, 'cma_diff_20_200'] = df['cma_20'] - df['cma_200']
+        df.loc[:, 'cma_diff_50_200'] = df['cma_50'] - df['cma_200']
 
         return df
 
@@ -112,8 +119,8 @@ class movingAverages():
 
         # Add empty crossover columns
         for x, y in zip(ma_crossovers, cma_crossovers):
-            df[x] = 0
-            df[y] = 0
+            df.loc[:, x] = 0
+            df.loc[:, y] = 0
         """
         print(ma_crossovers)
         print()
@@ -166,11 +173,11 @@ class movingAverages():
                 if 'sma' in str(y):
                     for pl in f_price_levels:
                         if str(pl) in str(y):
-                            df[y] = df[pl] - df[f"sma_{z}"]
+                            df.loc[:, y] = df[pl] - df[f"sma_{z}"]
                 elif 'cma' in str(y):
                     for pl in f_price_levels:
                         if str(pl) in str(y):
-                            df[y] = df[pl] - df[f"cma_{z}"]
+                            df.loc[:, y] = df[pl] - df[f"cma_{z}"]
                 else:
                     print('Neither sma nor cma could be found in the f_price_dict... passing')
                     print(y)
@@ -183,15 +190,27 @@ class movingAverages():
     def ma_cross(cls, df, crossovers, differences):
         """Binary identification of moving averages crossing each other."""
         for x, y in zip(crossovers, differences):
-            df[x] = np.where(
+            df.loc[:, x] = np.where(  # Bullish Crossover
+                            (
                             df[y].where(
-                                np.sign(df[y]) !=
-                                np.sign(df[y]).shift(1)
+                                np.sign(df[y]) <
+                                (np.sign(df[y]).shift(-1))  # Candle after
+                            ).fillna(0)
+                            ), 1,
+                          np.where(  # Bearish crossover
+                            df[y].where(
+                                np.sign(df[y]) >
+                                (np.sign(df[y]).shift(-1))  # Candle after
                             ).fillna(0),
-                            1, 0)
+                            -1, 0))
         return df
 
     @staticmethod
     def return_df(self):
         """Return the dataframe."""
         return self.df
+
+    @staticmethod
+    def return_cma(self):
+        """Return the cma column names."""
+        return self.cma_crossovers, self.cma_differences

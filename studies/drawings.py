@@ -13,13 +13,17 @@ class makeDrawings():
     @classmethod
     def local_max_min(cls, self, df):
         """Make Local Maximum and Minimums."""
-        n = 5  # Number of points to be checked before and after
+        # Number of points to be checked before and after
+        xlist = [5, 10, 20, 50, 200]
         
         # Find local peaks
-        df['localMin'] = df.iloc[argrelextrema(df.fClose.values, np.less_equal,
-                    order=n)[0]]['fClose']
-        df['localMax'] = df.iloc[argrelextrema(df.fClose.values, np.greater_equal,
-                    order=n)[0]]['fClose']
+        for xn,x in enumerate(xlist):
+            df[f"localMin_{x}"] = df.iloc[argrelextrema(
+                    df.fClose.values, np.less_equal, order=x
+                    )[0]]['fClose']
+            df[f"localMax_{x}"] = df.iloc[argrelextrema(
+                    df.fClose.values, np.greater_equal,
+                    order=x)[0]]['fClose']
         
         return df
     
