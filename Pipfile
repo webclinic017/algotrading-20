@@ -5,6 +5,8 @@ name = "pypi"
 
 [packages]
 scipy = "*"
+matplotlib = "*"
+nested-lookup = "*"
 
 [dev-packages]
 
