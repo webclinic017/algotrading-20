@@ -15,6 +15,21 @@ import requests
 from json import JSONDecodeError
 
 
+# decorater used to block function printing to the console
+def blockPrinting(func):
+    def func_wrapper(*args, **kwargs):
+        # block all printing to the console
+        sys.stdout = open(os.devnull, 'w')
+        # call the method in question
+        value = func(*args, **kwargs)
+        # enable all printing to the console
+        sys.stdout = sys.__stdout__
+        # pass the return value of the method back
+        return value
+
+    return func_wrapper
+
+
 class fileOps():
     """Helper class for reading/writing from local database."""
 
@@ -70,7 +85,7 @@ class fileOps():
 
             except ValueError:  # No data for that symbol exists, get data
                 current[sym] = {'current': 0, 'data': fileOps.all_stock_data(sym)}
-                print('Cannot find symbol. New stock data being added')
+                print(f"Cannot find {sym}. New stock data being added")
 
         if new_data:  # If any new data was added
             # Merge new json market data with previous market data

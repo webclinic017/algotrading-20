@@ -216,3 +216,20 @@ def get_sector_lists():
     Path(f"{base_dir}/sector_lists").write_bytes(rep.content)
 
 get_sector_lists()
+
+
+# %% codecell
+#######################################################################
+
+
+def get_tags():
+    """Get available tags."""
+    payload = {'token': os.environ.get("iex_publish_api")}
+    token = os.environ.get("iex_publish_api")
+    rep = requests.get(
+        f"https://cloud.iexapis.com/beta/ref-data/tags?token={token}"
+        )
+    base_dir = f"{Path(os.getcwd()).parents[0]}/data/tickers"
+    Path(f"{base_dir}/tags").write_bytes(rep.content)
+
+get_tags()

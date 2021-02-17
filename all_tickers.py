@@ -2,6 +2,11 @@
 The purpose of this file is to examine all the ticker data coming from IEX.
 
 OTC data is separate from all_symbols
+
+# Pink sheets is lowest tier
+# OTCQB is the middle tier, the "Venture Market". Early stage and developing
+    US and International companies net yet able to qualify for OTCQX
+# OTCQX is the highest tier. Subject to SEC regulations.
 """
 
 # %% codecell
@@ -47,6 +52,8 @@ def read_symbols(which):
 all_symbols = read_symbols('all_symbols')
 otc = read_symbols('otc')
 
+sectors = read_symbols('sector_lists')
+sectors
 # %% codecell
 ################################################
 
@@ -81,3 +88,17 @@ warrants.head(10)
 all_symbols.head(10)
 
 print(type(all_symbols))
+
+
+# %% codecell
+################################################
+otc_pink = otc[otc['exchangeName'].isin(['OTC PINK CURRENT', 'OTCQB MARKETPLACE', 'OTCQX MARKETPLACE'])]
+
+otc_warrants = otc_pink[otc_pink['type'].isin(['wt'])]
+otc_warrants.shape
+otc_pink.shape
+
+otc['exchangeName'].value_counts()
+
+
+otc.head(10)
