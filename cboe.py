@@ -11,6 +11,7 @@ from io import StringIO, BytesIO
 import glob
 import importlib
 import sys
+import copy
 
 import pandas as pd
 import numpy as np
@@ -30,8 +31,17 @@ from pandas_df_options import freeze_header
 
 import xml.etree.ElementTree as ET
 
+# Display max 50 columns
+pd.set_option('display.max_columns', None)
+# Display maximum rows
+pd.set_option('display.max_rows', None)
+
+
 # %% codecell
 ##############################################################
+
+# Thesis to get a weekly volume, monthly volume. When weekly crosses over monthly
+
 
 base_dir = f"{Path(os.getcwd()).parents[0]}/data/derivatives/cboe"
 
@@ -49,8 +59,6 @@ cboe_sample = cboe_get.content[0:10000]
 cboe_sample
 
 print(CnM.from_bytes(cboe_sample).best().first())
-
-
 # %% codecell
 ##############################################################
 
@@ -63,6 +71,14 @@ cboe_df = pd.read_csv(
             )
 
 cboe_df.shape
+
+cboe_df['Product Type'].value_counts()
+
+vol_sum_df = cboe_df.groupby(by=['Trade Date', 'Underlying']).sum()
+# vol_sum_df.reset_index(inplace=True)
+vol_sum_df['weeklyAvg'] = vol_sum_df['Volume'].rolling(window=5).sum()
+
+vol_sum_df.head(100)
 
 
 cboe_df.head(10)
@@ -83,18 +99,3 @@ Cboe ADV
 Liquidity Opportunity
     Percentage of the ADV missed, exhausted or routed. The higher the percentage the larger the market making opportunity.
 """
-mm_base_url = "https://www.cboe.com/us/options/market_statistics/maker_report/csv/?book=all&mkt="
-mm_dict = { 'cone': '', 'opt': '', 'ctwo': '', 'exo': ''}
-
-for k in mm_dict.keys():
-    mm_dict[k] = requests.get(f"{mm_base_url}{k}")
-
-
-
-https://www.cboe.com/us/options/market_statistics/maker_report/csv/?book=all&mkt=cone
-
-https://www.cboe.com/us/options/market_statistics/maker_report/csv/?book=all&mkt=opt
-
-https://www.cboe.com/us/options/market_statistics/maker_report/?mkt=ctwo
-
-https://www.cboe.com/us/options/market_statistics/maker_report/csv/?book=all&mkt=exo

@@ -238,7 +238,7 @@ class TradeVolume():
         self.url = self.create_url(self, query)
         #"""
         self.vol_df = self.read_local_data(self)
-
+        print('df.vol_df to get dataframe')
         if not isinstance(self.vol_df, pd.DataFrame):
             self.xml_data = self.get_trade_data(self)
             self.vol_df = self.process_data(self)
