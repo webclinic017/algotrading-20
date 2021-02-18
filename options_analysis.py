@@ -24,7 +24,8 @@ from dotenv import load_dotenv
 from pathlib import Path
 
 import datetime
-from datetime import date, timedelta
+from datetime import date, timedelta, time
+import pytz
 
 # from options import DerivativeExpirations
 from all_tickers import read_symbols
@@ -49,6 +50,13 @@ pd.set_option('display.max_rows', None)
 
 # %% codecell
 ############################################################
+
+# Set up cutoff time for after 4:15 pm for today's daily close market data.
+
+nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))
+cutoff_hm = 16.15
+nyc_hm = nyc_datetime.hour + (nyc_datetime.minute/60)
+nyc_hm
 
 # %% codecell
 ############################################################
