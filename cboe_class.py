@@ -34,128 +34,17 @@ import xml.etree.ElementTree as ET
 
 from options import DerivativesHelper
 from theocc_class import TradeVolume
+from iex_class import readData
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
 # Display maximum rows
 pd.set_option('display.max_rows', None)
 
-from pyinstrument import Profiler
-profiler = Profiler()
-
 # %% codecell
 ##############################################################
 
-# The thesis is trying to find names that previously had liquidity and now don't
-# From one week to another, this will give a good idea of where market makers are
-# Forced to buy more options
-"""
-try:
-    df = pd.merge(self.mmo_df, self.sym_df, on=['Symbol', 'exchange', 'Underlying'], how='left')
-    df.reset_index(inplace=True, drop=True)
-except TypeError:
-    df = pd.DataFrame()
-return df
-"""
 
-
-mmo = cboeData('mmo')
-
-mmo_df = mmo.mmo_df.copy(deep=True)
-sym_df = mmo.sym_df.copy(deep=True)
-mmo_df.shape
-sym_df.shape
-
-# Keep only the next few years
-years_to_get = [20, 21, 22, 23, 24, 25]
-sym_df = sym_df[sym_df['yr'].isin(years_to_get)]
-
-df = pd.merge(mmo_df, sym_df, on=['Symbol', 'exchange', 'Underlying'], how='inner')
-
-df.shape
-
-df.info(memory_usage='deep')
-
-cols_to_float4 = ['strike', 'Liquidity Opportunity']
-cols_to_int = ['Missed Liquidity', 'Exhausted Liquidity', 'Routed Liquidity', 'Volume Opportunity', 'expirationDate', 'Cboe ADV', 'yr', 'mo', 'day']
-df[cols_to_float4] = df[cols_to_float4].astype(np.float16)
-df[cols_to_int] = df[cols_to_int].astype(np.int8)
-
-df.info(memory_usage='deep')
-
-df.head(10)
-
-sym_df.shape
-
-mmo_df.head(2)
-
-mmo_df.info(memory_usage='deep')
-
-
-
-
-# %% codecell
-##############################################################
-mmo_only = mmo.mmo_df.copy(deep=True)
-sym_only = mmo.sym_df.copy(deep=True)
-
-
-
-report_date = datetime.date(2021, 2, 16)
-td_vol_df = TradeVolume(report_date, 'con_volume')
-td_vol_df = td_vol_df.vol_df
-
-cols_to_int = ['firmQuantity', 'customerQuantity', 'marketQuantity']
-
-td_vol_df[cols_to_int] = td_vol_df[cols_to_int].astype('int')
-
-td_vol_df['totalVolume'] = td_vol_df['firmQuantity'] + td_vol_df['customerQuantity'] + td_vol_df['marketQuantity']
-
-td_syms_df = td_vol_df[td_vol_df['underlying'].isin(mmo_syms)]
-
-td_vol_df.dtypes
-
-etfs_to_exclude = ['HYG', 'XLF', 'EEM', 'EWZ', 'TLT', 'VXX', 'RUT', 'ARKK', 'XLE', 'UVXY', 'EFA']
-td_syms_df = td_syms_df[~td_syms_df['underlying'].isin(etfs_to_exclude)]
-
-td_syms_df.sort_values(by='customerQuantity', ascending=False).head(200)
-
-# Get memory usage
-mmo_df2.info(memory_usage='deep')
-
-# %% codecell
-##############################################################
-
-mmo_syms = mmo_df2['Underlying'].value_counts()[0:250].index.to_list()
-len(mmo_syms)
-len(mmo_syms)
-
-mmo_syms
-# .index.to_list()
-# comb_df = pd.merge(mmo_df2, df_vol_df, on=['], how='left')
-# mmo_df2['missedOpportunity'] = mmo_df2['Missed Liquidity'] / mmo_df2['Cboe ADV']
-
-mmo_df2.shape
-
-
-mmo_df2.sort_values(by=['Liquidity Opportunity'], ascending=False).head(200)
-mmo_df2[mmo_df2['Underlying'] == 'TXMD'].head(50)
-mmo_df2.sort_values(by=['Missed Liquidity'], ascending=False).head(50)
-mmo_df2[mmo_df2['Underlying'] == 'XIN'].head(10)
-
-mmo_df2.sort_values(by=['missedOpportunity'], ascending=False).head(50)
-mmo_df2.sort_values(by=['Liquidity Opportunity'], ascending=False).head(50)
-
-mmo_df2.rename(columns={'Underlying': 'underlying'}, inplace=True)
-
-
-# %% codecell
-##############################################################
-profiler.start()
-mmo_clean_df = cleanMmo(mmo)
-profiler.stop()
-
-print(profiler.output_text(unicode=True, color=True))
 # %% codecell
 ##############################################################
 
@@ -163,35 +52,143 @@ class cleanMmo():
     """Clean mmo data."""
 
     def __init__(self, mmo):
+        self.date = mmo.date
         self.df = mmo.comb_df.copy(deep=True)
-        self.process_data(self)
+        self.nopop_top_2000 = self.process_data(self, mmo)
+        print('xxx.nopop_top_2000')
 
     @classmethod
-    def process_data(cls, self):
+    def process_data(cls, self, mmo):
         """Pre process data and call next function in line."""
-        self.df.dropna(axis=0, inplace=True)
+        # Delete unsused dataframes
+        try:
+            del mmo.mmo_df
+            del mmo.sym_df
+        except AttributeError:
+            pass
+        self._convert_cols(self)
         self._exclude_pop_symbols(self)
+        self._total_volume_calc(self)
+        self._conver_cols_nopop(self)
+        self._create_exp_col(self)
+        nopop_top_2000 = self._create_vol_sum(self)
+        self.exp_dict = self._create_time_frames(self)
+        time_dict = self._filter_nopop_by_time_frame(self, nopop_top_2000)
+        self._write_to_json(self, nopop_top_2000, time_dict)
+
+        return nopop_top_2000
+
+    @classmethod
+    def _convert_cols(cls, self):
+        """Convert columns to categories."""
+        cols_to_cat = ['Symbol', 'Underlying', 'exchange', 'OSI Symbol', 'side']
+        self.df[cols_to_cat] = self.df[cols_to_cat].astype('category')
+        self.df.drop(columns=['Symbol', 'OSI Symbol'], inplace=True)
+        self.df.rename(columns=({'Missed Liquidity': 'miss_liq',
+                                 'Exhausted Liquidity': 'exh_liq',
+                                 'Routed Liquidity': 'rout_liq',
+                                 'Volume Opportunity': 'vol_opp',
+                                 'expirationDate': 'expDate',
+                                 'Liquidity Opportunity': 'liq_opp'}
+                                ), inplace=True)
 
     @classmethod
     def _exclude_pop_symbols(cls, self):
         """Exclude popular symbols from the analysis."""
-        syms_to_exclude = (['SPY', 'QQQ', 'GLD', 'AAPL',
-                            'AMZN', 'TSLA', 'PLTR', 'FB',
-                            'TWTR', 'SPCE', 'IWM'])
-        self.df = self.df[~self.df['Underlying'].isin(syms_to_exclude)]
+        etf_list = readData.etf_list()
+        self.df = self.df[~self.df['Underlying'].isin(etf_list['symbol'])]
+        self.df.reset_index(inplace=True, drop=True)
 
-        self._make_contractDate_col(self)
+        pop_syms = ['AAPL', 'AMZN', 'BBBY', 'TSLA', 'GOOGL']
+        self.df = self.df[~self.df['Underlying'].isin(pop_syms)].copy(deep=True)
 
     @classmethod
-    def _make_contractDate_col(cls, self):
-        """Make a column for contract date."""
-        cols_to_use = ['yr', 'mo', 'day']
-        df_mod = self.df[cols_to_use].copy(deep=False)
+    def _total_volume_calc(cls, self):
+        """Calc total volume."""
+        self.df['totVol'] = (abs(self.df['miss_liq']) +
+                             abs(self.df['exh_liq']) +
+                             abs(self.df['rout_liq']))
 
-        for col in cols_to_use:  # fr = formatted
-            df_mod[f"{col}_fr"] = df_mod[col].astype('int').astype('str').str.zfill(2)
+    @classmethod
+    def _conver_cols_nopop(cls, self):
+        """Convert columns from not popular data frame."""
+        self.df = dataTypes(self.df).df
 
-        self.df['contdate'] = f"20{df_mod['yr_fr']}-{df_mod['mo_fr']}-{df_mod['day_fr']}"
+    @classmethod
+    def _create_exp_col(cls, self):
+        """Create expriration date column."""
+        yr_fr = self.df['yr'].astype(str).str.rjust(3, fillchar='0')
+        yr_fr = yr_fr.str.rjust(4, fillchar='2')
+        mo_fr = self.df['mo'].astype(str).str.rjust(2, fillchar='0')
+        day_fr = self.df['day'].astype(str).str.rjust(2, fillchar='0')
+
+        self.df['expDate'] = yr_fr + '-' + mo_fr + '-' + day_fr
+        self.df['expDate'] = self.df['expDate'].astype('category')
+
+    @classmethod
+    def _create_vol_sum(cls, self):
+        """Create groupby object for symbol, exp date, side."""
+        self.df['liq_opp'].fillna(0, inplace=True)
+        cols_to_drop = (['miss_liq', 'exh_liq', 'rout_liq',
+                         'strike', 'yr', 'mo', 'day'])
+        exist_columns = self.df.columns
+        cols_to_include = exist_columns[~exist_columns.isin(cols_to_drop)]
+        nopop_vol_sums = self.df[cols_to_include].copy(deep=True)
+
+        nopop_vol_sums = nopop_vol_sums.groupby(by=['expDate', 'Underlying', 'side']).sum()
+        nopop_vol_sums.dropna(inplace=True)
+        nopop_vol_sums.reset_index(inplace=True)
+
+        nopop_vol_sums['vol/avg'] = (nopop_vol_sums['totVol'] /
+                                     nopop_vol_sums['Cboe ADV']).astype(np.float16)
+
+        # Get top 2000 for vol/avg
+        nopop_top_2000 = nopop_vol_sums.sort_values(by=['vol/avg', 'liq_opp'], ascending=False).head(2000)
+        return nopop_top_2000
+
+    @classmethod
+    def _create_time_frames(cls, self):
+        """Create short-medium-long term time frames."""
+        exp_dates = pd.to_datetime(self.df['expDate'].value_counts().index, yearfirst=True).date
+        # Create empty dict to store dates
+        exp_dict = {}
+
+        exp_dict['short'] = exp_dates[exp_dates < (date.today() + timedelta(days=45))].astype(str)
+        exp_dict['med'] = (exp_dates[(exp_dates > (date.today() + timedelta(days=45))) &
+                                   (exp_dates < (date.today() + timedelta(days=180)))]).astype(str)
+        exp_dict['long'] = exp_dates[exp_dates > (date.today() + timedelta(days=180))].astype(str)
+
+        return exp_dict
+
+    @classmethod
+    def _filter_nopop_by_time_frame(cls, self, nopop_top_2000):
+        """Filter non popular symbols by short, medium, and long term frames."""
+        cols_to_float16 = nopop_top_2000.dtypes[nopop_top_2000.dtypes == 'float64'].index.to_list()
+        nopop_top_2000[cols_to_float16] = nopop_top_2000[cols_to_float16].astype(np.float16)
+        nopop_top_2000.reset_index(inplace=True, drop=True)
+
+        # Create empty dict to store short-medium-long term dataframes
+        time_dict = {}
+        time_dict['short'] = nopop_top_2000[nopop_top_2000['expDate'].isin(self.exp_dict['short'])]
+        time_dict['medium'] = nopop_top_2000[nopop_top_2000['expDate'].isin(self.exp_dict['med'])]
+        time_dict['long'] = nopop_top_2000[nopop_top_2000['expDate'].isin(self.exp_dict['long'])]
+
+        return time_dict
+
+    @classmethod
+    def _write_to_json(cls, self, nopop_top_2000, time_dict):
+        """Write to local json file."""
+        base_path = f"{Path(os.getcwd()).parents[0]}/data/derivatives/cboe"
+        nopop_fname = f"{base_path}/nopop_2000_{self.date}.gz"
+        nopop_top_2000.to_json(nopop_fname, compression='gzip')
+
+        # Short-medium-long term data frames to json
+        for t in time_dict.keys():
+            time_fname = f"{base_path}/syms_to_explore/{t}_{self.date}.gz"
+            time_dict[t].to_json(time_fname, compression='gzip')
+
+
+
 
 # %% codecell
 ##############################################################
@@ -325,26 +322,26 @@ class cboeData():
                         )
         sym_df = self.concat_dfs(self, symref_df_dict)
         sym_df = self.symref_format(self, sym_df)
-
-        # Keep only the next few years
-        years_to_get = [20, 21, 22, 23, 24, 25]
-        sym_df = sym_df[sym_df['yr'].isin(years_to_get)]
         return sym_df
 
     @classmethod
     def symref_format(cls, self, df):
         """Format symbol reference data."""
+
         df['sym_suf'] = df['OSI Symbol'].str[-15:]
         df['side'] = df['sym_suf'].str[6]
         df['strike'] = (df['sym_suf'].str[7:12] + '.' + df['sym_suf'].str[13]).astype('float16')
-        df['expirationDate'] = df['sym_suf'].str[0:5]
-        df.drop(columns=['Closing Only', 'Matching Unit', 'OSI Symbol', 'sym_suf'], inplace=True)
+        df['expirationDate'] = df['sym_suf'].str[0:6]
+        df.drop(columns=['Closing Only', 'Matching Unit', 'sym_suf'], inplace=True)
 
         df['yr'] = df['expirationDate'].str[0:2]
         df['mo'] = df['expirationDate'].str[2:4]
         df['day'] = df['expirationDate'].str[4:6]
 
         df.rename(columns={'Cboe Symbol': 'Symbol'}, inplace=True)
+
+        cols_to_category = ['Symbol', 'Underlying', 'exchange']
+        df[cols_to_category] = df[cols_to_category].astype('category')
 
         return df
 
@@ -356,12 +353,12 @@ class cboeData():
             df.reset_index(inplace=True, drop=True)
 
             # Change data types to reduce file size
-            cols_to_float4 = ['strike', 'Liquidity Opportunity']
-            cols_to_int = (['Missed Liquidity', 'Exhausted Liquidity',
+            cols_to_float16 = ['strike', 'Liquidity Opportunity']
+            cols_to_int16 = (['Missed Liquidity', 'Exhausted Liquidity',
                             'Routed Liquidity', 'Volume Opportunity',
                             'expirationDate', 'Cboe ADV', 'yr', 'mo', 'day'])
-            df[cols_to_float4] = df[cols_to_float4].astype(np.float16)
-            df[cols_to_int] = df[cols_to_int].astype(np.int8)
+            df[cols_to_float16] = df[cols_to_float16].astype(np.float16)
+            df[cols_to_int16] = df[cols_to_int16].astype(np.int18)
         except TypeError:
             df = pd.DataFrame()
         return df

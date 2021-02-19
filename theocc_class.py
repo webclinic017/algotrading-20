@@ -49,6 +49,9 @@ pd.set_option('display.max_rows', None)
 
 # %% codecell
 ############################################################
+
+
+
 """
 report_date = DerivativesHelper.which_fname_date() + timedelta(days=1)
 occ_flex_oi = OccFlex('OI', 'E', report_date)
@@ -113,7 +116,7 @@ class OccFlex():
         """Form the right fname for local dir."""
         rpt_lower = self.report_type.lower()
 
-        fname_p1 = f"/{rpt_lower}/equity_{rpt_lower}_{self.report_date}.json"
+        fname_p1 = f"/{rpt_lower}/equity_{rpt_lower}_{self.report_date}.gz"
         fname = f"{self.dump_dir}{fname_p1}"
         # Return fname to self.fname
         return fname
@@ -219,7 +222,7 @@ class OccFlex():
     def write_to_json(cls, self):
         """Write dataframe to local json file."""
         # Write to local json file
-        self.occ_df.to_json(self.fname)
+        self.occ_df.to_json(self.fname, compression='gzip')
 
 
 # %% codecell
@@ -242,6 +245,7 @@ class TradeVolume():
         if not isinstance(self.vol_df, pd.DataFrame):
             self.xml_data = self.get_trade_data(self)
             self.vol_df = self.process_data(self)
+            self.convert_col_dtypes(self)
             self.write_to_json(self)
         #"""
 
@@ -249,9 +253,9 @@ class TradeVolume():
     def create_fname(cls, self, query):
         """Determine local file path name."""
         if query == 'con_volume':
-            f_suf = f"/contrades_{self.report_date}.json"
+            f_suf = f"/contrades_{self.report_date}.gz"
         elif query == 'trade_volume':
-            f_suf = f"/tradevol_{self.report_date}.json"
+            f_suf = f"/tradevol_{self.report_date}.gz"
         else:
             print('Wrong params. Use either con_volume or trade_volume')
         # Combine base dir with f_suf for filepath name
@@ -311,7 +315,16 @@ class TradeVolume():
         return vol_df
 
     @classmethod
+    def convert_col_dtypes(cls, self):
+        """Convert column dtypes."""
+        cols_to_cat = (['symbol', 'pkind', 'exchangeName',
+                        'contdate', 'exchangeId', 'actdate', 'underlying'])
+        self.vol_df[cols_to_cat] = self.vol_df[cols_to_cat].astype('category')
+        cols_to_int16 = ['customerQuantity', 'marketQuantity', 'firmQuantity']
+        self.vol_df[cols_to_int16] = self.vol_df[cols_to_int16].astype(np.int16)
+
+    @classmethod
     def write_to_json(cls, self):
         """Write file to local json."""
         # Write to local json
-        self.vol_df.to_json(self.fname)
+        self.vol_df.to_json(self.fname, compression='gzip')

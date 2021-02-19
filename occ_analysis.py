@@ -26,6 +26,9 @@ from theocc_class import OccFlex, TradeVolume
 importlib.reload(sys.modules['theocc_class'])
 from theocc_class import OccFlex, TradeVolume
 
+from iex_class import readData
+importlib.reload(sys.modules['iex_class'])
+from iex_class import readData
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
 # Display maximum rows
@@ -34,13 +37,44 @@ pd.set_option('display.max_rows', None)
 # %% codecell
 ############################################################
 report_date = datetime.date(2021, 2, 11)
+report_date = date.today()
+report_date
 
 occ_flex_oi = OccFlex('OI', 'E', report_date)
-oi_df = occ_flex_oi.occ_df
+flex_oi_df = occ_flex_oi.occ_df.copy(deep=True)
 
+all_symbols_df = readData.all_iex_symbols()
+etf_df = readData.etf_list()
+
+flex_oi_df_noetf = flex_oi_df[~flex_oi_df['SYMBOL'].isin(etf_df['symbol'].values)]
+
+flex_oi_df_noetf.info(memory_usage='deep')
+
+flex_oi_df_noetf.head(10)
+
+# %% codecell
+############################################################
+report_date = datetime.date(2021, 2, 17)
 con_vol = TradeVolume(report_date, 'con_volume')
-con_df = con_vol.vol_df
+con_df = con_vol.vol_df.copy(deep=True)
 
+cols_to_cat = ['symbol', 'pkind', 'exchangeName', 'contdate', 'exchangeId', 'actdate', 'underlying']
+con_df[cols_to_cat] = con_df[cols_to_cat].astype('category')
+cols_to_int8 = ['customerQuantity', 'marketQuantity', 'firmQuantity']
+con_df[cols_to_int8] = con_df[cols_to_int8].astype(np.int8)
+
+con_df.info(memory_usage='deep')
+con_df.head(10)
+
+# %% codecell
+############################################################
+
+report_date = datetime.date(2021, 2, 17)
+con_vol = TradeVolume(report_date, 'con_volume')
+con_df = con_vol.vol_df.copy(deep=True)
+
+sys.getsizeof(con_df) / 1000000
+sys.getsizeof(occ_flex_oi.occ_df) / 1000000
 
 con_df['expirationDate'] = pd.to_datetime(con_df['contdate'], infer_datetime_format=True)
 con_df['expirationDate'] = con_df['expirationDate'].dt.strftime("%Y%m%d")

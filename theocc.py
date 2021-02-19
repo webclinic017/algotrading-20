@@ -36,8 +36,18 @@ from charset_normalizer import CharsetNormalizerMatches as CnM
 
 from pandas_df_options import freeze_header
 
+from options import DerivativeExpirations, DerivativesHelper, getDate
 importlib.reload(sys.modules['options'])
-from options import DerivativeExpirations, DerivativesHelper
+from options import DerivativeExpirations, DerivativesHelper, getDate
+
+from iex_class import expDates
+importlib.reload(sys.modules['iex_class'])
+from iex_class import expDates
+
+from help_class import dataTypes
+
+from theocc_class import TradeVolume
+
 
 import xml.etree.ElementTree as ET
 
@@ -92,7 +102,7 @@ print(CnM.from_bytes(voa_sample).best().first())
 """
 # %% codecell
 ##############################################################
-
+"""
 report_date = datetime.date(2021, 2, 12)
 oi_url = "https://marketdata.theocc.com/daily-open-interest?reportDate=20210212&action=download&format=csv"
 oi_get = requests.get(oi_url)
@@ -163,50 +173,56 @@ vol_df.head(10)
 
 con_sample = contract_get.content[0:10000]
 print(CnM.from_bytes(con_sample).best().first())
-
+"""
 # %% codecell
 ##############################################################
 
 
-
-
-occ_volume_og = pd.DataFrame()
-dev_exp = DerivativeExpirations()
-
-DerivativesHelper.which_fname_date()
-
-symbol = "IBM"
-# Load environment variables
-load_dotenv()
-base_url = os.environ.get("base_url")
-payload = {'token': os.environ.get("iex_publish_api")}
-exp = requests.get(
-    f"{base_url}/stock/{symbol}/options",
-    params=payload
-    )
-
-# Decode expiration dates from bytes to json
-exp = json.load(StringIO(exp.content.decode('utf-8')))
+exp = expDates('IBM').dates
 exp
 
-# query_date = DerivativesHelper.which_fname_date().strftime("%Y%m%d")
 
+query_date = getDate.query(site='occ').strftime("%Y%m%d")
+query_date
 # %% codecell
 ######################################################################
-query_date = "20210212"
+occ_volume_og = pd.DataFrame()
 
+#for sym in symbols:
 for contract_date in exp:
     productKind = "ALL"
     accountType = "ALL"
     vol_url_1 = f"https://marketdata.theocc.com/volume-query?reportDate={query_date}&format=csv&volumeQueryType=O"
-    vol_url_2 = f"&symbolType=O&symbol=IBM&reportType=M&accountType={accountType}&productKind={productKind}&porc=BOTH&contractDt={contract_date}"
+    vol_url_2 = f"&symbolType=U&symbol={symbol}&reportType=M&accountType={accountType}&productKind={productKind}&porc=BOTH&contractDt={contract_date}"
     occ_volume = requests.get(f"{vol_url_1}{vol_url_2}")
     occ_volume_df = pd.read_csv(BytesIO(occ_volume.content), escapechar='\n', delimiter=',')
     occ_volume_og = pd.concat([occ_volume_og, occ_volume_df])
 
 # %% codecell
 ######################################################################
-occ_volume_copy = occ_volume_og.copy(deep=True)
+vol_df = occ_volume_og.copy(deep=True)
+
+vol_df = dataTypes(vol_df).df
+vol_df.rename(columns={'porc': 'side'}, inplace=True)
+# vol_df.drop(columns=['underlying'], inplace=True)
+cust_vol_df = vol_df[vol_df['actype'] == 'C']
+firm_vol_df = vol_df[vol_df['actype'] == 'F']
+mark_vol_df = vol_df[vol_df['actype'] == 'M']
+
+vol_df_sum = vol_df.groupby(by=['contractDate', 'actdate', 'symbol', 'actype', 'side']).sum()
+
+firm_vol_df.head(10)
+
+
+
+actdates = vol_df['actdate'].value_counts().index.to_list()
+len(actdates)
+
+vol_df_sum.sort_values(by='contractDate', ascending=False).head(150)
+
+vol_df.head(10)
+
+
 
 occ_volume_og['contractDate'].value_counts()
 
@@ -263,13 +279,27 @@ occ_volume_df.head(100)
 
 # %% codecell
 ############################################################
+# Contract volume is just all the trades that were made on that day
+# For all symbols, for all expiration dates
+
+query_date = getDate.query(site='occ')
+con_vol = TradeVolume(query_date, 'con_volume')
+con_vol_df = con_vol.vol_df.copy(deep=True)
+
+con_vol_df['pkind'].value_counts()
+
+con_vol_df.head(10)
+
+
+# %% codecell
+############################################################
 """
 ess_url = f"https://marketdata.theocc.com/ess-reports?reportDate=20210212"
 ess = requests.get(ess_url)
 
 print(CnM.from_bytes(ess.content).best().first())
 
-thresh_url = f"https://marketdata.theocc.com/threshold-securities?reportDate=20210212"
+thresh_url = f"https://marketdata.theocc.com/threshold-securities?reportDate=20210217"
 thresh_sec = requests.get(thresh_url)
 
 print(CnM.from_bytes(thresh_sec.content).best().first())
@@ -299,6 +329,9 @@ mon_df.head(10)
 # %% codecell
 ######################################################################
 
+
+
+"""
 
 oi_url = "https://marketdata.theocc.com/daily-open-interest?reportDate=02/12/2021&action=download&format=csv"
 oi_get = requests.get(oi_url)
@@ -361,6 +394,8 @@ print(len(series_get.content))
 series_sample = series_get.content[0:10000]
 
 print(CnM.from_bytes(series_sample).best().first())
+"""
+
 
 # %% codecell
 ######################################################################
@@ -375,15 +410,6 @@ print(len(vol_sym_get.content))
 # %% codecell
 ######################################################################
 
-oi_sym_url_1 = "https://marketdata.theocc.com/open-interest-query?reportDate=20210212&format=csv&volumeQueryType=O"
-oi_sym_url_2 = "&symbolType=ALL&symbol=IBM&reportType=D&accountType=ALL&productKind=ALL&porc=BOTH&contractDt=20210219"
-
-oi_sym_url = f"{oi_sym_url_1}{oi_sym_url_2}"
-oi_sym_get = requests.get(oi_sym_url)
-
-print(len(oi_sym_get.content))
-
-print(CnM.from_bytes(oi_sym_get.content).best().first())
 
 # occ_comb = pd.merge(occ_volume_mr, mr_stocks[['symbol', 'fClose']], on='symbol', how='left')
 
