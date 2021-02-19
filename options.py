@@ -11,6 +11,7 @@ from pathlib import Path
 
 from datetime import date, timedelta
 import datetime
+import pytz
 
 import glob
 
@@ -74,6 +75,16 @@ class DerivativesStats():
         return df
 
 
+class getDate():
+    """Get the right query date."""
+
+    @staticmethod
+    def query(site):
+        """Call which_fname_date but shorter."""
+        query_date = DerivativesHelper.which_fname_date()
+        if site in ('cboe', 'occ'):
+            query_date = query_date + timedelta(days=1)
+        return query_date
 
 
 class DerivativesHelper():
@@ -82,14 +93,24 @@ class DerivativesHelper():
     @staticmethod
     def which_fname_date():
         """Figure out which date to use for file names."""
-        if date.today().weekday() == 0:
-            fname_date = (date.today() - timedelta(days=3))
+        nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))
+        nyc_hm = nyc_datetime.hour + (nyc_datetime.minute/60)
+        cutoff_hm = 9.55  # Past 9:30 AM
+
+        if nyc_hm < cutoff_hm:
+            da_min = -1
+        else:
+            da_min = 0
+
+        if date.today().weekday() in (0, 3):
+            days = 3 - da_min
+            fname_date = (date.today() - timedelta(days=days))
         elif date.today().weekday() in (1, 2, 3, 4):
-            fname_date = (date.today() - timedelta(days=1))
+            days = 1 - da_min
+            fname_date = (date.today() - timedelta(days=days))
         elif date.today().weekday() == 5:
-            fname_date = (date.today() - timedelta(days=2))
-        elif date.today().weekday() == 6:
-            fname_date = (date.today() - timedelta(days=3))
+            days = 2 - da_min
+            fname_date = (date.today() - timedelta(days=days))
 
         return fname_date
 
