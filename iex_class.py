@@ -22,6 +22,8 @@ from pathlib import Path
 import datetime
 from datetime import date, timedelta, time
 
+from dev.help_class import baseDir
+
 # %% codecell
 ######################################################
 
@@ -31,7 +33,7 @@ class readData():
     @staticmethod
     def all_iex_symbols():
         """Read all IEX symbols."""
-        symbols_base = f"{Path(os.getcwd()).parents[0]}/data/tickers"
+        symbols_base = f"{baseDir().path}/data/tickers"
         all_symbols_fname = f"{symbols_base}/all_symbols.gz"
         ticker_df = pd.read_json(all_symbols_fname, compression='gzip')
         return ticker_df
@@ -40,8 +42,7 @@ class readData():
     @staticmethod
     def etf_list():
         """Read local etf list."""
-        base_dir = f"{Path(os.getcwd()).parents[0]}/data"
-        etf_fname = f"{base_dir}/tickers/etf_list.gz"
+        etf_fname = f"{baseDir().path}/data/tickers/etf_list.gz"
         etf_df = pd.read_json(etf_fname, compression='gzip')
         return etf_df
 

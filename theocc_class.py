@@ -34,13 +34,15 @@ from charset_normalizer import CharsetNormalizerMatch
 from charset_normalizer import detect
 from charset_normalizer import CharsetNormalizerMatches as CnM
 
-from options import DerivativeExpirations, DerivativesHelper
-importlib.reload(sys.modules['options'])
-from options import DerivativeExpirations, DerivativesHelper
+from dev.options import DerivativeExpirations, DerivativesHelper
+importlib.reload(sys.modules['dev.options'])
+from dev.options import DerivativeExpirations, DerivativesHelper
 
-from economic_data import marketHolidays
-importlib.reload(sys.modules['economic_data'])
-from economic_data import marketHolidays
+from dev.economic_data import marketHolidays
+importlib.reload(sys.modules['dev.economic_data'])
+from dev.economic_data import marketHolidays
+
+from dev.help_class import baseDir
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
@@ -83,7 +85,7 @@ class OccFlex():
     # report_type: OI = Open Interest, PR = Price
     # option_type: E = Equity. I = Index
     occ_burl = "https://marketdata.theocc.com"
-    dump_dir = f"{Path(os.getcwd()).parents[0]}/data/derivatives/occ_dump"
+    dump_dir = f"{baseDir().path}/data/derivatives/occ_dump"
 
     def __init__(self, report_type, option_type, report_date):
         """Initialize class."""
@@ -230,7 +232,7 @@ class OccFlex():
 
 class TradeVolume():
     """Batch processing from OCC Trade Volume."""
-    dump_dir = f"{Path(os.getcwd()).parents[0]}/data/derivatives/occ_dump/vol"
+    dump_dir = f"{baseDir().path}/data/derivatives/occ_dump/vol"
     base_url = "https://marketdata.theocc.com/"
 
     # query can be 'con_volume' for contract volume

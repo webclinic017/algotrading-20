@@ -28,13 +28,13 @@ from charset_normalizer import CharsetNormalizerMatch
 from charset_normalizer import detect
 from charset_normalizer import CharsetNormalizerMatches as CnM
 
-from pandas_df_options import freeze_header
-
 import xml.etree.ElementTree as ET
 
-from options import DerivativesHelper
-from theocc_class import TradeVolume
-from iex_class import readData
+from dev.options import DerivativesHelper
+from dev.theocc_class import TradeVolume
+from dev.iex_class import readData
+
+from dev.help_class import baseDir, dataTypes
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
@@ -178,7 +178,7 @@ class cleanMmo():
     @classmethod
     def _write_to_json(cls, self, nopop_top_2000, time_dict):
         """Write to local json file."""
-        base_path = f"{Path(os.getcwd()).parents[0]}/data/derivatives/cboe"
+        base_path = f"{baseDir().path}/data/derivatives/cboe"
         nopop_fname = f"{base_path}/nopop_2000_{self.date}.gz"
         nopop_top_2000.to_json(nopop_fname, compression='gzip')
 
@@ -199,7 +199,7 @@ class cleanMmo():
 class cboeData():
     """Read/write/get cboe symbol reference/other data."""
     cboe_ex_list = ['cone', 'opt', 'ctwo', 'exo']
-    base_dir = f"{Path(os.getcwd()).parents[0]}/data/derivatives"
+    base_dir = f"{baseDir().path}/data/derivatives"
     # 'mmo' = market maker opportunity
     # Data is stored in self.comb_df for combined dataframes
 
@@ -355,8 +355,8 @@ class cboeData():
             # Change data types to reduce file size
             cols_to_float16 = ['strike', 'Liquidity Opportunity']
             cols_to_int16 = (['Missed Liquidity', 'Exhausted Liquidity',
-                            'Routed Liquidity', 'Volume Opportunity',
-                            'expirationDate', 'Cboe ADV', 'yr', 'mo', 'day'])
+                              'Routed Liquidity', 'Volume Opportunity',
+                              'expirationDate', 'Cboe ADV', 'yr', 'mo', 'day'])
             df[cols_to_float16] = df[cols_to_float16].astype(np.float16)
             df[cols_to_int16] = df[cols_to_int16].astype(np.int18)
         except TypeError:

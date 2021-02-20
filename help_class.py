@@ -14,6 +14,21 @@ uint32: Unsigned integer (0 to 4294967295)
 import pandas as pd
 import numpy as np
 
+import os
+from pathlib import Path
+# %% codecell
+###############################################################################
+
+class baseDir():
+    """Get the current base directory and adjust accordingly."""
+    env = 'production'
+
+    def __init__(self):
+        if self.env == 'production':
+            self.path = f"{Path(os.getcwd())}/data"
+        else:
+            self.path = f"{Path(os.getcwd().parents[0])}/data"
+
 
 # %% codecell
 ###############################################################################

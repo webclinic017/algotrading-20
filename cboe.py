@@ -29,9 +29,9 @@ from charset_normalizer import CharsetNormalizerMatches as CnM
 
 import xml.etree.ElementTree as ET
 
-from stocktwits import stTrending
-importlib.reload(sys.modules['stocktwits'])
-from stocktwits import stTrending
+from dev.stocktwits import stTrending
+importlib.reload(sys.modules['dev.stocktwits'])
+from dev.stocktwits import stTrending
 
 
 # Display max 50 columns
@@ -132,12 +132,12 @@ Writing covered called adds to the Open Interest
 from pyinstrument import Profiler
 profiler = Profiler()
 
-from cboe_class import cboeData, cleanMmo
-importlib.reload(sys.modules['cboe_class'])
-from cboe_class import cboeData, cleanMmo
+from dev.cboe_class import cboeData, cleanMmo
+importlib.reload(sys.modules['dev.cboe_class'])
+from dev.cboe_class import cboeData, cleanMmo
 
-from iex_class import readData
-from help_class import dataTypes
+from dev.iex_class import readData
+from dev.help_class import dataTypes
 
 # %% codecell
 ##############################################################
