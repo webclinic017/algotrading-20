@@ -23,9 +23,10 @@ import datetime
 from datetime import date, timedelta, time
 
 try:
-    from dev.help_class import baseDir
+    from dev.help_class import baseDir, getDate
 except ModuleNotFoundError:
-    from help_class import baseDir
+    from help_class import baseDir, getDate
+
 # %% codecell
 ######################################################
 
@@ -35,18 +36,31 @@ class readData():
     @staticmethod
     def all_iex_symbols():
         """Read all IEX symbols."""
-        symbols_base = f"{baseDir().path}/data/tickers"
+        symbols_base = f"{baseDir().path}/tickers"
         all_symbols_fname = f"{symbols_base}/all_symbols.gz"
         ticker_df = pd.read_json(all_symbols_fname, compression='gzip')
         return ticker_df
 
-
     @staticmethod
     def etf_list():
         """Read local etf list."""
-        etf_fname = f"{baseDir().path}/data/tickers/etf_list.gz"
+        etf_fname = f"{baseDir().path}/tickers/etf_list.gz"
         etf_df = pd.read_json(etf_fname, compression='gzip')
         return etf_df
+
+    @staticmethod
+    def last_bus_day_syms():
+        """Read all symbols from the last business day."""
+        last_date = getDate().query('last_syms')
+        syms_fname = f"{baseDir().path}/tickers/new_symbols/{last_date}.gz"
+
+        if not os.path.isfile(syms_fname):
+            print('Not data available. Defaulting to mid Feb symbols.')
+            syms_fname = f"{baseDir().path}/tickers/all_symbols.gz"
+        # Read local json file
+        old_syms = pd.read_json(syms_fname, compression='gzip')
+        return old_syms
+
 
 # %% codecell
 ######################################################
@@ -83,8 +97,28 @@ class expDates():
 # %% codecell
 ######################################################
 
+class urlData():
+    """Get data and convert to pd.DataFrame."""
+    # url_suf = url suffix. Should be string with
+    # 1st character as a forward slash
+
+    def __init__(self, url_suf):
+        print('Data accessible by xxx.df')
+        self.df = self._get_data(self, url_suf)
+
+    @classmethod
+    def _get_data(cls, self, url_suf):
+        """Get data from IEX, return dataframe."""
+        load_dotenv()
+        base_url = os.environ.get("base_url")
+        payload = {'token': os.environ.get("iex_publish_api")}
+        get = requests.get(f"{base_url}{url_suf}", params=payload)
+        df = pd.read_json(BytesIO(get.content))
+        return df
 
 
+# %% codecell
+######################################################
 
 
 """

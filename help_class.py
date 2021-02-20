@@ -17,6 +17,13 @@ from dotenv import load_dotenv
 
 import os
 from pathlib import Path
+from datetime import timedelta
+
+try:
+    from dev.options import DerivativesHelper
+except ModuleNotFoundError:
+    from options import DerivativesHelper
+
 # %% codecell
 ###############################################################################
 
@@ -29,8 +36,22 @@ class baseDir():
         if self.env == 'production':
             self.path = f"{Path(os.getcwd())}/data"
         else:
-            self.path = f"{Path(os.getcwd().parents[0])}/data"
+            self.path = f"{Path(os.getcwd()).parents[0]}/data"
+# %% codecell
+###############################################################################
 
+class getDate():
+    """Get the right query date."""
+
+    @staticmethod
+    def query(site):
+        """Call which_fname_date but shorter."""
+        query_date = DerivativesHelper.which_fname_date()
+        if site in ('cboe', 'occ'):
+            query_date = query_date + timedelta(days=1)
+        elif site in ('last_syms'):
+            pass
+        return query_date
 
 # %% codecell
 ###############################################################################

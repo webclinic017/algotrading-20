@@ -31,7 +31,7 @@ except ModuleNotFoundError:
 class stTrending():
     """Stock twits trending data."""
     st_base_url = "https://api.stocktwits.com/api/2/"
-    st_base_path = f"{baseDir().path}/data/stocktwits/trending"
+    st_base_path = f"{baseDir().path}/stocktwits/trending"
 
     def __init__(self):
         self.rec_df = self.request_data(self)
