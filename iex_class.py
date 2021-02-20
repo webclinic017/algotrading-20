@@ -22,8 +22,10 @@ from pathlib import Path
 import datetime
 from datetime import date, timedelta, time
 
-from dev.help_class import baseDir
-
+try:
+    from dev.help_class import baseDir
+except ModuleNotFoundError:
+    from help_class import baseDir
 # %% codecell
 ######################################################
 

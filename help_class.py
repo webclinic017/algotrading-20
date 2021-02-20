@@ -13,6 +13,7 @@ uint32: Unsigned integer (0 to 4294967295)
 # %% codecell
 import pandas as pd
 import numpy as np
+from dotenv import load_dotenv
 
 import os
 from pathlib import Path
@@ -21,7 +22,8 @@ from pathlib import Path
 
 class baseDir():
     """Get the current base directory and adjust accordingly."""
-    env = 'production'
+    load_dotenv()
+    env = os.environ.get("env")
 
     def __init__(self):
         if self.env == 'production':

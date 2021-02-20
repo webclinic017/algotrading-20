@@ -21,8 +21,10 @@ import importlib
 import datetime
 from datetime import date, timedelta, time
 
-from dev.help_class import dataTypes, baseDir
-
+try:
+    from dev.help_class import dataTypes, baseDir
+except ModuleNotFoundError:
+    from help_class import dataTypes, baseDir
 # %% codecell
 #############################################################
 
