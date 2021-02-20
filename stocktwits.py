@@ -21,9 +21,7 @@ import importlib
 import datetime
 from datetime import date, timedelta, time
 
-from help_class import dataTypes
-importlib.reload(sys.modules['help_class'])
-from help_class import dataTypes
+from dev.help_class import dataTypes, baseDir
 
 # %% codecell
 #############################################################
@@ -31,7 +29,7 @@ from help_class import dataTypes
 class stTrending():
     """Stock twits trending data."""
     st_base_url = "https://api.stocktwits.com/api/2/"
-    st_base_path = f"{Path(os.getcwd()).parent}/data/stocktwits/trending"
+    st_base_path = f"{baseDir().path}/data/stocktwits/trending"
 
     def __init__(self):
         self.rec_df = self.request_data(self)
