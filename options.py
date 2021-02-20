@@ -15,7 +15,12 @@ import pytz
 
 import glob
 
-from file_storage import fileOps
+try:
+    from dev.help_class import baseDir
+    from dev.file_storage import fileOps
+except ModuleNotFoundError:
+    from help_class import baseDir
+    from file_storage import fileOps
 
 # %% codecell
 ##########################################################
@@ -75,18 +80,6 @@ class DerivativesStats():
         return df
 
 
-class getDate():
-    """Get the right query date."""
-
-    @staticmethod
-    def query(site):
-        """Call which_fname_date but shorter."""
-        query_date = DerivativesHelper.which_fname_date()
-        if site in ('cboe', 'occ'):
-            query_date = query_date + timedelta(days=1)
-        return query_date
-
-
 class DerivativesHelper():
     """Static methods to implement options data."""
 
@@ -129,7 +122,7 @@ class DerivativesHelper():
         third_fridays_20y = [d.strftime("%Y%m%d") for d in third_fridays_20y]
 
         # Load base_directory (derivatives data)
-        dir_all_fridays = f"{Path(os.getcwd()).parents[0]}/data/derivatives"
+        dir_all_fridays = f"{baseDir().path}/derivatives"
         fname = f"{dir_all_fridays}/all_fridays_20_years.json"
 
         with open(fname, 'w') as json_file:
@@ -139,7 +132,7 @@ class DerivativesHelper():
     def get_all_third_fridays():
         """Get all third fridays stored locally."""
         # Load base_directory (derivatives data)
-        dir_all_fridays = f"{Path(os.getcwd()).parents[0]}/data/derivatives"
+        dir_all_fridays = f"{baseDir().path}/derivatives"
         fname = f"{dir_all_fridays}/all_fridays_20_years.json"
 
         try:
