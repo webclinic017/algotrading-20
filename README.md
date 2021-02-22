@@ -2,13 +2,12 @@ AlgoTrading:
 
 Algo Trading:
 
-	1. first_pass.ipynb is the starting point
-	2. Data source is last 5 years of AAPL data
-	3. Pipfile contains all necessary packages
-
 Description:
+Buy/Sell signal implementation using basic technical analysis, trending symbols from stocktwits, identifying unusual volume in the derivatives market.
 
-Buy/Sell signal implementation using basic technical analysis.
+	1. Data souces - OCC, CBOE, Stocktwits, IEX Cloud
+	2. first_pass.ipynb is the starting point for stock data
+
 
 Moving Averages:
 	- 10/20/50/200
@@ -20,7 +19,7 @@ Studies:
 
 Candlesticks:
 	- Bullish/Bearish 1/2/3 day candle patterns
-	- 
+	-
 
 Resources:
 	Creating Bins  - https://stackoverflow.com/questions/45273731/binning-column-with-python-pandas
