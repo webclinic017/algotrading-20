@@ -5,7 +5,7 @@ Algo Trading:
 Description:
 Buy/Sell signal implementation using basic technical analysis, trending symbols from stocktwits, identifying unusual volume in the derivatives market.
 
-	1. Data souces - OCC, CBOE, Stocktwits, IEX Cloud
+	1. Data sources - OCC, CBOE, Stocktwits, IEX Cloud
 	2. first_pass.ipynb is the starting point for stock data
 
 
