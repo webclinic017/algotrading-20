@@ -16,8 +16,8 @@ import pytz
 import glob
 
 try:
-    from dev.help_class import baseDir
-    from dev.file_storage import fileOps
+    from scripts.dev.help_class import baseDir
+    from scripts.dev.file_storage import fileOps
 except ModuleNotFoundError:
     from help_class import baseDir
     from file_storage import fileOps
