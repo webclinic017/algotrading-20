@@ -23,14 +23,9 @@ from datetime import date, timedelta, time
 
 try:
     from scripts.dev.help_class import dataTypes, baseDir
-    #from scripts.dev.help_class import dataTypes, baseDir
-except ModuleNotFoundError: 
-    try:
-        from help_class import dataTypes, baseDir
-    except ModuleNotFoundError:
-        print('Error from stocktwits.py')
-finally:
-    print(str(Path(os.getcwd())))
+except ModuleNotFoundError:
+    from help_class import dataTypes, baseDir
+    
 # %% codecell
 #############################################################
 

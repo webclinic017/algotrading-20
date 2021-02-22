@@ -23,8 +23,9 @@ import datetime
 from datetime import date, timedelta, time
 
 try:
-    from dev.help_class import baseDir, getDate
+    from scripts.dev.help_class import baseDir, getDate
 except ModuleNotFoundError:
+    print('Error from iex_class.py')
     from help_class import baseDir, getDate
 
 # %% codecell

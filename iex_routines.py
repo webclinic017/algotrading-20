@@ -23,9 +23,10 @@ import datetime
 from datetime import date, timedelta, time
 
 try:
-    from dev.help_class import baseDir, dataTypes, getDate
-    from dev.iex_class import readData, urlData
+    from scripts.dev.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.iex_class import readData, urlData
 except ModuleNotFoundError:
+    print('Error from iex_routines.py')
     from help_class import baseDir, dataTypes, getDate
     importlib.reload(sys.modules['help_class'])
     from help_class import baseDir, dataTypes, getDate
@@ -94,26 +95,6 @@ class dailySymbols():
 
 # %% codecell
 ##############################################
-
-iex_sup = urlData("/ref-data/symbols").df
-iex_df = iex_sup.copy(deep=True)
-
-iex_df.drop(columns=
-            ['exchangeSuffix', 'exchangeName', 'name', 'iexId', 'region',
-             'currency', 'isEnabled', 'cik', 'lei', 'figi'],
-            axis=1, inplace=True)
-iex_df = dataTypes(iex_df).df
-
-new_syms_tp = iex_df[iex_df['symbol'].isin(new_syms['symbol'])]
-
-
-
-iex_sup.head(10)
-
-old_syms.head(10)
-old_syms.shape
-
-new_syms.shape
 
 
 # %% codecell

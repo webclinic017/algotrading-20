@@ -17,12 +17,9 @@ from dotenv import load_dotenv
 
 import os
 from pathlib import Path
-from datetime import timedelta
-
-try:
-    from dev.options import DerivativesHelper
-except ModuleNotFoundError:
-    from options import DerivativesHelper
+from datetime import timedelta, date
+import datetime
+import pytz
 
 # %% codecell
 ###############################################################################
@@ -39,14 +36,42 @@ class baseDir():
             self.path = f"{Path(os.getcwd()).parents[0]}/data"
 # %% codecell
 ###############################################################################
-
 class getDate():
     """Get the right query date."""
 
     @staticmethod
+    def which_fname_date():
+        """Figure out which date to use for file names."""
+        nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))
+        nyc_hm = nyc_datetime.hour + (nyc_datetime.minute/60)
+        cutoff_hm = 9.55  # Past 9:30 AM
+
+        date_today = date.today().weekday()
+        weekdays = (0, 1, 2, 3, 4)
+
+        if (nyc_hm < cutoff_hm) and (date_today in weekdays):
+            da_min = 1
+        else:
+            da_min = 0
+
+        if date_today == 0:
+            days = 3 + da_min
+        elif date_today in weekdays:  # Get previous day data
+            days = 1 + da_min
+        elif date_today == 5:  # Saturday get thursday data
+            days = 2
+        elif date_today == 6:
+            days = 3
+
+        fname_date = (date.today() - timedelta(days=days))
+
+        return fname_date
+
+    @staticmethod
     def query(site):
+        print(site)
         """Call which_fname_date but shorter."""
-        query_date = DerivativesHelper.which_fname_date()
+        query_date = getDate.which_fname_date()
         if site in ('cboe', 'occ'):
             query_date = query_date + timedelta(days=1)
         elif site in ('last_syms'):

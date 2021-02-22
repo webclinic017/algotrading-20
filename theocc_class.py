@@ -35,13 +35,10 @@ from charset_normalizer import detect
 from charset_normalizer import CharsetNormalizerMatches as CnM
 
 try:
-    from dev.help_class import baseDir, dataTypes, getDate
-    from dev.options import DerivativeExpirations, DerivativesHelper
-    from dev.iex_class import readData, urlData
-
-    from dev.economic_data import marketHolidays
-    importlib.reload(sys.modules['dev.economic_data'])
-    from dev.economic_data import marketHolidays
+    from scripts.dev.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.options import DerivativeExpirations, DerivativesHelper
+    from scripts.dev.iex_class import readData, urlData
+    from scripts.dev.economic_data import marketHolidays
 except ModuleNotFoundError:
     from help_class import baseDir
 
