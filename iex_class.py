@@ -58,7 +58,10 @@ class readData():
             print('Not data available. Defaulting to mid Feb symbols.')
             syms_fname = f"{baseDir().path}/tickers/all_symbols.gz"
         # Read local json file
-        old_syms = pd.read_json(syms_fname, compression='gzip')
+        try:
+            old_syms = pd.read_json(syms_fname, compression='gzip')
+        except ValueError:
+            old_syms = pd.DataFrame()
         return old_syms
 
 
