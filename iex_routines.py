@@ -26,7 +26,6 @@ try:
     from scripts.dev.help_class import baseDir, dataTypes, getDate
     from scripts.dev.iex_class import readData, urlData
 except ModuleNotFoundError:
-    print('Error from iex_routines.py')
     from help_class import baseDir, dataTypes, getDate
     importlib.reload(sys.modules['help_class'])
     from help_class import baseDir, dataTypes, getDate

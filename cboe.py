@@ -29,19 +29,38 @@ from charset_normalizer import CharsetNormalizerMatches as CnM
 
 import xml.etree.ElementTree as ET
 
-from dev.stocktwits import stTrending
-importlib.reload(sys.modules['dev.stocktwits'])
-from dev.stocktwits import stTrending
 
+from iex_routines import dailySymbols
+importlib.reload(sys.modules['iex_routines'])
+from iex_routines import dailySymbols
+
+from iex_routines import dailySymbols
+importlib.reload(sys.modules['iex_routines'])
+from iex_routines import dailySymbols
+
+from iex_class import readData
+importlib.reload(sys.modules['iex_class'])
+from iex_class import readData
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
 # Display maximum rows
 pd.set_option('display.max_rows', 200)
 
+# %% codecell
+##############################################################
+
+"""
+AD = ADR = American depository receipt - represents shares in a foreign entity
+ET = ETF
+PS = Preferred stock
+WT = Warrant
+Struct = Structured Product
+"""
 
 # %% codecell
 ##############################################################
+
 
 trend_df = stTrending().df
 trend_df
