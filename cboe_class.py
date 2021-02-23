@@ -96,7 +96,10 @@ class cleanMmo():
     def _exclude_pop_symbols(cls, self):
         """Exclude popular symbols from the analysis."""
         etf_list = readData.etf_list()
-        self.df = self.df[~self.df['Underlying'].isin(etf_list['symbol'])]
+        try:
+            self.df = self.df[~self.df['Underlying'].isin(etf_list['symbol'])]
+        except KeyError:  # To avoid the 'symbol' error
+            self.df = self.df[~self.df['Underlying'].isin(etf_list.values.ravel())]
         self.df.reset_index(inplace=True, drop=True)
 
         pop_syms = ['AAPL', 'AMZN', 'BBBY', 'TSLA', 'GOOGL']
