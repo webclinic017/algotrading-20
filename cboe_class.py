@@ -31,13 +31,11 @@ from charset_normalizer import CharsetNormalizerMatches as CnM
 import xml.etree.ElementTree as ET
 
 try:
-    from dev.options import DerivativesHelper
-    from dev.theocc_class import TradeVolume
-    from dev.iex_class import readData
-    from dev.help_class import baseDir, dataTypes
+    from scripts.dev.options import DerivativesHelper
+    from scripts.dev.iex_class import readData
+    from scripts.dev.help_class import baseDir, dataTypes
 except ModuleNotFoundError:
     from options import DerivativesHelper
-    from theocc_class import TradeVolume
     from iex_class import readData
     from help_class import baseDir, dataTypes
 
@@ -45,9 +43,6 @@ except ModuleNotFoundError:
 pd.set_option('display.max_columns', None)
 # Display maximum rows
 pd.set_option('display.max_rows', None)
-
-# %% codecell
-##############################################################
 
 
 # %% codecell
@@ -363,7 +358,7 @@ class cboeData():
                               'Routed Liquidity', 'Volume Opportunity',
                               'expirationDate', 'Cboe ADV', 'yr', 'mo', 'day'])
             df[cols_to_float16] = df[cols_to_float16].astype(np.float16)
-            df[cols_to_int16] = df[cols_to_int16].astype(np.int18)
+            df[cols_to_int16] = df[cols_to_int16].astype(np.int16)
         except TypeError:
             df = pd.DataFrame()
         return df

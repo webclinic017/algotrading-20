@@ -59,6 +59,7 @@ class dailySymbols():
         """Get new symbols and find diff with last date."""
         current_syms = urlData("/ref-data/iex/symbols").df
         old_syms = readData.last_bus_day_syms()
+        old_syms['symbol'] = ''
 
         # Get the differennce between todays/yesterdays symbols
         syms_diff = (pd.concat([current_syms['symbol'], old_syms['symbol']])
