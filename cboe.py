@@ -40,7 +40,7 @@ from iex_routines import dailySymbols
 
 from iex_class import readData
 importlib.reload(sys.modules['iex_class'])
-from iex_class import readData
+from iex_class import readData, urlData
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
@@ -49,6 +49,11 @@ pd.set_option('display.max_rows', 200)
 
 # %% codecell
 ##############################################################
+
+
+
+etf_df = readData.etf_list()
+
 
 """
 AD = ADR = American depository receipt - represents shares in a foreign entity
