@@ -25,7 +25,6 @@ from datetime import date, timedelta, time
 try:
     from scripts.dev.help_class import baseDir, getDate
 except ModuleNotFoundError:
-    print('Error from iex_class.py')
     from help_class import baseDir, getDate
 
 # %% codecell
@@ -46,8 +45,19 @@ class readData():
     def etf_list():
         """Read local etf list."""
         etf_fname = f"{baseDir().path}/tickers/etf_list.gz"
-        etf_df = pd.read_json(etf_fname, compression='gzip')
+        if not os.path.isfile(etf_fname):
+            symbols = urlData("/ref-data/symbols").df
+            etf_df = symbols[symbols['type'] == 'et']['symbol']
+            etf_df.reset_index(inplace=True, drop=True)
+            etf_df.to_json(etf_fname, compression='gzip')
+        else:
+            etf_df = pd.read_json(etf_fname, compression='gzip')
         return etf_df
+
+    @staticmethod
+    def _get_etf_list(etf_fname):
+        """Get etf list data from IEX and write to json."""
+
 
     @staticmethod
     def last_bus_day_syms():
