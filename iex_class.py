@@ -47,7 +47,7 @@ class readData():
         etf_fname = f"{baseDir().path}/tickers/etf_list.gz"
         if not os.path.isfile(etf_fname):
             symbols = urlData("/ref-data/symbols").df
-            etf_df = symbols[symbols['type'] == 'et']['symbol']
+            etf_df = pd.DataFrame(symbols[symbols['type'] == 'et']['symbol'])
             etf_df.reset_index(inplace=True, drop=True)
             etf_df.to_json(etf_fname, compression='gzip')
         else:
