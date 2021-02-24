@@ -69,7 +69,6 @@ class getDate():
 
     @staticmethod
     def query(site):
-        print(site)
         """Call which_fname_date but shorter."""
         query_date = getDate.which_fname_date()
         if site in ('cboe', 'occ'):

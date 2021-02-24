@@ -50,7 +50,6 @@ pd.set_option('display.max_rows', 200)
 # %% codecell
 ##############################################################
 
-
 """
 AD = ADR = American depository receipt - represents shares in a foreign entity
 ET = ETF
