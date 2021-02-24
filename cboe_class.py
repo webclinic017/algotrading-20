@@ -1,5 +1,9 @@
 """
 CBOE Options Data Classes
+
+#try:
+#    self.df = self.df[~self.df['Underlying'].isin(etf_list['symbol'])]
+#except KeyError:  # To avoid the 'symbol' error
 """
 
 # %% codecell
@@ -12,6 +16,7 @@ import glob
 import importlib
 import sys
 import copy
+import zlib
 
 import pandas as pd
 import numpy as np
@@ -32,6 +37,8 @@ import xml.etree.ElementTree as ET
 
 try:
     from scripts.dev.options import DerivativesHelper
+    from scripts.dev.iex_class import readData
+    importlib.reload(sys.modules['scripts.dev.iex_class'])
     from scripts.dev.iex_class import readData
     from scripts.dev.help_class import baseDir, dataTypes
 except ModuleNotFoundError:
@@ -96,10 +103,7 @@ class cleanMmo():
     def _exclude_pop_symbols(cls, self):
         """Exclude popular symbols from the analysis."""
         etf_list = readData.etf_list()
-        try:
-            self.df = self.df[~self.df['Underlying'].isin(etf_list['symbol'])]
-        except KeyError:  # To avoid the 'symbol' error
-            self.df = self.df[~self.df['Underlying'].isin(etf_list.values.ravel())]
+        self.df = self.df[~self.df['Underlying'].isin(etf_list.values.ravel())]
         self.df.reset_index(inplace=True, drop=True)
 
         pop_syms = ['AAPL', 'AMZN', 'BBBY', 'TSLA', 'GOOGL']
@@ -286,7 +290,10 @@ class cboeData():
         self.sym_fname = f"{self.base_dir}/cboe_symref/symref_{self.date}.gz"
 
         if os.path.isfile(self.sym_fname):
-            sym_df = pd.read_json(self.sym_fname)
+            try:
+                sym_df = pd.read_json(self.sym_fname)
+            except zlib.error:
+                sym_df = self.get_symref(self)
         else:
             sym_df = self.get_symref(self)
 
