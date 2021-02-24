@@ -155,8 +155,17 @@ class stwitsUserStream():
         """If prev file exists, concat, drop duplicates."""
         prev_df = pd.read_json(fpath, compression='gzip')
         comb_df = pd.concat([prev_df, st_df])
-        comb_df.drop_duplicates(subset=['id'], inplace=True)
-        st_df = comb_df.copy(deep=True)
+        # If the raw df, use ID for dropping duplicates
+        if 'id' in comb_df.columns:
+            comb_df.drop_duplicates(
+                        subset=['id'],
+                        inplace=True)
+        else:  # Use symbol and created_at for dropping duplicates
+            comb_df.drop_duplicates(
+                        subset=['symbol', 'created_at'],
+                        inplace=True)
+        df = comb_df.copy(deep=True)
+        return df
 
     @classmethod
     def _write_to_json(cls, fpath, df):
