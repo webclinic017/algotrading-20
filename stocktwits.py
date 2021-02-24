@@ -44,11 +44,6 @@ from stocktwits_class import stwitsUserStream
 # %% codecell
 #############################################################
 
-stwitsUserStream()
-
-
-
-
 
 
 
