@@ -146,7 +146,10 @@ class stwitsUserStream():
         syms_df = pd.DataFrame()
         syms_df['symbol'] = nested_lookup('symbol', st_decode)
         syms_df['watch_count'] = nested_lookup('watchlist_count', st_decode)
-        syms_df['created_at'] = nested_lookup('created_at', st_decode)[1:]
+        try:
+            syms_df['created_at'] = nested_lookup('created_at', st_decode)
+        except ValueError:
+            syms_df['created_at'] = nested_lookup('created_at', st_decode)[1:]
 
         return syms_df
 
