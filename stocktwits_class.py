@@ -110,6 +110,10 @@ class stwitsUserStream():
         """Get user messages."""
         for u in user_list:
             user_fpath = f"{self.base_dir}/{u}"
+            # Define local fpaths for raw and cleaned messages
+            self.prev_fpath = f"{user_fpath}/raw_{self.this_year}.gz"
+            self.syms_fpath = f"{user_fpath}/syms_{self.this_year}.gz"
+
             # Create local directory if it does not exist
             if not os.path.isdir(user_fpath):
                 os.mkdir(user_fpath)
@@ -128,17 +132,13 @@ class stwitsUserStream():
 
         syms_df = self._clean_syms(self, st_decode, messages)
 
-        # Define local fpaths for symbols and for raw messages
-        prev_fpath = f"{user_fpath}/{self.this_year}.gz"
-        syms_fpath = f"{user_fpath}/syms_{self.this_year}.gz"
+        if os.path.isfile(self.prev_fpath):
+            raw_df = self._concat_drop(self.prev_fpath, raw_df)
+        if os.path.isfile(self.syms_fpath):
+            syms_df = self._concat_drop(self.syms_fpath, syms_df)
 
-        if os.path.isfile(prev_fpath):
-            raw_df = self._concat_drop(self, prev_fpath, raw_df)
-        if os.path.isfile(syms_fpath):
-            syms_df = self._concat_drop(self, syms_fpath, syms_df)
-
-        self._write_to_json(prev_fpath, raw_df)
-        self._write_to_json(syms_fpath, syms_df)
+        self._write_to_json(self.prev_fpath, raw_df)
+        self._write_to_json(self.syms_fpath, syms_df)
 
     @classmethod
     def _clean_syms(cls, self, st_decode, messages):
@@ -160,7 +160,7 @@ class stwitsUserStream():
         return sym_df
 
     @classmethod
-    def _concat_drop(cls, self, fpath, st_df):
+    def _concat_drop(cls, fpath, st_df):
         """If prev file exists, concat, drop duplicates."""
         prev_df = pd.read_json(fpath, compression='gzip')
         comb_df = pd.concat([prev_df, st_df])
