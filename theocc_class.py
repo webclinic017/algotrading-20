@@ -327,7 +327,7 @@ class TradeVolume():
     def convert_col_dtypes(cls, self):
         """Convert column dtypes."""
         cols_to_cat = (['symbol', 'pkind', 'exchangeName',
-                        'contdate', 'exchangeId', 'actdate', 'underlying'])
+                        'exchangeId', 'actdate', 'underlying'])
         self.vol_df[cols_to_cat] = self.vol_df[cols_to_cat].astype('category')
         cols_to_int16 = ['customerQuantity', 'marketQuantity', 'firmQuantity']
         self.vol_df[cols_to_int16] = self.vol_df[cols_to_int16].astype(np.int16)
