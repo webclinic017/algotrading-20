@@ -126,7 +126,7 @@ class stwitsUserStream():
         [messages] = nested_lookup('messages', st_decode)
         raw_df = pd.DataFrame(messages)
 
-        syms_df = self._clean_syms(self, st_decode)
+        syms_df = self._clean_syms(self, st_decode, messages)
 
         # Define local fpaths for symbols and for raw messages
         prev_fpath = f"{user_fpath}/{self.this_year}.gz"
@@ -141,17 +141,23 @@ class stwitsUserStream():
         self._write_to_json(syms_fpath, syms_df)
 
     @classmethod
-    def _clean_syms(cls, self, st_decode):
+    def _clean_syms(cls, self, st_decode, messages):
         """Extract symbols, watch_count, created_date."""
-        syms_df = pd.DataFrame()
-        syms_df['symbol'] = nested_lookup('symbol', st_decode)
-        syms_df['watch_count'] = nested_lookup('watchlist_count', st_decode)
-        try:
-            syms_df['created_at'] = nested_lookup('created_at', st_decode)
-        except ValueError:
-            syms_df['created_at'] = nested_lookup('created_at', st_decode)[1:]
+        msg_list = []
+        idx = ['symbol', 'watchlist_count', 'created_at']
+        for x in range(len(messages)):
+            try:
+                for y in range(len(messages[x]['symbols'])):
+                    pre = messages[x]['symbols'][y]
+                    row = (pre[idx[0]], pre[idx[1]], messages[x][idx[2]])
+                    msg_list.append(row)
+            except KeyError:  # If the message doesn't have any symbols
+                pass
 
-        return syms_df
+        col_list = ['symbol', 'watch_count', 'created_at']
+        sym_df = pd.DataFrame(msg_list, columns=col_list)
+
+        return sym_df
 
     @classmethod
     def _concat_drop(cls, self, fpath, st_df):
