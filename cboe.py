@@ -62,9 +62,6 @@ Struct = Structured Product
 ##############################################################
 
 
-trend_df = stTrending().df
-trend_df
-
 
 # Thesis to get a weekly volume, monthly volume. When weekly crosses over monthly
 """
