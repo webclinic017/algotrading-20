@@ -368,7 +368,7 @@ class cboeData():
                               'Routed Liquidity', 'Volume Opportunity',
                               'expirationDate', 'Cboe ADV', 'yr', 'mo', 'day'])
             df[cols_to_float16] = df[cols_to_float16].astype(np.float16)
-            df[cols_to_int16] = df[cols_to_int16].astype(np.int16)
+            df[cols_to_int16] = df[cols_to_int16].astype(np.uint16)
         except TypeError:
             df = pd.DataFrame()
         return df

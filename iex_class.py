@@ -155,3 +155,93 @@ etf_df = pd.read_json(etf_list_fname, compression='gzip')
 
 # %% codecell
 ######################################################
+
+class marketHolidays():
+    """Helper class for finding last trading date/market holidays."""
+    # which can be 'trade' or 'holiday'
+    # Dataframe is stored as days_df
+    base_dir = f"{baseDir().path}/economic_data"
+
+    def __init__(self, which):
+        self.fpath = self.determine_fpath(self, which)
+        self.days_df = self.check_if_exists(self)
+
+        if isinstance(self.days_df, (bool)):
+            self.params = self.determine_params(which)
+            self.full_url = self.construct_url(self.params)
+            self.days_df = self.get_market_trading_dates(self)
+            self.write_to_json(self)
+
+    @classmethod
+    def determine_fpath(cls, self, which):
+        """Determine fpath based on which param."""
+        fpath = ''
+
+        if which == 'trade':
+            fpath = f"{self.base_dir}/{date.today()}_{'trade'}.gz"
+        elif which == 'holiday':
+            fpath = f"{self.base_dir}/{date.today().year}_{'holiday'}.gz"
+        else:
+            print("Which needs to equal either 'trade' or 'holiday' ")
+
+        return fpath
+
+    @classmethod
+    def check_if_exists(cls, self):
+        """Check if requested file exists locally."""
+        if os.path.isfile(self.fpath):
+            local_df = pd.read_json(self.fpath, compression='gzip')
+        else:
+            local_df = False
+
+        return local_df
+
+
+    @classmethod
+    def determine_params(cls, which):
+        """Create dictionary of parameters."""
+        params = {'type': which, 'direction': '', 'last': 0, 'startDate': 'YYYYMMDD'}
+        if which == 'trade':
+            params['direction'] = 'last'
+            params['last'] = 1
+        elif which == 'holiday':
+            params['direction'] = 'next'
+            next_year = (date.today() + timedelta(days=365)).year
+            params['last'] = (datetime.date(next_year, 1, 1,) - date.today()).days
+        else:
+            return False
+
+        params['startDate'] = date.today().strftime("%Y%m%d")
+        return params
+
+    @classmethod
+    def construct_url(cls, params):
+        """Construct url to call get request."""
+        load_dotenv()
+        base_url = os.environ.get("base_url")
+        url_1 = f"/ref-data/us/dates/{params['type']}/{params['direction']}"
+        url_2 = f"/{params['last']}/{params['startDate']}"
+        full_url = f"{base_url}{url_1}{url_2}"
+
+        return full_url
+
+    @classmethod
+    def get_market_trading_dates(cls, self):
+        """Get market holiday data from iex."""
+        payload = {'token': os.environ.get("iex_publish_api")}
+        td_get = requests.get(
+            self.full_url,
+            params=payload  # Passed through function arg
+            )
+        # Convert bytes to dataframe=
+        df = pd.json_normalize(json.loads(td_get.content))
+
+        return df
+
+    @classmethod
+    def write_to_json(cls, self):
+        """Write data to local json file."""
+        self.days_df.to_json(self.fpath, compression='gzip')
+
+# %% codecell
+######################################################
