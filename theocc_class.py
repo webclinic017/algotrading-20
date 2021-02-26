@@ -318,6 +318,7 @@ class tradeVolume():
     @classmethod
     def convert_col_dtypes(cls, self):
         """Convert column dtypes."""
+
         # Rename the columns
         self.vol_df.rename(columns={
                 'exchangeId': 'exId',
