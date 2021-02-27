@@ -95,9 +95,6 @@ trend_url = "https://algotrading.ventures/api/v1/stocktwits/trending"
 t_get = requests.get(trend_url)
 trend_test = json.load(BytesIO(t_get.content))
 
-for fdate in trend_test:
-    print(fdate)
-
 fpath_to_use = '/var/www/algo_flask/data/stocktwits/trending/2021-02-24.gz'
 
 trend_df = pd.DataFrame(trend_test[fpath_to_use])
@@ -159,6 +156,12 @@ trade_vol_df = trade_vol.copy(deep=True)
 
 # %% codecell
 ##############################################################
+
+
+
+# %% codecell
+##############################################################
+
 
 
 
