@@ -60,8 +60,61 @@ Struct = Structured Product
 
 # %% codecell
 ##############################################################
+# Write function to get and display top 100 short term symbols
+
+# STE = symbols to explore
+ste_url = "https://algotrading.ventures/api/v1/cboe/mmo"
+ste_get = requests.get(ste_url)
+ste_test = json.load(BytesIO(ste_get.content))
+
+yesterday = date.today() - timedelta(days=1)
+five_days_ago = '2021-02-22'
+
+short_df = pd.DataFrame()
+for fname in ste_test:
+    mod_df = pd.DataFrame(ste_test[fname])
+    mod_df['dataDate'] = fname[-13:-3]
+    short_df = pd.concat([short_df, mod_df])
+
+fname
+fname[-13:-3]
+
+# %% codecell
+##############################################################
+thisF_df = short_df[short_df['expDate'] == '2021-02-26'].copy(deep=True)
+dataDates = sorted(list(set(short_df['dataDate'])))
+
+"""
+Get the p/c volume ratio - not that helpful and only a rough approximation
+
+pc_dict = {}
+for dd in dataDates:
+    this_date = thisF_df[thisF_df['dataDate'] == dd]
+    group = this_date.groupby(by=['side']).sum().reset_index()
+    pc_dict[f"{dd}_pc"] = group.iloc[0]['totVol'] / group.iloc[1]['totVol']
+"""
+
+"""
+This is really interesting. Someone bought a much higher than normal number of puts on EOG as it hit its 52 week high.
+THe next day, the same, and the day after that, and the day after that.
+
+USB is the same. The stock is rising and yet people are buying puts. 2 days after, the stock dumps.
+"""
+thisF_df['totVol'].value_counts()
+
+thisF_df[thisF_df['expDate'] == '2021-02-26'].sort_values(by=['vol/avg', 'liq_opp'], ascending=False).head(50)
+
+thisF_df.sort_values(by=['vol/avg', 'liq_opp'], ascending=False).head(50)
 
 
+short_amc = short_df[short_df['Underlying'] == 'AMC'].copy(deep=True)
+
+short_df.sort_values(by=['vol/avg', 'liq_opp'], ascending=False).head(10)
+
+
+
+# %% codecell
+##############################################################
 
 # Thesis to get a weekly volume, monthly volume. When weekly crosses over monthly
 """
