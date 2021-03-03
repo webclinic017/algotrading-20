@@ -23,14 +23,25 @@ from pathlib import Path
 import datetime
 from datetime import date, timedelta, time
 
-# Derivatives data
-from options import DerivativesHelper, DerivativesStats
-from file_storage import fileOps, blockPrinting
-from help_class import baseDir, dataTypes, getDate
+from yahoofinancials import YahooFinancials
 
-importlib.reload(sys.modules['options'])
-importlib.reload(sys.modules['file_storage'])
-importlib.reload(sys.modules['help_class'])
+try:
+    from scripts.dev.options import DerivativeExpirations, DerivativesHelper
+    from scripts.dev.file_storage import fileOps, blockPrinting
+    from scripts.dev.help_class import baseDir, dataTypes, getDate
+
+except ModuleNotFoundError:
+    from options import DerivativesHelper, DerivativesStats
+    from file_storage import fileOps, blockPrinting
+    from help_class import baseDir, dataTypes, getDate
+
+    importlib.reload(sys.modules['options'])
+    importlib.reload(sys.modules['file_storage'])
+    importlib.reload(sys.modules['help_class'])
+
+    from options import DerivativesHelper, DerivativesStats
+    from file_storage import fileOps, blockPrinting
+    from help_class import baseDir, dataTypes, getDate
 
 # %% codecell
 ############################################################
@@ -40,6 +51,52 @@ Write function to find the most recent date and then get all data in
 between today and that day.
 """
 
+# %% codecell
+############################################################
+
+class yahooTbills():
+    """Get current price for US T-bills - 3 month, 5 yr, 10 yr, 30 yr."""
+    # 4 am to 8 pm, every hour
+    tickers = ['^IRX', '^FVX', '^TNX', '^TYX']
+    cols = ['3mo', '5yr', '10yr', '30yr', 'time']
+
+    def __init__(self):
+        self.get_path(self)
+        self.df = self.get_data(self)
+        self.write_to_json(self)
+
+    def get_path(cls, self):
+        """Get local fpath."""
+        self.fpath = f"{baseDir().path}/economic_data/treasuries.gz"
+        # Create an empty data frame with column names
+        df = pd.DataFrame(columns=self.cols)
+        # Check if local data frame already exists
+        if os.path.isfile(self.fpath):
+            df = pd.read_json(self.fpath, compression='gzip')
+        # Return data frame
+        self.df = df
+
+    def get_data(cls, self):
+        """Get data from yahoo finance."""
+        treasuries = YahooFinancials(self.tickers)
+        tdata = treasuries.get_current_price()
+
+        # Add current timestamp
+        tdata['time'] = datetime.datetime.now()
+        # Append data to existing data frame
+        df = self.df.append(tdata, ignore_index=True)
+
+        # Remove time from columns for data conversion
+        self.cols.remove('time')
+        # Convert cols to float 16s
+        df[self.cols] = df[self.cols].astype(np.float16)
+        df.reset_index(inplace=True, drop=True)
+
+        return df
+
+    def write_to_json(cls, self):
+        """Write data to local json file."""
+        self.df.to_json(self.fpath, compression='gzip')
 
 # %% codecell
 ############################################################
