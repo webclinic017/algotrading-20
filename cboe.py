@@ -1,7 +1,6 @@
 """
 CBOE Options Data
 """
-
 # %% codecell
 ##############################################################
 import os
@@ -29,6 +28,7 @@ from charset_normalizer import CharsetNormalizerMatches as CnM
 
 import xml.etree.ElementTree as ET
 
+from help_class import baseDir
 
 from iex_routines import dailySymbols
 importlib.reload(sys.modules['iex_routines'])
@@ -42,6 +42,10 @@ from iex_class import readData
 importlib.reload(sys.modules['iex_class'])
 from iex_class import readData, urlData
 
+from cboe_class import cboeLocalRecDiff
+importlib.reload(sys.modules['cboe_class'])
+from cboe_class import cboeLocalRecDiff
+
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
 # Display maximum rows
@@ -49,40 +53,51 @@ pd.set_option('display.max_rows', 200)
 
 # %% codecell
 ##############################################################
-
 """
 AD = ADR = American depository receipt - represents shares in a foreign entity
 ET = ETF
 PS = Preferred stock
 WT = Warrant
 Struct = Structured Product
+
+CBOE Market Making:
+Data for 2021-02-19 to 2021-02-25 inclusive. - Feb 26th and Feb 27th data access.
 """
+# %% codecell
+##############################################################
+top_df_og = cboeLocalRecDiff(which='top_2000', fresh=True).df
+top_df = top_df_og.copy(deep=True)
+
+# top_df_og[(top_df_og['Underlying'] == 'YETI') & (top_df_og['expDate'] == '2021-02-26')]
+"""
+dataDate = 2021-02-24
+VOD:  Vol/avg = 260 - next day VOD tanks
+CIEN  Vol/avg = 50 - drops less than the rest
+EOG   Vol/avg = 30 - spikes up/drops
+CMG hardly moved, but calls bought on green
+YETI tanked despite calls bought on red
+OKE calls bought on green, then tanked
+KMB calls bought on slight red, then tanked
+URI puts bought on green, then epically tanks
+WBA calls bought on green, barely moved
+SLB puts bought on big green, tanks right after
+FL puts bought on big green, tanks right after
+STZ goes up green, then tanks right after
+NOW goes up green, tanks right after
+MO goes up green, tanks right after
+"""
+
+top_df[(top_df['expDate'] == '2021-02-26') & (top_df['dataDate'] == '2021-02-24')].sort_values(by=['vol/avg', 'liq_opp'], ascending=False).head(50)
 
 # %% codecell
 ##############################################################
 # Write function to get and display top 100 short term symbols
 
-# STE = symbols to explore
-ste_url = "https://algotrading.ventures/api/v1/cboe/mmo"
-ste_get = requests.get(ste_url)
-ste_test = json.load(BytesIO(ste_get.content))
-
-yesterday = date.today() - timedelta(days=1)
-five_days_ago = '2021-02-22'
-
-short_df = pd.DataFrame()
-for fname in ste_test:
-    mod_df = pd.DataFrame(ste_test[fname])
-    mod_df['dataDate'] = fname[-13:-3]
-    short_df = pd.concat([short_df, mod_df])
-
-fname
-fname[-13:-3]
 
 # %% codecell
 ##############################################################
-thisF_df = short_df[short_df['expDate'] == '2021-02-26'].copy(deep=True)
-dataDates = sorted(list(set(short_df['dataDate'])))
+
+
 
 """
 Get the p/c volume ratio - not that helpful and only a rough approximation
@@ -100,17 +115,6 @@ THe next day, the same, and the day after that, and the day after that.
 
 USB is the same. The stock is rising and yet people are buying puts. 2 days after, the stock dumps.
 """
-thisF_df['totVol'].value_counts()
-
-thisF_df[thisF_df['expDate'] == '2021-02-26'].sort_values(by=['vol/avg', 'liq_opp'], ascending=False).head(50)
-
-thisF_df.sort_values(by=['vol/avg', 'liq_opp'], ascending=False).head(50)
-
-
-short_amc = short_df[short_df['Underlying'] == 'AMC'].copy(deep=True)
-
-short_df.sort_values(by=['vol/avg', 'liq_opp'], ascending=False).head(10)
-
 
 
 # %% codecell
