@@ -87,7 +87,10 @@ class yahooTbills():
         df = self.df.append(tdata, ignore_index=True)
 
         # Remove time from columns for data conversion
-        self.cols.remove('time')
+        try:
+            self.cols.remove('time')
+        except ValueError:
+            pass
         # Convert cols to float 16s
         df[self.cols] = df[self.cols].astype(np.float16)
         df.reset_index(inplace=True, drop=True)
