@@ -23,12 +23,25 @@ from pathlib import Path
 import datetime
 from datetime import date, timedelta, time
 
-# Derivatives data
-from options import DerivativesHelper, DerivativesStats
-from file_storage import fileOps, blockPrinting
+from yahoofinancials import YahooFinancials
 
-importlib.reload(sys.modules['options'])
-importlib.reload(sys.modules['file_storage'])
+try:
+    from scripts.dev.data_collect.options import DerivativeExpirations, DerivativesHelper
+    from scripts.dev.data_collect.file_storage import fileOps, blockPrinting
+    from scripts.dev.data_collect.help_class import baseDir, dataTypes, getDate
+
+except ModuleNotFoundError:
+    from data_collect.options import DerivativesHelper, DerivativesStats
+    from file_storage import fileOps, blockPrinting
+    from multiuse.help_class import baseDir, dataTypes, getDate
+
+    importlib.reload(sys.modules['data_collect.options'])
+    importlib.reload(sys.modules['file_storage'])
+    importlib.reload(sys.modules['multiuse.help_class'])
+
+    from data_collect.options import DerivativesHelper, DerivativesStats
+    from file_storage import fileOps, blockPrinting
+    from multiuse.help_class import baseDir, dataTypes, getDate
 
 # %% codecell
 ############################################################
@@ -38,91 +51,58 @@ Write function to find the most recent date and then get all data in
 between today and that day.
 """
 
-class marketHolidays():
-    """Helper class for finding last trading date/market holidays."""
-    # type can be 'trade' or 'holiday'
-    # Dataframe is stored as days_df
-    def __init__(self, type):
-        self.days_df = self.check_if_exists(self, type)
-        if not isinstance(self.days_df, (bool)):
-            self.params = self.determine_params(self, type)
-            self.full_url = self.construct_url(self, self.params)
-            self.days_df = self.get_market_trading_dates(self)
-            self.write_to_json(self)
+# %% codecell
+############################################################
 
-    @classmethod
-    def check_if_exists(cls, self, type):
-        """Check if requested file exists locally."""
-        base_dir = f"{Path(os.getcwd()).parents[0]}/data/economic_data"
+class yahooTbills():
+    """Get current price for US T-bills - 3 month, 5 yr, 10 yr, 30 yr."""
+    # 4 am to 8 pm, every hour
+    tickers = ['^IRX', '^FVX', '^TNX', '^TYX']
+    cols = ['3mo', '5yr', '10yr', '30yr', 'time']
 
-        if type == 'trade':
-            fname = f"{base_dir}/{date.today()}_{'trade'}.json"
-        elif type == 'holiday':
-            fname = f"{base_dir}/{date.today().year}_{'holiday'}.json"
+    def __init__(self):
+        self.get_path(self)
+        self.df = self.get_data(self)
+        self.write_to_json(self)
 
-        if os.path.isfile(fname):
-            local_df = pd.read_json(fname)
-        else:
-            local_df = False
+    def get_path(cls, self):
+        """Get local fpath."""
+        self.fpath = f"{baseDir().path}/economic_data/treasuries.gz"
+        # Create an empty data frame with column names
+        df = pd.DataFrame(columns=self.cols)
+        # Check if local data frame already exists
+        if os.path.isfile(self.fpath):
+            df = pd.read_json(self.fpath, compression='gzip')
+        # Return data frame
+        self.df = df
 
-        return local_df
+    def get_data(cls, self):
+        """Get data from yahoo finance."""
+        treasuries = YahooFinancials(self.tickers)
+        tdata = treasuries.get_current_price()
 
+        # Add current timestamp
+        tdata['time'] = datetime.datetime.now()
+        # Append data to existing data frame
+        df = self.df.append(tdata, ignore_index=True)
 
-    @classmethod
-    def determine_params(cls, self, type):
-        """Create dictionary of parameters."""
-        params = {'type': type, 'direction': '', 'last': 0, 'startDate': 'YYYYMMDD'}
-        if type == 'trade':
-            params['direction'] = 'last'
-            params['last'] = 1
-        elif type == 'holiday':
-            params['direction'] = 'next'
-            next_year = (date.today() + timedelta(days=365)).year
-            params['last'] = (datetime.date(next_year, 1, 1,) - date.today()).days
-
-        else:
-            print('type needs to be either trade or holiday')
-            return False
-
-        params['startDate'] = date.today().strftime("%Y%m%d")
-        return params
-
-    @classmethod
-    def construct_url(cls, self, params):
-        """Construct url to call get request."""
-        load_dotenv()
-        base_url = os.environ.get("base_url")
-        url_1 = f"/ref-data/us/dates/{params['type']}/{params['direction']}"
-        url_2 = f"/{params['last']}/{params['startDate']}"
-        full_url = f"{base_url}{url_1}{url_2}"
-
-        return full_url
-
-    @classmethod
-    def get_market_trading_dates(cls, self):
-        """Get market holiday data from iex."""
-        payload = {'token': os.environ.get("iex_publish_api")}
-        td_get = requests.get(
-            self.full_url,
-            params=payload  # Passed through function arg
-            )
-        # Convert bytes to dataframe=
-        df = pd.json_normalize(json.loads(td_get.content))
+        # Remove time from columns for data conversion
+        try:
+            self.cols.remove('time')
+        except ValueError:
+            pass
+        # Convert cols to float 16s
+        df[self.cols] = df[self.cols].astype(np.float16)
+        df.reset_index(inplace=True, drop=True)
 
         return df
 
-    @classmethod
     def write_to_json(cls, self):
-        """Write date to local json file."""
-        base_dir = f"{Path(os.getcwd()).parents[0]}/data/economic_data"
+        """Write data to local json file."""
+        self.df.to_json(self.fpath, compression='gzip')
 
-        if self.params['type'] == 'trade':
-            fname = f"{base_dir}/{date.today()}_{'trade'}.json"
-        elif self.params['type'] == 'holiday':
-            fname = f"{base_dir}/{date.today().year}_{'holiday'}.json"
-
-        self.days_df.to_json(fname)
-
+# %% codecell
+############################################################
 
 
 def get_tdata(payload, base_url):

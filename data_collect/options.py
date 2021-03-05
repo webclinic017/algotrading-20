@@ -16,10 +16,10 @@ import pytz
 import glob
 
 try:
-    from dev.help_class import baseDir
-    from dev.file_storage import fileOps
+    from scripts.dev.data_collect.help_class import baseDir
+    from scripts.dev.file_storage import fileOps
 except ModuleNotFoundError:
-    from help_class import baseDir
+    from multiuse.help_class import baseDir
     from file_storage import fileOps
 
 # %% codecell

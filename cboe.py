@@ -1,7 +1,6 @@
 """
 CBOE Options Data
 """
-
 # %% codecell
 ##############################################################
 import os
@@ -29,23 +28,97 @@ from charset_normalizer import CharsetNormalizerMatches as CnM
 
 import xml.etree.ElementTree as ET
 
-from dev.stocktwits import stTrending
-importlib.reload(sys.modules['dev.stocktwits'])
-from dev.stocktwits import stTrending
+from help_class import baseDir
 
+from iex_routines import dailySymbols
+importlib.reload(sys.modules['iex_routines'])
+from iex_routines import dailySymbols
+
+from iex_routines import dailySymbols
+importlib.reload(sys.modules['iex_routines'])
+from iex_routines import dailySymbols
+
+from iex_class import readData
+importlib.reload(sys.modules['iex_class'])
+from iex_class import readData, urlData
+
+from cboe_class import cboeLocalRecDiff
+importlib.reload(sys.modules['cboe_class'])
+from cboe_class import cboeLocalRecDiff
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
 # Display maximum rows
 pd.set_option('display.max_rows', 200)
 
+# %% codecell
+##############################################################
+"""
+AD = ADR = American depository receipt - represents shares in a foreign entity
+ET = ETF
+PS = Preferred stock
+WT = Warrant
+Struct = Structured Product
+
+CBOE Market Making:
+Data for 2021-02-19 to 2021-02-25 inclusive. - Feb 26th and Feb 27th data access.
+"""
+# %% codecell
+##############################################################
+top_df_og = cboeLocalRecDiff(which='top_2000', fresh=True).df
+top_df = top_df_og.copy(deep=True)
+
+# top_df_og[(top_df_og['Underlying'] == 'YETI') & (top_df_og['expDate'] == '2021-02-26')]
+"""
+dataDate = 2021-02-24
+VOD:  Vol/avg = 260 - next day VOD tanks
+CIEN  Vol/avg = 50 - drops less than the rest
+EOG   Vol/avg = 30 - spikes up/drops
+CMG hardly moved, but calls bought on green
+YETI tanked despite calls bought on red
+OKE calls bought on green, then tanked
+KMB calls bought on slight red, then tanked
+URI puts bought on green, then epically tanks
+WBA calls bought on green, barely moved
+SLB puts bought on big green, tanks right after
+FL puts bought on big green, tanks right after
+STZ goes up green, then tanks right after
+NOW goes up green, tanks right after
+MO goes up green, tanks right after
+"""
+
+top_df[(top_df['expDate'] == '2021-02-26') & (top_df['dataDate'] == '2021-02-24')].sort_values(by=['vol/avg', 'liq_opp'], ascending=False).head(50)
+
+# %% codecell
+##############################################################
+# Write function to get and display top 100 short term symbols
+
 
 # %% codecell
 ##############################################################
 
-trend_df = stTrending().df
-trend_df
 
+
+"""
+Get the p/c volume ratio - not that helpful and only a rough approximation
+
+pc_dict = {}
+for dd in dataDates:
+    this_date = thisF_df[thisF_df['dataDate'] == dd]
+    group = this_date.groupby(by=['side']).sum().reset_index()
+    pc_dict[f"{dd}_pc"] = group.iloc[0]['totVol'] / group.iloc[1]['totVol']
+"""
+
+"""
+This is really interesting. Someone bought a much higher than normal number of puts on EOG as it hit its 52 week high.
+THe next day, the same, and the day after that, and the day after that.
+
+USB is the same. The stock is rising and yet people are buying puts. 2 days after, the stock dumps.
+"""
+
+
+# %% codecell
+##############################################################
 
 # Thesis to get a weekly volume, monthly volume. When weekly crosses over monthly
 """

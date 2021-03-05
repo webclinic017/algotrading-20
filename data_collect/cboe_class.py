@@ -1,5 +1,9 @@
 """
 CBOE Options Data Classes
+
+#try:
+#    self.df = self.df[~self.df['Underlying'].isin(etf_list['symbol'])]
+#except KeyError:  # To avoid the 'symbol' error
 """
 
 # %% codecell
@@ -12,6 +16,7 @@ import glob
 import importlib
 import sys
 import copy
+import zlib
 
 import pandas as pd
 import numpy as np
@@ -31,23 +36,20 @@ from charset_normalizer import CharsetNormalizerMatches as CnM
 import xml.etree.ElementTree as ET
 
 try:
-    from dev.options import DerivativesHelper
-    from dev.theocc_class import TradeVolume
-    from dev.iex_class import readData
-    from dev.help_class import baseDir, dataTypes
+    from scripts.dev.data_collect.options import DerivativesHelper
+    from scripts.dev.data_collect.iex_class import readData
+    importlib.reload(sys.modules['scripts.dev.data_collect.iex_class'])
+    from scripts.dev.data_collect.iex_class import readData
+    from scripts.dev.data_collect.help_class import baseDir, dataTypes
 except ModuleNotFoundError:
-    from options import DerivativesHelper
-    from theocc_class import TradeVolume
-    from iex_class import readData
-    from help_class import baseDir, dataTypes
+    from data_collect.options import DerivativesHelper
+    from data_collect.iex_class import readData
+    from multiuse.help_class import baseDir, dataTypes
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
 # Display maximum rows
 pd.set_option('display.max_rows', None)
-
-# %% codecell
-##############################################################
 
 
 # %% codecell
@@ -77,6 +79,7 @@ class cleanMmo():
         self._conver_cols_nopop(self)
         self._create_exp_col(self)
         nopop_top_2000 = self._create_vol_sum(self)
+        nopop_top_2000 = self._get_daily_difference(self, nopop_top_2000)
         self.exp_dict = self._create_time_frames(self)
         time_dict = self._filter_nopop_by_time_frame(self, nopop_top_2000)
         self._write_to_json(self, nopop_top_2000, time_dict)
@@ -101,7 +104,7 @@ class cleanMmo():
     def _exclude_pop_symbols(cls, self):
         """Exclude popular symbols from the analysis."""
         etf_list = readData.etf_list()
-        self.df = self.df[~self.df['Underlying'].isin(etf_list['symbol'])]
+        self.df = self.df[~self.df['Underlying'].isin(etf_list.values.ravel())]
         self.df.reset_index(inplace=True, drop=True)
 
         pop_syms = ['AAPL', 'AMZN', 'BBBY', 'TSLA', 'GOOGL']
@@ -129,6 +132,21 @@ class cleanMmo():
 
         self.df['expDate'] = yr_fr + '-' + mo_fr + '-' + day_fr
         self.df['expDate'] = self.df['expDate'].astype('category')
+
+    @classmethod
+    def _get_daily_difference(cls, self, nopop_top_2000):
+        """Get the difference between data today and data yesterday."""
+        top_fpaths = glob.glob(f"{baseDir().path}/derivatives/cboe/*")
+        top_fpaths = sorted(top_fpaths)[:-1]
+        last_df = pd.read_json(top_fpaths[-2], compression='gzip')
+
+        mod_df = pd.merge(nopop_top_2000, last_df, how='outer', indicator='Exist')
+        mod_df = mod_df[mod_df['Exist'] == 'left_only'].copy(deep=True)
+        mod_df.drop(columns=['Exist'], inplace=True)
+        mod_df.reset_index(inplace=True, drop=True)
+        mod_df['dataDate'] = top_fpaths[-1][-13:-3]
+
+        return mod_df
 
     @classmethod
     def _create_vol_sum(cls, self):
@@ -160,7 +178,7 @@ class cleanMmo():
 
         exp_dict['short'] = exp_dates[exp_dates < (date.today() + timedelta(days=45))].astype(str)
         exp_dict['med'] = (exp_dates[(exp_dates > (date.today() + timedelta(days=45))) &
-                                   (exp_dates < (date.today() + timedelta(days=180)))]).astype(str)
+                                     (exp_dates < (date.today() + timedelta(days=180)))]).astype(str)
         exp_dict['long'] = exp_dates[exp_dates > (date.today() + timedelta(days=180))].astype(str)
 
         return exp_dict
@@ -185,13 +203,24 @@ class cleanMmo():
         """Write to local json file."""
         base_path = f"{baseDir().path}/derivatives/cboe"
         nopop_fname = f"{base_path}/nopop_2000_{self.date}.gz"
-        nopop_top_2000.to_json(nopop_fname, compression='gzip')
+
+        if os.path.isfile(nopop_fname):
+            pass
+        else:
+            nopop_top_2000.to_json(nopop_fname, compression='gzip')
 
         # Short-medium-long term data frames to json
         for t in time_dict.keys():
             time_fname = f"{base_path}/syms_to_explore/{t}_{self.date}.gz"
-            time_dict[t].to_json(time_fname, compression='gzip')
+            self._if_file_exists(self, time_fname, time_dict, t)
 
+    @classmethod
+    def _if_file_exists(cls, self, fname, time_dict, t):
+        """Check if file exists and don't overwrite if it does."""
+        if os.path.isfile(fname):
+            pass
+        else:
+            time_dict[t].to_json(fname, compression='gzip')
 
 
 
@@ -288,7 +317,10 @@ class cboeData():
         self.sym_fname = f"{self.base_dir}/cboe_symref/symref_{self.date}.gz"
 
         if os.path.isfile(self.sym_fname):
-            sym_df = pd.read_json(self.sym_fname)
+            try:
+                sym_df = pd.read_json(self.sym_fname)
+            except zlib.error:
+                sym_df = self.get_symref(self)
         else:
             sym_df = self.get_symref(self)
 
@@ -356,6 +388,7 @@ class cboeData():
         try:
             df = pd.merge(self.mmo_df, self.sym_df, on=['Symbol', 'exchange', 'Underlying'], how='inner')
             df.reset_index(inplace=True, drop=True)
+            df['rptDate'] = date.today()
 
             # Change data types to reduce file size
             cols_to_float16 = ['strike', 'Liquidity Opportunity']
@@ -363,7 +396,7 @@ class cboeData():
                               'Routed Liquidity', 'Volume Opportunity',
                               'expirationDate', 'Cboe ADV', 'yr', 'mo', 'day'])
             df[cols_to_float16] = df[cols_to_float16].astype(np.float16)
-            df[cols_to_int16] = df[cols_to_int16].astype(np.int18)
+            df[cols_to_int16] = df[cols_to_int16].astype(np.uint16)
         except TypeError:
             df = pd.DataFrame()
         return df
@@ -376,6 +409,103 @@ class cboeData():
         self.comb_df.to_json(self.fname, compression='gzip')
 
 
+
+# %% codecell
+##############################################################
+
+class cboeLocalRecDiff():
+    """Get the recursive differences between CBOE data/days."""
+    base_dir = f"{baseDir().path}/derivatives/cboe"
+    base_url = "https://algotrading.ventures/api/v1/"
+    top_2000 = "cboe/mmo/top"
+    # url_suf = url_suffix
+    # If fresh == True, get fresh data from API. If false, read local data
+
+    def __init__(self, which, fresh):
+        self.df = ''
+        if fresh:
+            self.cboe_dict = self.get_data(self, which)
+            self.make_fname_lists(self)
+            self.unmerged_df = self.convert_to_dataframe(self)
+            self.df = self.clean_sort_write(self)
+        else:
+            self.df = self.read_local_data(self)
+
+    @classmethod
+    def read_local_data(cls, self):
+        """Get all local files, read, concat, and return df."""
+        # Top fpaths is all local cboe top 2000 symbols, minus dir
+        top_fpaths = glob.glob(f"{self.base_dir}/*")
+        top_fpaths = sorted(top_fpaths)[:-1]
+
+        top_df = pd.DataFrame()
+        for fs in top_fpaths:
+            new_df = pd.DataFrame(pd.read_json(top_fpaths[fs], compression='gzip'))
+            top_df = pd.concat([top_df, new_df])
+
+        return top_df
+
+    @classmethod
+    def get_data(cls, self, which):
+        url_suf = ''
+        if which == 'top_2000':
+            url_suf = self.top_2000
+
+        cboe_url = f"{self.base_url}{url_suf}"
+        cboe_get = requests.get(cboe_url)
+        cboe_dict = json.load(BytesIO(cboe_get.content))
+
+        return cboe_dict
+
+    @classmethod
+    def make_fname_lists(cls, self):
+        """Make server and local fname lists."""
+        local_fname_list = []
+        for f in self.cboe_dict:
+            local_fname_list.append(f"{baseDir().path}{f.split('data')[1]}")
+
+        server_fname_list = []
+        for f in self.cboe_dict:
+            server_fname_list.append(f)
+
+        self.local_flist = local_fname_list
+        self.server_flist = server_fname_list
+
+    @classmethod
+    def convert_to_dataframe(cls, self):
+        """Convert data to dataframe, add report date."""
+        all_df = pd.DataFrame()
+
+        for fs in self.cboe_dict:
+            self.cboe_dict[fs] = pd.DataFrame(self.cboe_dict[fs])
+            self.cboe_dict[fs]['dataDate'] = fs[-13:-3]
+            all_df = pd.concat([all_df, self.cboe_dict[fs]])
+
+        return all_df
+
+    @classmethod
+    def clean_sort_write(cls, self):
+        """Clean and sort data."""
+        flist = self.server_flist
+        cboe = self.cboe_dict
+        on_list = list(self.unmerged_df.columns.drop('dataDate'))
+
+        top_df = pd.DataFrame()
+        for fsn, fs in enumerate(flist):
+            try:
+                # print(flist[(fsn - 1)])
+                df = pd.merge(cboe[flist[fsn]], cboe[flist[(fsn-1)]], how='outer', on=on_list, indicator='Exist').copy(deep=True)
+                df = df[df['Exist'] == 'left_only'].copy(deep=True)
+                df.drop(columns=['Exist'], inplace=True)
+                df.reset_index(inplace=True, drop=True)
+                df['dataDate'] = fs[-13:-3]
+                top_df = pd.concat([top_df, df]).copy(deep=True)
+                df.to_json(self.local_flist[fsn], compression='gzip')
+            except IndexError:
+                pass
+        # Drop columns from merge
+        top_df.drop(columns=['dataDate_x', 'dataDate_y'], inplace=True)
+        return top_df
 
 # %% codecell
 ##############################################################

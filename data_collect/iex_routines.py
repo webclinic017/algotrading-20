@@ -23,16 +23,16 @@ import datetime
 from datetime import date, timedelta, time
 
 try:
-    from dev.help_class import baseDir, dataTypes, getDate
-    from dev.iex_class import readData, urlData
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.data_collect.iex_class import readData, urlData
 except ModuleNotFoundError:
-    from help_class import baseDir, dataTypes, getDate
-    importlib.reload(sys.modules['help_class'])
-    from help_class import baseDir, dataTypes, getDate
+    from multiuse.help_class import baseDir, dataTypes, getDate
+    importlib.reload(sys.modules['multiuse.help_class'])
+    from multiuse.help_class import baseDir, dataTypes, getDate
 
-    from iex_class import readData, urlData
-    importlib.reload(sys.modules['iex_class'])
-    from iex_class import readData, urlData
+    from data_collect.iex_class import readData, urlData
+    importlib.reload(sys.modules['data_collect.iex_class'])
+    from data_collect.iex_class import readData, urlData
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
@@ -58,6 +58,7 @@ class dailySymbols():
         """Get new symbols and find diff with last date."""
         current_syms = urlData("/ref-data/iex/symbols").df
         old_syms = readData.last_bus_day_syms()
+        old_syms['symbol'] = ''
 
         # Get the differennce between todays/yesterdays symbols
         syms_diff = (pd.concat([current_syms['symbol'], old_syms['symbol']])
@@ -94,26 +95,6 @@ class dailySymbols():
 
 # %% codecell
 ##############################################
-
-iex_sup = urlData("/ref-data/symbols").df
-iex_df = iex_sup.copy(deep=True)
-
-iex_df.drop(columns=
-            ['exchangeSuffix', 'exchangeName', 'name', 'iexId', 'region',
-             'currency', 'isEnabled', 'cik', 'lei', 'figi'],
-            axis=1, inplace=True)
-iex_df = dataTypes(iex_df).df
-
-new_syms_tp = iex_df[iex_df['symbol'].isin(new_syms['symbol'])]
-
-
-
-iex_sup.head(10)
-
-old_syms.head(10)
-old_syms.shape
-
-new_syms.shape
 
 
 # %% codecell

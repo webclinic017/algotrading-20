@@ -35,23 +35,18 @@ from charset_normalizer import detect
 from charset_normalizer import CharsetNormalizerMatches as CnM
 
 try:
-    from dev.help_class import baseDir, dataTypes, getDate
-    from dev.options import DerivativeExpirations, DerivativesHelper
-    from dev.iex_class import readData, urlData
-
-    from dev.economic_data import marketHolidays
-    importlib.reload(sys.modules['dev.economic_data'])
-    from dev.economic_data import marketHolidays
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.data_collect.options import DerivativeExpirations, DerivativesHelper
+    from scripts.dev.data_collect.iex_class import readData, urlData, marketHolidays
+    from scripts.dev.data_collect.econ_class import marketHolidays
 except ModuleNotFoundError:
-    from help_class import baseDir
+    from multiuse.help_class import baseDir, dataTypes, getDate
 
-    from options import DerivativeExpirations, DerivativesHelper
-    importlib.reload(sys.modules['options'])
-    from options import DerivativeExpirations, DerivativesHelper
+    from data_collect.options import DerivativeExpirations, DerivativesHelper
+    importlib.reload(sys.modules['data_collect.options'])
+    from data_collect.options import DerivativeExpirations, DerivativesHelper
 
-    from economic_data import marketHolidays
-    importlib.reload(sys.modules['economic_data'])
-    from economic_data import marketHolidays
+    from data_collect.iex_class import marketHolidays
 
 
 # Display max 50 columns
@@ -65,15 +60,6 @@ pd.set_option('display.max_rows', None)
 
 
 """
-report_date = DerivativesHelper.which_fname_date() + timedelta(days=1)
-occ_flex_oi = OccFlex('OI', 'E', report_date)
-
-occ_flex_oi.occ_nf.head(10)
-
-occ_flex_pr = OccFlex('PR', 'E', report_date)
-
-
-
 # %% codecell
 ############################################################
 test_nf = occ_flex_pr.occ_df.copy(deep=True)
@@ -89,7 +75,7 @@ con_df.vol_df.head(10)
 # %% codecell
 ############################################################
 """
-class OccFlex():
+class occFlex():
     """Get all equity options data for report_date."""
 
     # report_type: OI = Open Interest, PR = Price
@@ -104,15 +90,15 @@ class OccFlex():
         self.report_type = report_type
         self.fname = self.right_fname(self)
 
-        # self.occ_df = self.read_local_data(self)
-        self.occ_df = False
-        if not isinstance(self.occ_df, pd.DataFrame):
+        self.df = self.read_local_data(self)
+        # self.df = False
+        if not isinstance(self.df, pd.DataFrame):
             self.flex_bytes = self.get_data(self, report_type, option_type)
             # self.flex_bytes = flex_bytes
             self.occ_nf = self.read_csv(self)  # No format
             # self.occ_df = self.occ_nf
             self.occ_rc = self.fix_col_names(self)  # Renamed cols
-            self.occ_df = self.clean_data(self)
+            self.df = self.clean_data(self)
             self.write_to_json(self)
 
     @classmethod
@@ -228,31 +214,35 @@ class OccFlex():
 
         # Reset index and drop inplace
         occ_ff.reset_index(drop=True, inplace=True)
+
+        occ_ff['expirationDate'] = occ_ff['expirationDate'].astype('category')
+        # Need to label data types and too lazy at the moment
+        # occ_ff = dataTypes(occ_ff).df
         return occ_ff
 
     @classmethod
     def write_to_json(cls, self):
         """Write dataframe to local json file."""
         # Write to local json file
-        self.occ_df.to_json(self.fname, compression='gzip')
+        self.df.to_json(self.fname, compression='gzip')
 
 
 # %% codecell
 ##############################################################
 
-class TradeVolume():
+class tradeVolume():
     """Batch processing from OCC Trade Volume."""
     dump_dir = f"{baseDir().path}/derivatives/occ_dump/vol"
     base_url = "https://marketdata.theocc.com/"
-
+    vol_df = ''
     # query can be 'con_volume' for contract volume
     # or 'trade_volume'
-    def __init__(self, report_date, query):
+    def __init__(self, report_date, query, fresh):
         self.report_date = report_date
         self.fname = self.create_fname(self, query)
         self.url = self.create_url(self, query)
-        #"""
-        self.vol_df = self.read_local_data(self)
+        if not fresh:
+            self.vol_df = self.read_local_data(self)
         print('df.vol_df to get dataframe')
         if not isinstance(self.vol_df, pd.DataFrame):
             self.xml_data = self.get_trade_data(self)
@@ -309,7 +299,6 @@ class TradeVolume():
     def get_trade_data(cls, self):
         """Get trade volume from iex."""
         occ_get = requests.get(self.url)
-
         root = ET.fromstring(occ_get.content.decode('ISO-8859-1'))
         return root
 
@@ -329,11 +318,25 @@ class TradeVolume():
     @classmethod
     def convert_col_dtypes(cls, self):
         """Convert column dtypes."""
-        cols_to_cat = (['symbol', 'pkind', 'exchangeName',
-                        'contdate', 'exchangeId', 'actdate', 'underlying'])
+        # Rename the columns
+        self.vol_df.rename(columns={
+                'exchangeId': 'exId',
+                'exchangeName': 'exName',
+                'firmQuantity': 'fQuant',
+                'customerQuantity': 'cQuant',
+                'marketQuantity': 'mQuant'}, inplace=True)
+
+        vol_cols = self.vol_df.columns
+        # Columns to convert to category
+        cols_to_cat = (['symbol', 'pkind', 'exName', 'exId',
+                        'actdate', 'underlying'])
         self.vol_df[cols_to_cat] = self.vol_df[cols_to_cat].astype('category')
-        cols_to_int16 = ['customerQuantity', 'marketQuantity', 'firmQuantity']
-        self.vol_df[cols_to_int16] = self.vol_df[cols_to_int16].astype(np.int16)
+
+        # Get the columns to convert to integer
+        cols_to_int = [col for col in vol_cols if col not in cols_to_cat]
+        self.vol_df[cols_to_int] = self.vol_df[cols_to_int].astype(np.uint16)
+        # self.vol_df = dataTypes(self.vol_df).df
+
 
     @classmethod
     def write_to_json(cls, self):

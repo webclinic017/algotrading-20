@@ -10,16 +10,26 @@ import numpy as np
 import requests
 from dotenv import load_dotenv
 from pathlib import Path
+import glob
 
+import importlib
+import sys
 import datetime
 from datetime import timedelta, date
 
 from nested_lookup import nested_lookup
 
+from multiuse.help_class import baseDir
+#from .iex_class import urlData
+from data_collect.iex_class import urlData
+importlib.reload(sys.modules['data_collect.iex_class'])
+from data_collect.iex_class import urlData
 # %% codecell
 ######################################################################################
-load_dotenv()  # Load environ variables
-base_url = os.environ.get("base_url")
+
+fund_class = companyStats(symbols, 'fund_ownership')
+fund_df = fund_class.df.copy(deep=True)
+
 
 # %% codecell
 ######################################################################################
@@ -27,45 +37,67 @@ base_url = os.environ.get("base_url")
 symbols = ["AAPL", "AMZN"]
 
 
-class CompanyStats():
+class companyStats():
     """Static methods for various company data."""
-    def stats_dict():
-        """Create dict of url and local fpaths."""
-        stats_dict = {
-            'advanced_stats': {'url_suffix': 'advanced-stats',
-                               'local_fpath': 'key_stats'},
-            'fund_ownership': {'url_suffix': 'fund-ownership',
-                               'local_fpath': 'fund_ownership'},
-            'insiders': {'url_suffix': 'insider-roster',
-                         'local_fpath': 'insiders'},
-            'insider_trans': {'url_suffix': 'insider-transactions',
-                              'local_fpath': 'insider_trans'},
-            'institutional_owners': {'url_suffix': 'institutional-ownership',
-                                     'local_fpath': 'institutional_owners'},
-            'peers': {'url_suffix': 'peers',
-                      'local_fpath': 'peers'},
-        }
-        return stats_dict
 
+    stats_dict = {
+        'advanced_stats': {'url_suffix': 'advanced-stats',
+                           'local_fpath': 'key_stats'},
+        'fund_ownership': {'url_suffix': 'fund-ownership',
+                           'local_fpath': 'fund_ownership'},
+        'insiders': {'url_suffix': 'insider-roster',
+                     'local_fpath': 'insiders'},
+        'insider_trans': {'url_suffix': 'insider-transactions',
+                          'local_fpath': 'insider_trans'},
+        'institutional_owners': {'url_suffix': 'institutional-ownership',
+                                 'local_fpath': 'institutional_owners'},
+        'peers': {'url_suffix': 'peers',
+                  'local_fpath': 'peers'},
+    }
 
-    @staticmethod
-    def get_data(symbols, which):
-        """Base function for getting company stats data."""
-        load_dotenv()
-        stats_dict = CompanyStats.stats_dict()
-        base_url = os.environ.get("base_url")
+    def __init__(self, symbols, which):
+        self.get_fname(self, which)
+        self.df = self.check_local(self, symbols, which)
+
+    @classmethod
+    def get_fname(cls, self, which):
+        """Get local fname to use."""
+        base_dir = f"{baseDir().path}/company_stats"
+        self.fpath = f"{base_dir}/{self.stats_dict[which]['local_fpath']}"
+
+    @classmethod
+    def check_local(cls, self, symbols, which):
+        """Check for local data before requesting from IEX."""
+        which = 'fund_ownership'
+        base_dir = f"{baseDir().path}/company_stats"
+        all_df = pd.DataFrame()
 
         for sym in symbols:
-            payload = {'token': os.environ.get("iex_publish_api")}
-            rep = requests.get(
-                f"{base_url}/stock/{sym}/{stats_dict[which]['url_suffix']}",
-                params=payload
-                )
-            # print(rep.text)
+            full_path = f"{base_dir}/{self.stats_dict[which]['local_fpath']}/{sym[0].lower()}/*"
+            data_today = f"{full_path}_{date.today()}"
+            data_yest = f"{full_path}_{date.today() - timedelta(days=1)}"
 
-            base_dir = f"{Path(os.getcwd()).parents[0]}/data/company_stats/{stats_dict[which]['local_fpath']}"
+            if os.path.isfile(data_today):
+                df = pd.read_json(data_today, compression='gzip')
+                all_df = pd.concat([all_df, df])
+            elif os.path.isfile(data_yest):
+                df = pd.read_json(data_yest, compression='gzip')
+                all_df = pd.concat([all_df, df])
+            else:
+                df = self._get_data(self, sym, which)
+                all_df = pd.concat([all_df, df])
 
-            Path(f"{base_dir}/{sym[0].lower()}/_{sym}").write_bytes(rep.content)
+        all_df.reset_index(inplace=True, drop=True)
+        return all_df
+
+    @classmethod
+    def _get_data(cls, self, sym, which):
+        """Base function for getting company stats data."""
+        url = f"/stock/{sym}/{self.stats_dict[which]['url_suffix']}"
+        df = urlData(url).df
+        path = Path(f"{self.fpath}/{sym[0].lower()}/_{sym}_{date.today()}.gz")
+        df.to_json(path, compression='gzip')
+        return df
 
 
 # %% codecell
