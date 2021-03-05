@@ -37,7 +37,6 @@ try:
     from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate
     from scripts.dev.data_collect.options import DerivativeExpirations, DerivativesHelper
     from scripts.dev.data_collect.iex_class import readData, urlData, marketHolidays
-    from scripts.dev.data_collect.econ_class import marketHolidays
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, dataTypes, getDate
 
