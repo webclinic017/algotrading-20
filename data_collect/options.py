@@ -16,7 +16,7 @@ import pytz
 import glob
 
 try:
-    from scripts.dev.data_collect.help_class import baseDir
+    from scripts.dev.multiuse.help_class import baseDir
     from scripts.dev.file_storage import fileOps
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir

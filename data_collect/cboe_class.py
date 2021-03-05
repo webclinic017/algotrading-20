@@ -40,7 +40,7 @@ try:
     from scripts.dev.data_collect.iex_class import readData
     importlib.reload(sys.modules['scripts.dev.data_collect.iex_class'])
     from scripts.dev.data_collect.iex_class import readData
-    from scripts.dev.data_collect.help_class import baseDir, dataTypes
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes
 except ModuleNotFoundError:
     from data_collect.options import DerivativesHelper
     from data_collect.iex_class import readData
