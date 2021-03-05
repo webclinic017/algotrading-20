@@ -28,7 +28,7 @@ from yahoofinancials import YahooFinancials
 try:
     from scripts.dev.data_collect.options import DerivativeExpirations, DerivativesHelper
     from scripts.dev.data_collect.file_storage import fileOps, blockPrinting
-    from scripts.dev.data_collect.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate
 
 except ModuleNotFoundError:
     from data_collect.options import DerivativesHelper, DerivativesStats
