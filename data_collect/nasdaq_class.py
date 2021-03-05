@@ -18,9 +18,9 @@ import os
 import datetime
 
 try:
-    from scripts.dev.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate
 except ModuleNotFoundError:
-    from help_class import baseDir, dataTypes, getDate
+    from multiuse.help_class import baseDir, dataTypes
 
 
 # %% codecell

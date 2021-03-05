@@ -23,16 +23,16 @@ import datetime
 from datetime import date, timedelta, time
 
 try:
-    from scripts.dev.help_class import baseDir, dataTypes, getDate
-    from scripts.dev.iex_class import readData, urlData
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.data_collect.iex_class import readData, urlData
 except ModuleNotFoundError:
-    from help_class import baseDir, dataTypes, getDate
-    importlib.reload(sys.modules['help_class'])
-    from help_class import baseDir, dataTypes, getDate
+    from multiuse.help_class import baseDir, dataTypes, getDate
+    importlib.reload(sys.modules['multiuse.help_class'])
+    from multiuse.help_class import baseDir, dataTypes, getDate
 
-    from iex_class import readData, urlData
-    importlib.reload(sys.modules['iex_class'])
-    from iex_class import readData, urlData
+    from data_collect.iex_class import readData, urlData
+    importlib.reload(sys.modules['data_collect.iex_class'])
+    from data_collect.iex_class import readData, urlData
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)

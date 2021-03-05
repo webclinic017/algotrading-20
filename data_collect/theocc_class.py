@@ -35,18 +35,18 @@ from charset_normalizer import detect
 from charset_normalizer import CharsetNormalizerMatches as CnM
 
 try:
-    from scripts.dev.help_class import baseDir, dataTypes, getDate
-    from scripts.dev.options import DerivativeExpirations, DerivativesHelper
-    from scripts.dev.iex_class import readData, urlData, marketHolidays
-    from scripts.dev.economic_data import marketHolidays
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.data_collect.options import DerivativeExpirations, DerivativesHelper
+    from scripts.dev.data_collect.iex_class import readData, urlData, marketHolidays
+    from scripts.dev.data_collect.econ_class import marketHolidays
 except ModuleNotFoundError:
-    from help_class import baseDir, dataTypes, getDate
+    from multiuse.help_class import baseDir, dataTypes, getDate
 
-    from options import DerivativeExpirations, DerivativesHelper
-    importlib.reload(sys.modules['options'])
-    from options import DerivativeExpirations, DerivativesHelper
+    from data_collect.options import DerivativeExpirations, DerivativesHelper
+    importlib.reload(sys.modules['data_collect.options'])
+    from data_collect.options import DerivativeExpirations, DerivativesHelper
 
-    from iex_class import marketHolidays
+    from data_collect.iex_class import marketHolidays
 
 
 # Display max 50 columns

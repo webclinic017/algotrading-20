@@ -36,15 +36,15 @@ from charset_normalizer import CharsetNormalizerMatches as CnM
 import xml.etree.ElementTree as ET
 
 try:
-    from scripts.dev.options import DerivativesHelper
-    from scripts.dev.iex_class import readData
-    importlib.reload(sys.modules['scripts.dev.iex_class'])
-    from scripts.dev.iex_class import readData
-    from scripts.dev.help_class import baseDir, dataTypes
+    from scripts.dev.data_collect.options import DerivativesHelper
+    from scripts.dev.data_collect.iex_class import readData
+    importlib.reload(sys.modules['scripts.dev.data_collect.iex_class'])
+    from scripts.dev.data_collect.iex_class import readData
+    from scripts.dev.data_collect.help_class import baseDir, dataTypes
 except ModuleNotFoundError:
-    from options import DerivativesHelper
-    from iex_class import readData
-    from help_class import baseDir, dataTypes
+    from data_collect.options import DerivativesHelper
+    from data_collect.iex_class import readData
+    from multiuse.help_class import baseDir, dataTypes
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)

@@ -26,22 +26,22 @@ from datetime import date, timedelta, time
 from yahoofinancials import YahooFinancials
 
 try:
-    from scripts.dev.options import DerivativeExpirations, DerivativesHelper
-    from scripts.dev.file_storage import fileOps, blockPrinting
-    from scripts.dev.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.data_collect.options import DerivativeExpirations, DerivativesHelper
+    from scripts.dev.data_collect.file_storage import fileOps, blockPrinting
+    from scripts.dev.data_collect.help_class import baseDir, dataTypes, getDate
 
 except ModuleNotFoundError:
-    from options import DerivativesHelper, DerivativesStats
+    from data_collect.options import DerivativesHelper, DerivativesStats
     from file_storage import fileOps, blockPrinting
-    from help_class import baseDir, dataTypes, getDate
+    from multiuse.help_class import baseDir, dataTypes, getDate
 
-    importlib.reload(sys.modules['options'])
+    importlib.reload(sys.modules['data_collect.options'])
     importlib.reload(sys.modules['file_storage'])
-    importlib.reload(sys.modules['help_class'])
+    importlib.reload(sys.modules['multiuse.help_class'])
 
-    from options import DerivativesHelper, DerivativesStats
+    from data_collect.options import DerivativesHelper, DerivativesStats
     from file_storage import fileOps, blockPrinting
-    from help_class import baseDir, dataTypes, getDate
+    from multiuse.help_class import baseDir, dataTypes, getDate
 
 # %% codecell
 ############################################################

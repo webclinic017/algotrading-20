@@ -6,27 +6,25 @@ Let's have some fun with stocktwits data
 """
 # %% codecell
 #############################################################
-import requests
-import pandas as pd
-import numpy as np
 import json
-from io import StringIO, BytesIO
+import os
+import sys
+from io import StringIO
 import os.path
 from pathlib import Path
-import os
-
-import sys
 import importlib
-
 import datetime
 from datetime import date, timedelta, time
 
 from nested_lookup import nested_lookup
+import requests
+import pandas as pd
+
 
 try:
-    from scripts.dev.help_class import dataTypes, baseDir
+    from scripts.dev.multiuse.help_class import dataTypes, baseDir
 except ModuleNotFoundError:
-    from help_class import dataTypes, baseDir
+    from multiuse.help_class import dataTypes, baseDir
 
 # %% codecell
 #############################################################

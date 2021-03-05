@@ -34,6 +34,19 @@ class baseDir():
             self.path = f"{Path(os.getcwd())}/data"
         else:
             self.path = f"{Path(os.getcwd()).parents[0]}/data"
+
+
+class scriptDir():
+    """Get the current base directory and adjust accordingly."""
+    load_dotenv()
+    env = os.environ.get("env")
+
+    def __init__(self):
+        if self.env == 'production':
+            self.path = f"{Path(os.getcwd())}/scripts/dev/data_collect"
+        else:
+            self.path = f"{Path(os.getcwd()).parents[0]}/dev/data_collect"
+
 # %% codecell
 ###############################################################################
 class getDate():
