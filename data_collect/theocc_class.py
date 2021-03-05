@@ -1,6 +1,5 @@
 """
 Can we do free batch processing from the OCC?
-
 Flex Number Prefix:
 1 = American-style equity. For index products, this also means it is a.m. settled.
 2 = European-style equity. For index products, this also means it is a.m. settled.
@@ -63,15 +62,11 @@ pd.set_option('display.max_rows', None)
 # %% codecell
 ############################################################
 test_nf = occ_flex_pr.occ_df.copy(deep=True)
-
 test_nf.head(10)
-
 # report_date = DerivativesHelper.which_fname_date()
 report_date = datetime.date(2021, 2, 12)
 con_df = TradeVolume(report_date, 'con_volume')
-
 con_df.vol_df.head(10)
-
 # %% codecell
 ############################################################
 """
@@ -318,6 +313,7 @@ class tradeVolume():
     @classmethod
     def convert_col_dtypes(cls, self):
         """Convert column dtypes."""
+
         # Rename the columns
         self.vol_df.rename(columns={
                 'exchangeId': 'exId',
