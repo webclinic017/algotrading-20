@@ -28,23 +28,19 @@ from charset_normalizer import CharsetNormalizerMatches as CnM
 
 import xml.etree.ElementTree as ET
 
-from help_class import baseDir
+from multiuse.help_class import baseDir
 
-from iex_routines import dailySymbols
-importlib.reload(sys.modules['iex_routines'])
-from iex_routines import dailySymbols
+from data_collect.iex_routines import dailySymbols
+importlib.reload(sys.modules['data_collect.iex_routines'])
+from data_collect.iex_routines import dailySymbols
 
-from iex_routines import dailySymbols
-importlib.reload(sys.modules['iex_routines'])
-from iex_routines import dailySymbols
+from data_collect.iex_class import readData
+importlib.reload(sys.modules['data_collect.iex_class'])
+from data_collect.iex_class import readData, urlData
 
-from iex_class import readData
-importlib.reload(sys.modules['iex_class'])
-from iex_class import readData, urlData
-
-from cboe_class import cboeLocalRecDiff
-importlib.reload(sys.modules['cboe_class'])
-from cboe_class import cboeLocalRecDiff
+from data_collect.cboe_class import cboeLocalRecDiff
+importlib.reload(sys.modules['data_collect.cboe_class'])
+from data_collect.cboe_class import cboeLocalRecDiff
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
@@ -93,7 +89,17 @@ top_df[(top_df['expDate'] == '2021-02-26') & (top_df['dataDate'] == '2021-02-24'
 ##############################################################
 # Write function to get and display top 100 short term symbols
 
+from data_collect.econ_class import yahooTbills
 
+tb_df = yahooTbills().df.copy(deep=True)
+tb_df.head(10)
+
+base_url = "https://algotrading.ventures/api/v1"
+url = f"{base_url}/econ/treasuries"
+
+get = requests.get(url)
+
+get.content
 # %% codecell
 ##############################################################
 

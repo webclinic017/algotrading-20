@@ -50,7 +50,6 @@ Get the last year of 3-month T bill rates (risk free).
 Write function to find the most recent date and then get all data in
 between today and that day.
 """
-
 # %% codecell
 ############################################################
 
@@ -69,7 +68,7 @@ class yahooTbills():
         """Get local fpath."""
         self.fpath = f"{baseDir().path}/economic_data/treasuries.gz"
         # Create an empty data frame with column names
-        df = pd.DataFrame(columns=self.cols)
+        df = pd.DataFrame(columns=self.tickers)
         # Check if local data frame already exists
         if os.path.isfile(self.fpath):
             df = pd.read_json(self.fpath, compression='gzip')
@@ -86,6 +85,7 @@ class yahooTbills():
         # Append data to existing data frame
         df = self.df.append(tdata, ignore_index=True)
 
+        """
         # Remove time from columns for data conversion
         try:
             self.cols.remove('time')
@@ -93,6 +93,7 @@ class yahooTbills():
             pass
         # Convert cols to float 16s
         df[self.cols] = df[self.cols].astype(np.float16)
+        """
         df.reset_index(inplace=True, drop=True)
 
         return df

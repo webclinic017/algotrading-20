@@ -53,16 +53,25 @@ class getDate():
     """Get the right query date."""
 
     @staticmethod
-    def which_fname_date():
-        """Figure out which date to use for file names."""
+    def time_cutoff(cutoff_hm=9.55):
+        """Calculate cutoff with default at 9:30."""
         nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))
         nyc_hm = nyc_datetime.hour + (nyc_datetime.minute/60)
-        cutoff_hm = 9.55  # Past 9:30 AM
+
+        cutoff = False
+        if nyc_hm < cutoff_hm:
+            cutoff = True
+        return cutoff
+
+    @staticmethod
+    def which_fname_date():
+        """Figure out which date to use for file names."""
+        cutoff = getDate.time_cutoff()
 
         date_today = date.today().weekday()
         weekdays = (0, 1, 2, 3, 4)
 
-        if (nyc_hm < cutoff_hm) and (date_today in weekdays):
+        if (cutoff) and (date_today in weekdays):
             da_min = 1
         else:
             da_min = 0
@@ -89,6 +98,25 @@ class getDate():
         elif site in ('last_syms'):
             pass
         return query_date
+
+    @staticmethod
+    def busDays(start_dt, end_dt=date.today(), last_data=True):
+        """Get a list of all business days."""
+
+        def daterange(date1, date2):
+            for n in range(int((date2 - date1).days)+1):
+                yield date1 + timedelta(n)
+
+        date_list = []
+        for dt in daterange(start_dt, end_dt):
+            if dt.weekday() not in (5, 6):
+                date_list.append(dt)
+                # print(dt.strftime("%Y-%m-%d"))
+
+        if last_data and getDate.time_cutoff(cutoff_hm=17):
+            date_list.remove(date.today())
+
+        return date_list
 
 # %% codecell
 ###############################################################################

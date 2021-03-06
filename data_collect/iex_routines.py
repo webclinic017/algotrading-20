@@ -51,12 +51,12 @@ class dailySymbols():
     def __init__(self):
         self.new_syms = self.get_merge_sort(self)
         self.new_syms_tp = self.new_syms_ref_type(self)
-        self.write_to_json(self)
 
     @classmethod
     def get_merge_sort(cls, self):
         """Get new symbols and find diff with last date."""
         current_syms = urlData("/ref-data/iex/symbols").df
+
         old_syms = readData.last_bus_day_syms()
         old_syms['symbol'] = ''
 
@@ -75,6 +75,9 @@ class dailySymbols():
     def new_syms_ref_type(cls, self):
         """Get reference type data for new symbols."""
         iex_sup = urlData("/ref-data/symbols").df
+        syms_fname = f"{baseDir().path}/tickers/all_symbols.gz"
+        self.write_to_json(self, iex_sup, syms_fname)
+
         iex_sup.drop(columns=
                      ['exchangeSuffix', 'exchangeName',
                       'name', 'iexId', 'region',
@@ -84,14 +87,17 @@ class dailySymbols():
         iex_sup = dataTypes(iex_sup).df
         new_syms_tp = iex_sup[iex_sup['symbol'].isin(self.new_syms['symbol'])]
         new_syms_tp.reset_index(inplace=True, drop=True)
+
+        date_to_use = getDate().query('occ')
+        syms_fname = f"{baseDir().path}/tickers/new_symbols/{date_to_use}.gz"
+        self.write_to_json(self, new_syms_tp, syms_fname)
+
         return new_syms_tp
 
     @classmethod
-    def write_to_json(cls, self):
+    def write_to_json(cls, self, df, syms_fname):
         """Write new symbols json file to local json file."""
-        date_to_use = getDate().query('occ')
-        syms_fname = f"{baseDir().path}/tickers/new_symbols/{date_to_use}.gz"
-        self.new_syms_tp.to_json(syms_fname, compression='gzip')
+        df.to_json(syms_fname, compression='gzip')
 
 # %% codecell
 ##############################################
