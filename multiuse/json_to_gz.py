@@ -21,11 +21,11 @@ def convert_json_to_gz(which):
     """Convert local json files to .gz."""
     fpath_dict = ({
         'StockEOD': f"{baseDir().path}/StockEOD/{date.today().year}/*/**",
-        'tickers': f"{baseDir().path}/tickers/*"
+        'tickers': f"{baseDir().path}/tickers/*/**"
     })
 
     l_stock = glob.glob(fpath_dict[which])
-    l_stock = [f for f in l_stock if os.path.isfile(f) if '.gz' not in f]
+    l_stock = [f for f in l_stock if not os.path.isdir(f) if '.gz' not in f]
     l_stock = sorted(l_stock)
     print(l_stock)
     print(which)
