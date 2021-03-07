@@ -15,7 +15,6 @@ except ModuleNotFoundError:
 
 # %% codecell
 ###############################################
-convert_json_to_gz('tickers')
 
 # %% codecell
 ###############################################
