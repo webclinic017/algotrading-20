@@ -8,7 +8,7 @@ import os.path
 
 import json
 from io import StringIO, BytesIO
-
+import gzip
 import importlib
 import sys
 import xml.etree.ElementTree as ET
@@ -101,7 +101,53 @@ class dailySymbols():
 
 # %% codecell
 ##############################################
+# Data schedule: 4:30 AM - 8:00 PM Monday-Friday
+# Data weight - 1. For ~ 10,000 symbols, this is 10,000 credits.
+# March 5th is the first day this was ran
 
+class iexClose():
+    """Get end of day quotes for all symbols."""
+
+    fpath_base = f"{baseDir().path}/iex_eod_quotes"
+
+    def __init__(self):
+        self.get_params(self)
+        self.get_all_symbols(self)
+        self.start_quote_process(self)
+
+    @classmethod
+    def get_params(cls, self):
+        """Get payload/base_url params."""
+        load_dotenv()
+        self.base_url = os.environ.get("base_url")
+        self.payload = {'token': os.environ.get("iex_publish_api")}
+
+    @classmethod
+    def get_all_symbols(cls, self):
+        """Get list of all IEX supported symbols (9000 or so)."""
+        all_symbols_fpath = f"{baseDir().path}/tickers/all_symbols.gz"
+        df_all_syms = pd.read_json(all_symbols_fpath)
+        df_all_syms = dataTypes(df_all_syms).df
+
+        self.symbols = list(df_all_syms['symbol'])
+
+    @classmethod
+    def start_quote_process(cls, self):
+        """Where the for loop for getting and updating data starts."""
+        year = date.today().year
+
+        for sym in self.symbols:
+            self._get_update_local(self, sym, year)
+
+    @classmethod
+    def _get_update_local(cls, self, sym, year):
+        """Get quote data, update fpath, upate gzip, write to gzip."""
+        url = f"{self.base_url}/stock/{sym}/quote"
+        get = requests.get(url, params=self.payload)
+
+        fpath = f"{self.fpath_base}/{year}/{sym.lower()[0]}/_{sym}.gz"
+        with gzip.open(fpath, 'wb') as f:
+            f.write(get.content)
 
 # %% codecell
 ##############################################
