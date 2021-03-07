@@ -17,32 +17,43 @@ except ModuleNotFoundError:
 ###############################################
 
 
-def convert_json_to_gz():
+def convert_json_to_gz(which):
     """Convert local json files to .gz."""
-    # Get fpaths for all local syms
-    glob_fpath = f"{baseDir().path}/StockEOD/{date.today().year}/*/**"
-    local_stock_data = glob.glob(glob_fpath)
-    local_stock_data = sorted(local_stock_data)
+    fpath_dict = ({
+        'StockEOD': f"{baseDir().path}/StockEOD/{date.today().year}/*/**",
+        'tickers': f"{baseDir().path}/tickers/*"
+    })
 
-    local_syms = []  # Create an empty list
-    for st in local_stock_data:  # Split strings and store symbol names
-        local_syms.append(st.split('_')[1])
+    l_stock = glob.glob(fpath_dict[which])
+    l_stock = [f for f in l_stock if os.path.isfile(f) if '.gz' not in f]
+    l_stock = sorted(l_stock)
 
-    local_syms_dict = {}
-    for sym, path in zip(local_syms, local_stock_data):
-        local_syms_dict[sym] = pd.read_json(path)
-        local_syms_dict[sym].drop_duplicates(subset=['date'], inplace=True)
+    if which == 'StockEOD':
+        local_syms = []  # Create an empty list
+        for st in l_stock:  # Split strings and store symbol names
+            local_syms.append(st.split('_')[1])
 
-    local_stock_gz = deepcopy(local_stock_data)
-    local_stock_gz = sorted([f"{path}.gz" for path in local_stock_gz])
+        local_syms_dict = {}
+        for sym, path in zip(local_syms, l_stock):
+            local_syms_dict[sym] = pd.read_json(path)
+            local_syms_dict[sym].drop_duplicates(subset=['date'], inplace=True)
 
-    for sym, path in zip(local_syms_dict, local_stock_gz):
-        local_syms_dict[sym].to_json(path, compression='gzip')
+        l_stock_gz = deepcopy(l_stock)
+        l_stock_gz = sorted([f"{path}.gz" for path in l_stock_gz])
+
+        for sym, path in zip(local_syms_dict, l_stock_gz):
+            local_syms_dict[sym].to_json(path, compression='gzip')
+    elif which == 'tickers':
+        for file in l_stock:
+            df_file = pd.read_json(file)
+            mod_file = f"{file}.gz"
+            df_file.to_json(mod_file, compression='gzip')
 
     # Remove original json files
-    for st in local_stock_data:
-        if '.gz' not in st:
-            os.remove(st)
+    for st in l_stock:
+        os.remove(st)
+
+
 
 # %% codecell
 ###############################################
