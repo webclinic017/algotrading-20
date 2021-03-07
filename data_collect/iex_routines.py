@@ -23,12 +23,12 @@ import datetime
 from datetime import date, timedelta, time
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, local_dates
     from scripts.dev.data_collect.iex_class import readData, urlData
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, dataTypes, getDate
+    from multiuse.help_class import baseDir, dataTypes, getDate, local_dates
     importlib.reload(sys.modules['multiuse.help_class'])
-    from multiuse.help_class import baseDir, dataTypes, getDate
+    from multiuse.help_class import baseDir, dataTypes, getDate, local_dates
 
     from data_collect.iex_class import readData, urlData
     importlib.reload(sys.modules['data_collect.iex_class'])
@@ -151,3 +151,101 @@ class iexClose():
 
 # %% codecell
 ##############################################
+
+
+class histPrices():
+    """Class for historical price data."""
+
+    base_dir = baseDir().path
+    # period can equal 'ytd', 'previous', 'date'
+    # replace is a boolean value: False for testing
+
+    # sym_list is literally just a list of symbols
+    # Originated from the stocktwits trending data symbols
+
+    def __init__(self, sym_list):
+        self.get_params(self)
+        self.get_local_dates(self, sym_list)
+        # Update missing individual dates
+        self.for_ind_dates(self)
+        # Get ytd data for syms with no local data
+        self.for_ytd_dates(self)
+
+    @classmethod
+    def get_params(cls, self):
+        """Get params that are used later on."""
+        load_dotenv()
+        self.base_url = os.environ.get("base_url")
+        self.payload = {'token': os.environ.get("iex_publish_api")}
+        self.json_errors = []
+
+    @classmethod
+    def get_local_dates(cls, self, sym_list):
+        """Get the dict of all revelant dates needed."""
+        self.ld_dict = local_dates('StockEOD')
+        # Get all the syms that are not saved locally
+        not_local_syms = ([sym for sym in sym_list
+                           if sym not in self.ld_dict['syms_list']])
+        self.get_ytd_syms = not_local_syms
+
+    @classmethod
+    def for_ind_dates(cls, self):
+        """For loop initiation for getting individual dates."""
+        sort_dates = sorted(self.ld_dict['dl_ser'])
+        dt_keys = self.ld_dict['syms_dict_to_get'].keys()
+        dt_vals = self.ld_dict['syms_dict_to_get'].values()
+        zipped_for_dates = zip(dt_keys, dt_vals, self.ld_dict['syms_fpaths'])
+
+        # For all the missing local dates
+        for sym, dates, path in zipped_for_dates:
+            # If none of the necessary dates are stored locally, get ytd
+            if sorted(dates) == sort_dates:
+                self.get_ytd_syms.append(sym)
+            else:  # If only some of the dates match
+                self.else_ind_dates(self, sym, dates, path)
+
+    @classmethod
+    def else_ind_dates(cls, self, sym, dates, path):
+        """Else part of previous for loop ^^."""
+        str_dates = pd.to_datetime(dates).dt.strftime("%Y%m%d")
+        df_dl = pd.DataFrame()
+        # Call get request for individual dates, append to df
+        per = 'date'
+        for day in str_dates:
+            # Get data and append to previous dataframe
+            df_dl = df_dl.append(self.get_hist(self, sym, per, day))
+            # Combine previous dataframe with new data
+            df_all = pd.concat([pd.read_json(path), df_dl])
+            df_all.reset_index(inplace=True, drop=True)
+            # Write to local json file
+            df_all.to_json(path, compression='gzip')
+
+    @classmethod
+    def for_ytd_dates(cls, self):
+        """Get ytd dates for dates in self.get_ytd_syms."""
+        # Get the year to use in file path
+        # Set period to year-to-date and dt(date) to empty string
+        per, dt = 'ytd', ''
+        base_path = f"{self.base_dir}/StockEOD/{date.today().year}"
+
+        for sym in self.get_ytd_syms:
+            try:
+                path = f"{base_path}/{sym.lower()[0]}/_{sym}.gz"
+                df = self.get_hist(self, sym, per, dt)
+                df.to_json(path, compression='gzip')
+            except ValueError:
+                self.json_errors.append(sym)
+
+    @classmethod
+    def get_hist(cls, self, sym, per, dt):
+        """Get historical data for date/dates."""
+        data = ''
+        if (per == 'date') and (dt != ''):
+            url = f"{self.base_url}/stock/{sym}/chart/date/{dt}"
+            data = requests.get(url, params=self.payload).json()
+        elif (per == 'ytd') and (dt == ''):
+            url = f"{self.base_url}/stock/{sym}/chart/ytd"
+            get = requests.get(url, params=self.payload)
+            data = pd.read_json(StringIO(get.content.decode('utf-8')))
+
+        return data

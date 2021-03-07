@@ -11,16 +11,17 @@ uint32: Unsigned integer (0 to 4294967295)
 
 """
 # %% codecell
-import pandas as pd
-import numpy as np
+###############################################################################
 from dotenv import load_dotenv
-
+import glob
 import os
 from pathlib import Path
 from datetime import timedelta, date
 import datetime
 import pytz
 
+import pandas as pd
+import numpy as np
 # %% codecell
 ###############################################################################
 
@@ -114,7 +115,10 @@ class getDate():
                 # print(dt.strftime("%Y-%m-%d"))
 
         if last_data and getDate.time_cutoff(cutoff_hm=17):
-            date_list.remove(date.today())
+            try:
+                date_list.remove(date.today())
+            except ValueError:
+                pass
 
         return date_list
 
@@ -171,6 +175,50 @@ class dataTypes():
         self.df[cols_float64] = self.df[cols_float64].astype(np.float16)
 
 
+
+# %% codecell
+###############################################################################
+
+def local_dates(which):
+    """Get dict of missing local dates."""
+    stock_suf = ({
+        'StockEOD': f"/StockEOD/{date.today().year}/*/**"
+    })
+
+    stock_fpath = f"{baseDir().path}{stock_suf[which]}"
+    # Min date for stocktwits trending data
+    st_date_min = datetime.date(2021, 2, 19)
+    dl_ser = pd.Series(getDate.busDays(st_date_min))
+
+    # Get fpaths for all local syms
+    local_stock_data = glob.glob(stock_fpath)
+    local_stock_data = sorted(local_stock_data)
+
+    local_syms = []  # Create an empty list
+    for st in local_stock_data:  # Split strings and store symbol names
+        local_syms.append(st.split('_')[1][:-3])
+
+    syms_dict = {}
+    syms_dict_to_get = {}
+    syms_not_get = []
+    dl_ser_dt = pd.to_datetime(dl_ser)
+    for st, path in zip(local_syms, local_stock_data):
+        syms_dict[st] = pd.read_json(path, compression='gzip')
+        # syms_dict[st]['date'] = pd.to_datetime(syms_dict[st]['date'], unit='ms')
+        try:
+            syms_dict_to_get[st] = dl_ser[~dl_ser_dt.isin(syms_dict[st]['date'].astype('object'))]
+        except KeyError:
+            syms_dict_to_get[st] = dl_ser
+            syms_not_get.append(st)
+
+    ld_dict = {}
+    ld_dict['dl_ser'] = dl_ser  # Series of date list
+    ld_dict['syms_list'] = local_syms
+    ld_dict['syms_cant_get'] = syms_not_get
+    ld_dict['syms_dict_to_get'] = syms_dict_to_get
+    ld_dict['syms_data'] = syms_dict
+    ld_dict['syms_fpaths'] = local_stock_data
+    return ld_dict
 
 # %% codecell
 ###############################################################################
