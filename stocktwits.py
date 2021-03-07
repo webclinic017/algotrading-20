@@ -33,10 +33,12 @@ importlib.reload(sys.modules['api'])
 from api import serverAPI
 
 from data_collect.iex_class import readData
+importlib.reload(sys.modules['data_collect.iex_class'])
+
 from multiuse.help_class import baseDir, getDate, dataTypes, local_dates
 importlib.reload(sys.modules['multiuse.help_class'])
 
-from iex_routines import histPrices
+from data_collect.iex_routines import histPrices
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
@@ -66,6 +68,14 @@ sym_list = st_df['symbol'].value_counts().index.to_list()
 # %% codecell
 #############################################################
 
+readData.get_all_symbols()
+syms_fpath = f"{baseDir().path}/tickers/all_symbols.gz"
+
+all_syms = pd.read_json(syms_fpath, compression='gzip')
+
+all_syms.info(memory_usage='deep')
+
+all_syms.head(10)
 
 # %% codecell
 #############################################################

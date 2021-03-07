@@ -30,8 +30,18 @@ except ModuleNotFoundError:
 
 # %% codecell
 ######################################################
+
+
 class readData():
     """All purpose class to read local IEX data."""
+
+    @staticmethod
+    def get_all_symbols():
+        """Get and write to local file all symbols."""
+        syms_fpath = f"{baseDir().path}/tickers/all_symbols.gz"
+        symbols = urlData("/ref-data/symbols").df
+        symbols.to_json(syms_fpath, compression='gzip')
+        return symbols
 
     @staticmethod
     def all_iex_symbols():

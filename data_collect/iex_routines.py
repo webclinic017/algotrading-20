@@ -126,7 +126,11 @@ class iexClose():
     def get_all_symbols(cls, self):
         """Get list of all IEX supported symbols (9000 or so)."""
         all_symbols_fpath = f"{baseDir().path}/tickers/all_symbols.gz"
-        df_all_syms = pd.read_json(all_symbols_fpath)
+        try:
+            df_all_syms = pd.read_json(all_symbols_fpath)
+        except ValueError:
+            df_all_syms = readData.get_all_symbols()
+            
         df_all_syms = dataTypes(df_all_syms).df
 
         self.symbols = list(df_all_syms['symbol'])
