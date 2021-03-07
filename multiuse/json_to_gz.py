@@ -48,6 +48,7 @@ def convert_json_to_gz(which):
             df_file = pd.read_json(file)
             mod_file = f"{file}.gz"
             df_file.to_json(mod_file, compression='gzip')
+            print(file)
 
     # Remove original json files
     for st in l_stock:
