@@ -27,6 +27,8 @@ def convert_json_to_gz(which):
     l_stock = glob.glob(fpath_dict[which])
     l_stock = [f for f in l_stock if os.path.isfile(f) if '.gz' not in f]
     l_stock = sorted(l_stock)
+    print(l_stock)
+    print(which)
 
     if which == 'StockEOD':
         local_syms = []  # Create an empty list
