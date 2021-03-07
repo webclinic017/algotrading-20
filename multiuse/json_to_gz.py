@@ -15,13 +15,16 @@ except ModuleNotFoundError:
 
 # %% codecell
 ###############################################
+convert_json_to_gz('tickers')
 
+# %% codecell
+###############################################
 
 def convert_json_to_gz(which):
     """Convert local json files to .gz."""
     fpath_dict = ({
         'StockEOD': f"{baseDir().path}/StockEOD/{date.today().year}/*/**",
-        'tickers': f"{baseDir().path}/tickers/*/**"
+        'tickers': f"{baseDir().path}/tickers/*"
     })
 
     l_stock = glob.glob(fpath_dict[which])
@@ -47,7 +50,10 @@ def convert_json_to_gz(which):
             local_syms_dict[sym].to_json(path, compression='gzip')
     elif which == 'tickers':
         for file in l_stock:
-            df_file = pd.read_json(file)
+            try:
+                df_file = pd.read_json(file)
+            except UnicodeDecodeError:
+                df_file = pd.read_json(file, compression='gzip')
             mod_file = f"{file}.gz"
             df_file.to_json(mod_file, compression='gzip')
             print(file)
