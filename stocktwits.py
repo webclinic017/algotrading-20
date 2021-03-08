@@ -100,6 +100,8 @@ histPrices(sym_list)
 ##################################################################
 # pd.DataFrame(get.json(), index=[0])
 
+get_watch = requests.get('https://algotrading.ventures/api/v1/stocktwits/watchlist')
+get_watch.content
 
 # %% codecell
 ###########################################################
