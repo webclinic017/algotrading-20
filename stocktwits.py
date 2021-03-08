@@ -100,8 +100,30 @@ histPrices(sym_list)
 ##################################################################
 # pd.DataFrame(get.json(), index=[0])
 
+
 # %% codecell
 ###########################################################
+
+
+# %% codecell
+###########################################################
+
+
+
+# %% codecell
+###########################################################
+
+def st_watchlist_id():
+    """Get watchlist id for authenticating user."""
+    load_dotenv()
+    watch_url = "https://api.stocktwits.com/api/2/watchlists.json"
+    payload = {'access_token': os.environ.get("st_token")}
+    stwits_get = requests.get(watch_url, params=payload).json()
+
+    return stwits_get['watchlists'][0]['id']
+
+
+
 
 
 # %% codecell
