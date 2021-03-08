@@ -199,7 +199,7 @@ class stWatch():
 
     def __init__(self, refresh=True):
         self.get_fpath(self)
-        self.df = self.get_data(self, refresh)
+        self.data = self.get_data(self, refresh)
 
     @classmethod
     def get_fpath(cls, self):
@@ -213,11 +213,11 @@ class stWatch():
         if os.path.isfile(self.fpath) and refresh:
             # with gzip.open(self.fpath, 'rb') as f:
             #     data = f.read()
-            df = pd.read_json(self.fpath, compression='gzip')
+            data = json.load(gzip.open(self.fpath))
         else:
-            df = self.request_data(self)
+            data = self.request_data(self)
 
-        return df
+        return data
 
     @classmethod
     def request_data(cls, self):
@@ -233,10 +233,12 @@ class stWatch():
 
         rel_df = pd.DataFrame(rel_l)
         rel_df.to_json(self.fpath, compression='gzip')
+
+        data = json.load(gzip.open(self.fpath))
         # with gzip.open(self.fpath, 'wb') as f:
         #     f.write(bytearray(rel_l))
 
-        return rel_df
+        return data
 
     @classmethod
     def construct_params(cls):
