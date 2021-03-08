@@ -57,7 +57,7 @@ class yahooTbills():
     """Get current price for US T-bills - 3 month, 5 yr, 10 yr, 30 yr."""
     # 4 am to 8 pm, every hour
     tickers = ['^IRX', '^FVX', '^TNX', '^TYX']
-    cols = ['3mo', '5yr', '10yr', '30yr', 'time']
+    # cols = ['3mo', '5yr', '10yr', '30yr', 'time']
 
     def __init__(self):
         self.get_path(self)

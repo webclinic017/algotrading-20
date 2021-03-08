@@ -15,6 +15,8 @@ from pathlib import Path
 import importlib
 import datetime
 from datetime import date, timedelta, time
+from dotenv import load_dotenv
+import gzip
 
 from nested_lookup import nested_lookup
 import requests
@@ -184,6 +186,78 @@ class stwitsUserStream():
         """Reset index and write dataframe to json."""
         df.reset_index(inplace=True, drop=True)
         df.to_json(fpath, compression='gzip')
+
+# %% codecell
+#############################################################
+
+
+class stWatch():
+    """Get my stocktwits watchlist."""
+
+    # refresh = True/False
+    # yes == get new data, no == read local data, if it exists
+
+    def __init__(self, refresh=True):
+        self.get_fpath(self)
+        self.data = self.get_data(self, refresh)
+
+    @classmethod
+    def get_fpath(cls, self):
+        """Construct local fpath."""
+        self.fpath = f"{baseDir().path}/stocktwits/me/_watch_{date.today()}.gz"
+
+    @classmethod
+    def get_data(cls, self, refresh):
+        """Read local data if it exists."""
+        data = ''
+        if os.path.isfile(self.fpath) and refresh:
+            with gzip.open(self.fpath, 'rb') as f:
+                data = f.read()
+        else:
+            data = self.request_data(self)
+
+        return data
+
+    @classmethod
+    def request_data(cls, self):
+        """Request fresh watchlist data from stocktwits."""
+        st_url, payload = self.construct_params()
+        # Request data
+        st_get = requests.get(st_url, params=payload).json()
+
+        # Create a list of tuples with relevant data
+        rel_l = []  # Relevant list
+        for rec in st_get['watchlist']['symbols']:
+            rel_l.append((rec['symbol'], rec['title'], rec['watchlist_count']))
+
+        rel_df = pd.DataFrame(rel_l)
+        rel_df.to_json(self.fpath, compression='gzip')
+        # with gzip.open(self.fpath, 'wb') as f:
+        #     f.write(bytearray(rel_l))
+
+        return rel_l
+
+    @classmethod
+    def construct_params(cls):
+        """Construct params used for st request."""
+        load_dotenv()
+        st_base_url = "https://api.stocktwits.com/api/2/watchlists/show"
+        st_url = f"{st_base_url}/{os.environ.get('st_watch_id')}.json"
+        payload = {'access_token': os.environ.get("st_token")}
+
+        return st_url, payload
+
+# %% codecell
+#############################################################
+
+def st_watchlist_id():
+    """Get watchlist id for authenticating user."""
+    load_dotenv()
+    watch_url = "https://api.stocktwits.com/api/2/watchlists.json"
+    payload = {'access_token': os.environ.get("st_token")}
+    stwits_get = requests.get(watch_url, params=payload).json()
+
+    return stwits_get['watchlists'][0]['id']
 
 # %% codecell
 #############################################################

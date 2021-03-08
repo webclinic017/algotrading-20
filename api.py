@@ -22,7 +22,10 @@ class serverAPI():
         'cboe_mmo_top': '/cboe/mmo/top',
         'cboe_mmo_syms': '/cboe/mmo/syms',
         'st_stream': '/stocktwits/user_stream',
-        'st_trend': '/stocktwits/trending'
+        'st_trend': '/stocktwits/trending',
+        'iex_quotes_raw': '/iex_eod_quotes',
+        'new_symbols': '/symbols/new',
+        'all_symbols': '/symbols/all'
     })
 
     # Data to conacatenate
