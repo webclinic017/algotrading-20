@@ -199,7 +199,7 @@ class stWatch():
 
     def __init__(self, refresh=True):
         self.get_fpath(self)
-        self.data = self.get_data(self, refresh)
+        self.df = self.get_data(self, refresh)
 
     @classmethod
     def get_fpath(cls, self):
@@ -209,14 +209,15 @@ class stWatch():
     @classmethod
     def get_data(cls, self, refresh):
         """Read local data if it exists."""
-        data = ''
+        df = ''
         if os.path.isfile(self.fpath) and refresh:
-            with gzip.open(self.fpath, 'rb') as f:
-                data = f.read()
+            # with gzip.open(self.fpath, 'rb') as f:
+            #     data = f.read()
+            df = pd.read_json(self.fpath, compression='gzip')
         else:
-            data = self.request_data(self)
+            df = self.request_data(self)
 
-        return data
+        return df
 
     @classmethod
     def request_data(cls, self):
@@ -235,7 +236,7 @@ class stWatch():
         # with gzip.open(self.fpath, 'wb') as f:
         #     f.write(bytearray(rel_l))
 
-        return rel_l
+        return rel_df
 
     @classmethod
     def construct_params(cls):
