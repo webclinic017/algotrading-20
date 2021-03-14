@@ -209,7 +209,7 @@ class stWatch():
     @classmethod
     def get_data(cls, self, refresh):
         """Read local data if it exists."""
-        df = ''
+        data = ''
         if os.path.isfile(self.fpath) and refresh:
             # with gzip.open(self.fpath, 'rb') as f:
             #     data = f.read()

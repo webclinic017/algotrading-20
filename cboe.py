@@ -38,9 +38,9 @@ from data_collect.iex_class import readData
 importlib.reload(sys.modules['data_collect.iex_class'])
 from data_collect.iex_class import readData, urlData
 
-from data_collect.cboe_class import cboeLocalRecDiff
+from data_collect.cboe_class import cboeData, cleanMmo, cboeLocalRecDiff
 importlib.reload(sys.modules['data_collect.cboe_class'])
-from data_collect.cboe_class import cboeLocalRecDiff
+from data_collect.cboe_class import cboeData, cleanMmo, cboeLocalRecDiff
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
@@ -59,6 +59,9 @@ Struct = Structured Product
 CBOE Market Making:
 Data for 2021-02-19 to 2021-02-25 inclusive. - Feb 26th and Feb 27th data access.
 """
+mmo = cboeData('mmo')
+clean_mmo = cleanMmo(mmo)
+
 # %% codecell
 ##############################################################
 top_df_og = cboeLocalRecDiff(which='top_2000', fresh=True).df
