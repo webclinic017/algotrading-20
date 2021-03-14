@@ -101,15 +101,37 @@ histPrices(sym_list)
 # pd.DataFrame(get.json(), index=[0])
 
 get_watch = requests.get('https://algotrading.ventures/api/v1/stocktwits/watchlist')
-get_watch.content
+
+
+
+watch = get_watch.json()
+
 
 # %% codecell
 ###########################################################
 
+get_eod_prices = requests.get('https://algotrading.ventures/api/v1/prices/eod/all')
+
+len(get_eod_prices.content)
+
+eod_prices = pd.DataFrame(get_eod_prices.json()).T
+eod_prices.reset_index(inplace=True, drop=True)
+
+eod_prices.info(memory_usage='deep')
+
+eod_prices.head(10)
 
 # %% codecell
 ###########################################################
 
+get_treas = requests.get('https://algotrading.ventures/api/v1/econ/treasuries')
+get_treas
+
+df_treas = pd.read_json(get_treas.content)
+df_treas.sort_values(by=['date', 'hour'], ascending=True).head(50)
+
+# %% codecell
+###########################################################
 
 
 # %% codecell

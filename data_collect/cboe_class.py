@@ -17,6 +17,7 @@ import importlib
 import sys
 import copy
 import zlib
+import gzip
 
 import pandas as pd
 import numpy as np
@@ -38,11 +39,11 @@ import xml.etree.ElementTree as ET
 try:
     from scripts.dev.data_collect.options import DerivativesHelper
     from scripts.dev.data_collect.iex_class import readData
-    from scripts.dev.multiuse.help_class import baseDir, dataTypes
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate
 except ModuleNotFoundError:
     from data_collect.options import DerivativesHelper
     from data_collect.iex_class import readData
-    from multiuse.help_class import baseDir, dataTypes
+    from multiuse.help_class import baseDir, dataTypes, getDate
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
@@ -250,6 +251,7 @@ class cboeData():
         """Market maker opportunity."""
 
         self.fname = f"{self.base_dir}/mmo/{self.date}.gz"
+        self.raw_fname = f"{self.base_dir}/mmo/raw/{self.date}.gz"
 
         if os.path.isfile(self.fname):
             self.comb_df = pd.read_json(self.fname)
@@ -266,8 +268,8 @@ class cboeData():
         nyc_hm = nyc_datetime.hour + (nyc_datetime.minute/60)
         cutoff_hm = 16.30
         # While current hh.mm < cuttoff
-        if nyc_hm < cutoff_hm:
-            self.date = DerivativesHelper.which_fname_date()
+        if nyc_hm < cutoff_hm or date.today().weekday() in (5, 6):
+            self.date = getDate.query('cboe')
         else:
             self.date = date.today()
         return self.date
@@ -280,6 +282,9 @@ class cboeData():
         mm_url_p2 = "/market_statistics/maker_report/csv/?book=all&mkt="
         for ex in self.cboe_ex_list:
             mm_dict[ex] = (requests.get(f"{mm_url_p1}{mm_url_p2}{ex}")).content
+
+        #  with gzip.open(self.raw_fname, 'wb') as raw_fpath:
+        #    raw_fpath.write(mm_dict.encode('utf-8'))
 
         for ex in self.cboe_ex_list:
             mm_dict[ex] = pd.read_csv(
