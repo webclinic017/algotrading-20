@@ -90,8 +90,13 @@ get_ytd_syms = [].append(not_local_syms)
 #############################################################
 
 ##################################################################
-st_trend = serverAPI('st_trend')
-st_df = st_trend.df.copy(deep=True)
+# st_trend = serverAPI('st_trend_today')
+url = "https://algotrading.ventures/api/v1/stocktwits/trending/today/explore"
+st_get = requests.get(url).json()
+df = pd.DataFrame(st_get)
+
+
+
 sym_list = st_df['symbol'].value_counts().index.to_list()
 
 histPrices(sym_list)
@@ -132,6 +137,7 @@ df_treas.sort_values(by=['date', 'hour'], ascending=True).head(50)
 
 # %% codecell
 ###########################################################
+
 
 
 # %% codecell

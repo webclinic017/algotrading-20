@@ -4,6 +4,7 @@ Get data from server through API.
 # %% codecell
 ####################################
 import json
+from json import JSONDecodeError
 from io import BytesIO
 
 import pandas as pd
@@ -22,8 +23,9 @@ class serverAPI():
         'cboe_mmo_top': '/cboe/mmo/top',
         'cboe_mmo_syms': '/cboe/mmo/syms',
         'st_stream': '/stocktwits/user_stream',
-        'st_trend': '/stocktwits/trending',
-        'iex_quotes_raw': '/iex_eod_quotes',
+        'st_trend_all': '/stocktwits/trending/all',
+        'st_trend_today': {'url': '/stocktwits/trending/today', 'purpose': 'explore'},
+        'iex_quotes_raw': '/prices/eod/all',
         'new_symbols': '/symbols/new',
         'all_symbols': '/symbols/all'
     })
@@ -40,7 +42,10 @@ class serverAPI():
         """Get data from server."""
         url = f"{self.base_url}{self.url_dict[which]}"
         get = requests.get(url)
-        df = json.load(BytesIO(get.content))
+        try:
+            df = json.load(BytesIO(get.content))
+        except JSONDecodeError:
+            df = get.json()
 
         # If data type needs to be looped/concatenated
         if which in self.concat:

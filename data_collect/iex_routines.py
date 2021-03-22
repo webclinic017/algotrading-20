@@ -105,6 +105,7 @@ class dailySymbols():
 # Data weight - 1. For ~ 10,000 symbols, this is 10,000 credits.
 # March 5th is the first day this was ran
 
+
 class iexClose():
     """Get end of day quotes for all symbols."""
 
@@ -130,7 +131,7 @@ class iexClose():
             df_all_syms = pd.read_json(all_symbols_fpath)
         except ValueError:
             df_all_syms = readData.get_all_symbols()
-            
+
         df_all_syms = dataTypes(df_all_syms).df
 
         self.symbols = list(df_all_syms['symbol'])
@@ -142,16 +143,28 @@ class iexClose():
 
         for sym in self.symbols:
             self._get_update_local(self, sym, year)
+            # break
 
     @classmethod
     def _get_update_local(cls, self, sym, year):
         """Get quote data, update fpath, upate gzip, write to gzip."""
-        url = f"{self.base_url}/stock/{sym}/quote"
-        get = requests.get(url, params=self.payload)
+        self.url = f"{self.base_url}/stock/{sym}/quote"
+        get = requests.get(self.url, params=self.payload)
+        new_data = pd.DataFrame(get.json(), index=range(1))
 
         fpath = f"{self.fpath_base}/{year}/{sym.lower()[0]}/_{sym}.gz"
-        with gzip.open(fpath, 'wb') as f:
-            f.write(get.content)
+
+        existing = ''
+        try:
+            existing = pd.DataFrame([pd.read_json(fpath, compression='gzip', typ='series')])
+        except ValueError:
+            existing = pd.read_json(fpath, compression='gzip')
+        except FileNotFoundError:
+            existing = pd.DataFrame()
+
+        new_df = pd.concat([existing, new_data])
+        new_df.reset_index(drop=True, inplace=True)
+        new_df.to_json(fpath, compression='gzip')
 
 # %% codecell
 ##############################################
