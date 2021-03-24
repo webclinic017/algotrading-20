@@ -28,7 +28,7 @@ from charset_normalizer import CharsetNormalizerMatches as CnM
 
 import xml.etree.ElementTree as ET
 
-from multiuse.help_class import baseDir
+from multiuse.help_class import baseDir, getDate
 
 from data_collect.iex_routines import dailySymbols
 importlib.reload(sys.modules['data_collect.iex_routines'])
@@ -41,6 +41,10 @@ from data_collect.iex_class import readData, urlData
 from data_collect.cboe_class import cboeData, cleanMmo, cboeLocalRecDiff
 importlib.reload(sys.modules['data_collect.cboe_class'])
 from data_collect.cboe_class import cboeData, cleanMmo, cboeLocalRecDiff
+
+from api import serverAPI
+importlib.reload(sys.modules['api'])
+from api import serverAPI
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
@@ -59,9 +63,91 @@ Struct = Structured Product
 CBOE Market Making:
 Data for 2021-02-19 to 2021-02-25 inclusive. - Feb 26th and Feb 27th data access.
 """
+getDate.query('cboe')
 
-mmo = cboeData('mmo')
-clean_mmo = cleanMmo(mmo)
+cboe = serverAPI('cboe_mmo_top')
+cboe_df = cboe.df.copy(deep=True)
+cboe_df.dropna(axis=0, inplace=True)
+
+from pandas.tseries.offsets import BusinessDay
+bs = BusinessDay(n=1)
+
+cboe_df['date_dt'] = pd.to_datetime(cboe_df['dataDate'])
+cboe_df['date_df'] = (cboe_df['date_dt'] + bs).dt.date
+
+my_watchlist = serverAPI('st_watch')
+stw_df = my_watchlist.df.copy(deep=True).T
+
+my_watch = stw_df['symbols'].to_list()
+
+cboe_my = cboe_df[cboe_df['Underlying'].isin(my_watch)].copy(deep=True)
+cboe_my.reset_index(inplace=True, drop=True)
+cboe_my['expDateDT'] = pd.to_datetime(cboe_my['expDate'])
+
+cboe_my_today = cboe_my[cboe_my['date_df'] == date.today() - timedelta(days=1)].copy(deep=True)
+cboe_my_today.reset_index(inplace=True, drop=True)
+
+new_df = pd.DataFrame()
+# r = pd.DatetimeIndex(cboe_my['expDate'].value_counts(ascending=True).index, yearfirst=True)
+# r = pd.date_range(start=cboe_my_today.expDate.min(), end=cboe_my_today.expDate.max(), freq='7D')
+r = pd.to_datetime(cboe_my['expDate']).value_counts().index.values
+for sym in cboe_my_today['Underlying'].value_counts().index:
+
+    mod_c = cboe_my_today[(cboe_my_today['Underlying'] == sym) & (cboe_my_today['side'] == 'C')].copy(deep=True)
+    mod_p = cboe_my_today[(cboe_my_today['Underlying'] == sym) & (cboe_my_today['side'] == 'P')].copy(deep=True)
+    # mod.reset_index(inplace=True, drop=True)
+    # print(mod)
+
+    try:
+        mod_c = (mod_c.set_index('expDateDT')
+                  .reindex(r, fill_value=1)
+                  .reset_index())
+        mod_c['Underlying'] = sym
+
+        mod_p = (mod_p.set_index('expDateDT')
+                  .reindex(r, fill_value=1)
+                  .reset_index())
+        mod_p['Underlying'] = sym
+        # print(mod)
+    except ValueError as ve:
+        print(sym)
+
+    new_df = pd.concat([new_df, mod_c, mod_p]).copy(deep=True)
+
+
+# %% codecell
+##############################################################
+
+cboe = requests.get("https://algotrading.ventures/api/v1/cboe/mmo/st/me/vue")
+
+cboe_df = pd.DataFrame(cboe.json()).T
+
+cboe_df['dataDate'].value_counts()
+
+cboe_df.head(10)
+
+my_watch = cboe_df['symbols'].to_list()
+
+cboe_df.shape
+
+# %% codecell
+##############################################################
+
+# break
+new_df.shape
+new_df.groupby(by=['Underlying']).count()
+
+
+new_df
+
+mod.set_index('expDateDT').reindex(r)
+
+r
+
+mod.head(10)
+
+# mmo = cboeData('mmo')
+# clean_mmo = cleanMmo(mmo)
 
 # %% codecell
 ##############################################################

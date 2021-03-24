@@ -24,14 +24,15 @@ class serverAPI():
         'cboe_mmo_syms': '/cboe/mmo/syms',
         'st_stream': '/stocktwits/user_stream',
         'st_trend_all': '/stocktwits/trending/all',
-        'st_trend_today': {'url': '/stocktwits/trending/today', 'purpose': 'explore'},
+        'st_trend_today': '/stocktwits/trending/today/explore',
+        'st_watch': '/stocktwits/watchlist',
         'iex_quotes_raw': '/prices/eod/all',
         'new_symbols': '/symbols/new',
         'all_symbols': '/symbols/all'
     })
 
     # Data to conacatenate
-    concat = ['st_trend']
+    concat = ['st_trend', 'cboe_mmo_top']
 
     def __init__(self, which):
         df = self.get_data(self, which)

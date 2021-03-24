@@ -157,9 +157,7 @@ class iexClose():
         existing = ''
         try:
             existing = pd.DataFrame([pd.read_json(fpath, compression='gzip', typ='series')])
-        except ValueError:
-            existing = pd.read_json(fpath, compression='gzip')
-        except FileNotFoundError:
+        except ValueError or FileNotFoundError:
             existing = pd.DataFrame()
 
         new_df = pd.concat([existing, new_data])
