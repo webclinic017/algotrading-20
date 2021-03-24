@@ -7,6 +7,7 @@ import os
 import os.path
 
 import json
+from json import JSONDecodeError
 from io import StringIO, BytesIO
 import gzip
 import importlib
@@ -150,7 +151,11 @@ class iexClose():
         """Get quote data, update fpath, upate gzip, write to gzip."""
         self.url = f"{self.base_url}/stock/{sym}/quote"
         get = requests.get(self.url, params=self.payload)
-        new_data = pd.DataFrame(get.json(), index=range(1))
+        existing, new_data = '', ''
+        try:
+            new_data = pd.DataFrame(get.json(), index=range(1))
+        except JSONDecodeError:
+            return
 
         fpath = f"{self.fpath_base}/{year}/{sym.lower()[0]}/_{sym}.gz"
 
