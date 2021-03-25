@@ -19,6 +19,7 @@ from pathlib import Path
 from datetime import timedelta, date
 import datetime
 import pytz
+from pandas.tseries.offsets import BusinessDay
 
 import pandas as pd
 import numpy as np
@@ -94,8 +95,13 @@ class getDate():
     def query(site):
         """Call which_fname_date but shorter."""
         query_date = getDate.which_fname_date()
+        bs = BusinessDay(n=1)
+        query_date = ''
         if site in ('cboe', 'occ'):
-            query_date = query_date + timedelta(days=1)
+            if getDate.time_cutoff(cutoff_hm=22.10):
+                query_date = (date.today() - bs).date()
+            else:
+                query_date = (date.today() - bs).date() + timedelta(days=1)
         elif site in ('last_syms'):
             pass
         return query_date
