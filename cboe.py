@@ -13,6 +13,7 @@ import sys
 import copy
 
 import pandas as pd
+from pandas.tseries.offsets import BusinessDay
 import numpy as np
 import requests
 from dotenv import load_dotenv
@@ -28,6 +29,8 @@ from charset_normalizer import CharsetNormalizerMatches as CnM
 
 import xml.etree.ElementTree as ET
 
+from multiuse.help_class import baseDir, getDate
+importlib.reload(sys.modules['multiuse.help_class'])
 from multiuse.help_class import baseDir, getDate
 
 from data_collect.iex_routines import dailySymbols
@@ -118,11 +121,23 @@ for sym in cboe_my_today['Underlying'].value_counts().index:
 # %% codecell
 ##############################################################
 
-cboe = requests.get("https://algotrading.ventures/api/v1/cboe/mmo/st/me/vue")
+(date.today() + bs).date()
+
+getDate.query('cboe')
+
+# %% codecell
+##############################################################
+
+cboe_get = requests.get("https://algotrading.ventures/api/v1/cboe/mmo/st/me/vue")
+cboe_json = cboe_get.json()
+cboe_json
+
 
 cboe_df = pd.DataFrame(cboe.json()).T
 
 cboe_df['dataDate'].value_counts()
+
+sorted(list(set(pd.to_datetime(cboe_df['expDateDT'], unit='ms').dt.date.astype('str'))))
 
 cboe_df.head(10)
 
