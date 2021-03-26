@@ -72,50 +72,6 @@ cboe = serverAPI('cboe_mmo_top')
 cboe_df = cboe.df.copy(deep=True)
 cboe_df.dropna(axis=0, inplace=True)
 
-from pandas.tseries.offsets import BusinessDay
-bs = BusinessDay(n=1)
-
-cboe_df['date_dt'] = pd.to_datetime(cboe_df['dataDate'])
-cboe_df['date_df'] = (cboe_df['date_dt'] + bs).dt.date
-
-my_watchlist = serverAPI('st_watch')
-stw_df = my_watchlist.df.copy(deep=True).T
-
-my_watch = stw_df['symbols'].to_list()
-
-cboe_my = cboe_df[cboe_df['Underlying'].isin(my_watch)].copy(deep=True)
-cboe_my.reset_index(inplace=True, drop=True)
-cboe_my['expDateDT'] = pd.to_datetime(cboe_my['expDate'])
-
-cboe_my_today = cboe_my[cboe_my['date_df'] == date.today() - timedelta(days=1)].copy(deep=True)
-cboe_my_today.reset_index(inplace=True, drop=True)
-
-new_df = pd.DataFrame()
-# r = pd.DatetimeIndex(cboe_my['expDate'].value_counts(ascending=True).index, yearfirst=True)
-# r = pd.date_range(start=cboe_my_today.expDate.min(), end=cboe_my_today.expDate.max(), freq='7D')
-r = pd.to_datetime(cboe_my['expDate']).value_counts().index.values
-for sym in cboe_my_today['Underlying'].value_counts().index:
-
-    mod_c = cboe_my_today[(cboe_my_today['Underlying'] == sym) & (cboe_my_today['side'] == 'C')].copy(deep=True)
-    mod_p = cboe_my_today[(cboe_my_today['Underlying'] == sym) & (cboe_my_today['side'] == 'P')].copy(deep=True)
-    # mod.reset_index(inplace=True, drop=True)
-    # print(mod)
-
-    try:
-        mod_c = (mod_c.set_index('expDateDT')
-                  .reindex(r, fill_value=1)
-                  .reset_index())
-        mod_c['Underlying'] = sym
-
-        mod_p = (mod_p.set_index('expDateDT')
-                  .reindex(r, fill_value=1)
-                  .reset_index())
-        mod_p['Underlying'] = sym
-        # print(mod)
-    except ValueError as ve:
-        print(sym)
-
-    new_df = pd.concat([new_df, mod_c, mod_p]).copy(deep=True)
 
 
 # %% codecell
@@ -130,12 +86,26 @@ getDate.query('cboe')
 
 cboe_get = requests.get("https://algotrading.ventures/api/v1/cboe/mmo/st/me/vue")
 cboe_json = cboe_get.json()
-cboe_json
 
+all_df = pd.read_json(cboe_json['df']).T
+cboe_df = all_df.copy(deep=True)
 
-cboe_df = pd.DataFrame(cboe.json()).T
+bs = BusinessDay(n=1)
 
-cboe_df['dataDate'].value_counts()
+cboe_df['date_dt'] = pd.to_datetime(cboe_df['dataDate'])
+cboe_df['date_df'] = (cboe_df['date_dt'] + bs).dt.date
+
+my_watch = serverAPI('st_watch').df.T
+cboe_df['date_dt'].max().date()
+
+cboe_df['date_df'] = pd.to_datetime(cboe_df['expDateDT'], unit='ms')
+
+cboe_df.head(10)
+
+cboe_df.sort_values(by=['expDate'], ascending=True).head(10)
+
+my_list_df = cboe_df[cboe_df['Underlying'].isin(my_watch['symbols'].values)]
+my_list_df[(my_list_df['Underlying'] == 'VIEW') & (my_list_df['date_df'] == date.today())]
 
 sorted(list(set(pd.to_datetime(cboe_df['expDateDT'], unit='ms').dt.date.astype('str'))))
 
@@ -147,22 +117,6 @@ cboe_df.shape
 
 # %% codecell
 ##############################################################
-
-# break
-new_df.shape
-new_df.groupby(by=['Underlying']).count()
-
-
-new_df
-
-mod.set_index('expDateDT').reindex(r)
-
-r
-
-mod.head(10)
-
-# mmo = cboeData('mmo')
-# clean_mmo = cleanMmo(mmo)
 
 # %% codecell
 ##############################################################

@@ -143,8 +143,10 @@ class iexClose():
         year = date.today().year
 
         for sym in self.symbols:
-            self._get_update_local(self, sym, year)
-            # break
+            try:
+                self._get_update_local(self, sym, year)
+            except JSONDecodeError:
+                pass
 
     @classmethod
     def _get_update_local(cls, self, sym, year):
@@ -159,11 +161,13 @@ class iexClose():
 
         fpath = f"{self.fpath_base}/{year}/{sym.lower()[0]}/_{sym}.gz"
 
-        existing = ''
+        existing = pd.DataFrame()
         try:
             existing = pd.DataFrame([pd.read_json(fpath, compression='gzip', typ='series')])
-        except ValueError or FileNotFoundError:
-            existing = pd.DataFrame()
+        except ValueError as ve:
+            pass
+        except FileNotFoundError:
+            pass
 
         new_df = pd.concat([existing, new_data])
         new_df.reset_index(drop=True, inplace=True)

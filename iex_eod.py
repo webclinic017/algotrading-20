@@ -13,6 +13,7 @@ import importlib
 from dotenv import load_dotenv
 from io import StringIO, BytesIO
 from json import JSONDecodeError
+from datetime import date
 
 from api import serverAPI
 importlib.reload(sys.modules['api'])
@@ -65,10 +66,15 @@ sym = 'A'
 fpath_base = f"{baseDir().path}/iex_eod_quotes"
 fpath = f"{fpath_base}/{year}/{sym.lower()[0]}/_{sym}.gz"
 
+
 exist = pd.DataFrame([pd.read_json(fpath, compression='gzip', typ='series')])
 exist
 exist.head(10)
 
+# %% codecell
+##################################
+
+iex_close = iexClose()
 
 
 # %% codecell
@@ -113,29 +119,36 @@ class iexClose():
         year = date.today().year
 
         for sym in self.symbols:
-            self._get_update_local(self, sym, year)
-            # break
+            try:
+                self._get_update_local(self, sym, year)
+            except JSONDecodeError:
+                pass
 
     @classmethod
     def _get_update_local(cls, self, sym, year):
         """Get quote data, update fpath, upate gzip, write to gzip."""
         self.url = f"{self.base_url}/stock/{sym}/quote"
         get = requests.get(self.url, params=self.payload)
-        new_data = pd.DataFrame(get.json(), index=range(1))
+        existing, new_data = '', ''
+        try:
+            new_data = pd.DataFrame(get.json(), index=range(1))
+        except JSONDecodeError:
+            return
 
         fpath = f"{self.fpath_base}/{year}/{sym.lower()[0]}/_{sym}.gz"
 
-        existing = ''
+        existing = pd.DataFrame()
         try:
             existing = pd.DataFrame([pd.read_json(fpath, compression='gzip', typ='series')])
-        except ValueError:
-            existing = pd.read_json(fpath, compression='gzip')
+        except ValueError as ve:
+            pass
         except FileNotFoundError:
-            existing = pd.DataFrame()
+            pass
 
         new_df = pd.concat([existing, new_data])
         new_df.reset_index(drop=True, inplace=True)
         new_df.to_json(fpath, compression='gzip')
+
 
 
 # %% codecell
