@@ -94,14 +94,13 @@ class getDate():
     @staticmethod
     def query(site):
         """Call which_fname_date but shorter."""
-        query_date = getDate.which_fname_date()
-        bs = BusinessDay(n=1)
+        # query_date = getDate.which_fname_date()
         query_date = ''
         if site in ('cboe', 'occ'):
             if getDate.time_cutoff(cutoff_hm=22.10):
-                query_date = (date.today() - bs).date()
+                query_date = (date.today() - BusinessDay(n=1)).date()
             else:
-                query_date = (date.today() - bs).date() + timedelta(days=1)
+                query_date = (date.today() - BusinessDay(n=0)).date()
         elif site in ('last_syms'):
             pass
         return query_date
