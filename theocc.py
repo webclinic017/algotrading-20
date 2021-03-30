@@ -34,22 +34,29 @@ from charset_normalizer import CharsetNormalizerMatch
 from charset_normalizer import detect
 from charset_normalizer import CharsetNormalizerMatches as CnM
 
-
+"""
 from options import DerivativeExpirations, DerivativesHelper
 importlib.reload(sys.modules['options'])
 from options import DerivativeExpirations, DerivativesHelper
+"""
 
-from iex_class import expDates, marketHolidays
-importlib.reload(sys.modules['iex_class'])
-from iex_class import expDates, marketHolidays
 
-from help_class import dataTypes, getDate
+from data_collect.iex_class import expDates, marketHolidays
+importlib.reload(sys.modules['data_collect.iex_class'])
+from data_collect.iex_class import expDates, marketHolidays
 
-from theocc_class import tradeVolume, occFlex
-importlib.reload(sys.modules['theocc_class'])
-from theocc_class import tradeVolume, occFlex
+from data_collect.theocc_class import tradeVolume, occFlex
+importlib.reload(sys.modules['data_collect.theocc_class'])
+from data_collect.theocc_class import tradeVolume, occFlex
+
+from multiuse.help_class import dataTypes, getDate
 
 import xml.etree.ElementTree as ET
+
+from api import serverAPI
+importlib.reload(sys.modules['api'])
+from api import serverAPI
+
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
@@ -82,10 +89,61 @@ flex_pr_df.dtypes
 
 
 report_date = getDate.which_fname_date()
+
+report_date = datetime.date(2021, 3, 26)
 td_vol = tradeVolume(report_date, 'con_volume', fresh=True).vol_df
-td_vol_df = td_vol.copy(deep=True)
-td_vol_df = td_vol_df[td_vol_df['pkind'] == 'OSTK'].copy(deep=True)
-td_vol_df.drop(columns=['actdate', 'exId', 'pkind'], inplace=True)
+
+td_vol_last = td_vol.copy(deep=True)
+
+td_vol_last.head(10)
+
+
+cboe_last = serverAPI('cboe_mmo_exp_last').df
+for key in cboe_last.keys():
+    cboe_df = cboe_last[key]
+    break
+
+td_vol_last.rename(columns={'contdate': 'expDate', 'underlying': 'Underlying'}, inplace=True)
+td_vol_last.drop(columns=['pkind', 'exId'], inplace=True)
+
+my_watch = serverAPI('st_watch').df.T
+my_watch_syms = my_watch['symbols'].unique()
+
+both_df = pd.merge(td_vol_last, cboe_df, how='inner', on=['Underlying', 'expDate'])
+both_df.head(10)
+
+my_syms_df = both_df[both_df['Underlying'].isin(my_watch_syms.tolist())].copy(deep=True)
+
+my_syms_td_df = td_vol_last[td_vol_last['Underlying'].isin(my_watch_syms.tolist())].copy(deep=True)
+# my_syms_td_df.head(10)
+cols_to_int = ['cQuant', 'fQuant', 'mQuant']
+my_syms_td_df[cols_to_int] = my_syms_td_df[cols_to_int].astype(np.uint16)
+
+td_my_agg = my_syms_td_df.groupby(by=['Underlying', 'expDate']).sum().reset_index()
+td_my_agg = td_my_agg.dropna()
+
+my_syms_td_df.dtypes
+
+td_my_agg
+
+trade_vol = tradeVolume(report_date, 'trade_volume', fresh=True).vol_df
+
+
+
+trade_vol['underlying'].value_counts().index
+
+
+
+td_my_agg.shape
+
+td_vol_last.shape
+
+
+both_df['Underlying'].value_counts()
+
+=both_df[both_df['Underlying'] == '']
+
+my_syms_df.head(10)
 
 td_vol_df.info(memory_usage='deep')
 
