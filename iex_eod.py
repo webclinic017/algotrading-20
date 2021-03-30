@@ -36,7 +36,28 @@ pd.set_option('display.max_rows', 500)
 iex_eod = serverAPI('iex_quotes_raw')
 iex_df = iex_eod.df.T.copy(deep=True)
 
-iex_df.shape
+
+iex_get = requests.get('https://algotrading.ventures/api/v1/prices/eod/all')
+iex_json = iex_get.json()
+
+iex_get
+
+iex_get_df = iex_get
+
+
+all_df = pd.DataFrame()
+for key in iex_json.keys():
+    try:
+        df = pd.DataFrame(iex_json[key])
+        all_df = pd.concat([all_df, df])
+    except ValueError:
+        print(key)
+
+
+
+for ix in iex_df.index:
+    df = pd.DataFrame(iex_df.iloc[0, :])
+    break
 
 iex_df.reset_index(drop=True, inplace=True)
 

@@ -274,10 +274,10 @@ class cboeData():
         nyc_hm = nyc_datetime.hour + (nyc_datetime.minute/60)
         cutoff_hm = 16.30
         # While current hh.mm < cuttoff
-        if nyc_hm < cutoff_hm or date.today().weekday() in (5, 6):
-            self.date = getDate.query('cboe')
+        if nyc_hm < cutoff_hm:
+            self.date = (date.today() - BusinessDay(n=1)).date()
         else:
-            self.date = date.today()
+            self.date = (date.today() - BusinessDay(n=0)).date()
         return self.date
 
     @classmethod

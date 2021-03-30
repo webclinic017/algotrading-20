@@ -97,7 +97,7 @@ class getDate():
         # query_date = getDate.which_fname_date()
         query_date = ''
         if site in ('cboe', 'occ'):
-            if getDate.time_cutoff(cutoff_hm=22.10):
+            if getDate.time_cutoff(cutoff_hm=17.15):
                 query_date = (date.today() - BusinessDay(n=1)).date()
             else:
                 query_date = (date.today() - BusinessDay(n=0)).date()
