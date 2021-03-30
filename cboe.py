@@ -76,44 +76,99 @@ cboe_df.dropna(axis=0, inplace=True)
 
 # %% codecell
 ##############################################################
+serverAPI.url_dict
 
-(date.today() + bs).date()
 
-getDate.query('cboe')
+all_syms = serverAPI('cboe_mmo_exp_all')
+all_syms.df.keys()
+
+for key in all_syms.df.keys():
+    print(key[-13:-3])
+
+
+march_14 = all_syms.df['2021-03-14'].copy(deep=True)
+march_14[~march_14['Underlying'].isin(['XSP'])].head(50)
+
+march_15 = all_syms.df['2021-03-15'].copy(deep=True)
+march_15[~march_15['Underlying'].isin(['XSP'])].head(50)
+
+march_16 = all_syms.df['2021-03-16'].copy(deep=True)
+march_16[~march_16['Underlying'].isin(['XSP'])].head(50)
+
+
+all_df = all_syms.df.copy(deep=True)
+
+
+all_df.head(10)
+
+all_df.sort_values(by=['vol/avg', 'totVol'], ascending=False).head(50)
+
 
 # %% codecell
 ##############################################################
 
-cboe_get = requests.get("https://algotrading.ventures/api/v1/cboe/mmo/st/me/vue")
-cboe_json = cboe_get.json()
+cboe_all = serverAPI('cboe_mmo_top').df
+keys_to_use = sorted(cboe_all['dataDate'].value_counts().index)[2:]
+keys_to_use.reverse()
 
-all_df = pd.read_json(cboe_json['df']).T
-cboe_df = all_df.copy(deep=True)
+cboe_all.drop(columns=['rptDate'], inplace=True)
+cboe_all.dtypes
 
-bs = BusinessDay(n=1)
+on_list = ['Cboe ADV', 'Underlying', 'expDate', 'liq_opp', 'side', 'totVol', 'vol/avg', 'vol_opp']
+
+unique_dict = {}
+for key in keys_to_use:
+    dt = datetime.datetime.strptime(key, "%Y-%m-%d").date()
+    cboe_base = cboe_all[cboe_all['dataDate'] == str(dt)].copy(deep=True)
+
+    for dtn,dtr in enumerate(range(1, 6)):
+        date_item = (dt - BusinessDay(n=dtr)).date()
+        try:
+            x = 2
+        except KeyError:  # If data is missing
+            continue
+
+        cboe_dt = cboe_all[cboe_all['dataDate'] == str(date_item)]
+
+        if dtn == 0:
+            cboe_last = pd.merge(cboe_base, cboe_dt, how='outer', on=on_list, indicator=True)
+        else:
+            cboe_last = pd.merge(cboe_left, cboe_dt, how='outer', on=on_list, indicator=True)
+        cboe_left = cboe_last[cboe_last['_merge'] == 'left_only'].copy(deep=True)
+        cboe_left.rename(columns={'dataDate_x': 'dataDate'}, inplace=True)
+        cboe_left.drop(columns=['dataDate_y', '_merge'], inplace=True)
+
+    unique_dict[key] = cboe_left
+    # break
+
+dt = '2021-03-22'
+cboe_syms = unique_dict[dt][unique_dict[dt]['Underlying'].isin(my_syms)]
+
+cboe_syms
+
+
+for key in unique_dict.keys():
+    print(key, unique_dict[key].shape[0])
+    print()
+
+
+# %% codecell
+##############################################################
+
+
+bs = BusinessDay(n=0)
+((date.today() - bs)).date()
+date.today()
+
+
+((date.today() - BusinessDay(n=0))).date()
 
 cboe_df['date_dt'] = pd.to_datetime(cboe_df['dataDate'])
 cboe_df['date_df'] = (cboe_df['date_dt'] + bs).dt.date
 
 my_watch = serverAPI('st_watch').df.T
-cboe_df['date_dt'].max().date()
+my_syms =  my_watch['symbols'].values.tolist()
 
-cboe_df['date_df'] = pd.to_datetime(cboe_df['expDateDT'], unit='ms')
-
-cboe_df.head(10)
-
-cboe_df.sort_values(by=['expDate'], ascending=True).head(10)
-
-my_list_df = cboe_df[cboe_df['Underlying'].isin(my_watch['symbols'].values)]
-my_list_df[(my_list_df['Underlying'] == 'VIEW') & (my_list_df['date_df'] == date.today())]
-
-sorted(list(set(pd.to_datetime(cboe_df['expDateDT'], unit='ms').dt.date.astype('str'))))
-
-cboe_df.head(10)
-
-my_watch = cboe_df['symbols'].to_list()
-
-cboe_df.shape
 
 # %% codecell
 ##############################################################

@@ -328,8 +328,8 @@ class tradeVolume():
         self.vol_df[cols_to_cat] = self.vol_df[cols_to_cat].astype('category')
 
         # Get the columns to convert to integer
-        cols_to_int = [col for col in vol_cols if col not in cols_to_cat]
-        self.vol_df[cols_to_int] = self.vol_df[cols_to_int].astype(np.uint16)
+        # cols_to_int = [col for col in vol_cols if col not in cols_to_cat]
+        # self.vol_df[cols_to_int] = self.vol_df[cols_to_int].astype(np.uint16)
         # self.vol_df = dataTypes(self.vol_df).df
 
 

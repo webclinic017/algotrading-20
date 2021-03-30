@@ -22,6 +22,8 @@ class serverAPI():
         'cboe_mmo_raw': '/cboe/mmo/raw',
         'cboe_mmo_top': '/cboe/mmo/top',
         'cboe_mmo_syms': '/cboe/mmo/syms',
+        'cboe_mmo_exp_all': '/cboe/mmo/explore/all',
+        'cboe_mmo_exp_last': '/cboe/mmo/explore/last',
         'st_stream': '/stocktwits/user_stream',
         'st_trend_all': '/stocktwits/trending/all',
         'st_trend_today': '/stocktwits/trending/today/explore',
@@ -54,6 +56,8 @@ class serverAPI():
             # Clean stocktwits trending data
             if which == 'st_trend':
                 df = self._clean_st_trend(self, df)
+        elif which in ('cboe_mmo_exp_all', 'cboe_mmo_exp_last'):
+            df = self._mmo_explore_all(self, df)
         else:
             # Convert to dataframe
             df = pd.DataFrame(df)
@@ -94,6 +98,28 @@ class serverAPI():
         df.rename(columns={'watchlist_count': 'wCount'}, inplace=True)
 
         return df
+
+    @classmethod
+    def _mmo_explore_all(cls, self, df):
+        """Return dict of processed/converted dataframes for each CBOE day."""
+        cboe_dict = {}
+
+        for key in df.keys():
+            key_mod = key[-13:-3]
+            try:
+                if cboe_dict[key_mod].shape[0] > 1:
+                    key_df = pd.DataFrame(df[key])
+                    cboe_dict[key_mod] = pd.concat([cboe_dict[key_mod], key_df])
+            except KeyError:
+                cboe_dict[key_mod] = pd.DataFrame(df[key])
+
+        for key in cboe_dict.keys():
+            cboe_dict[key]['Cboe ADV'] = cboe_dict[key]['Cboe ADV'].where(cboe_dict[key]['Cboe ADV'] != 0, 1)
+            cboe_dict[key]['vol/avg'] = (cboe_dict[key]['totVol'] / cboe_dict[key]['Cboe ADV']).astype(np.float16)
+            cboe_dict[key] = cboe_dict[key].sort_values(by=['vol/avg', 'totVol'], ascending=False).head(150)
+            cboe_dict[key].reset_index(inplace=True, drop=True)
+
+        return cboe_dict
 
 
 

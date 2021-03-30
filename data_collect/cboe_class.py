@@ -20,6 +20,7 @@ import zlib
 import gzip
 
 import pandas as pd
+from pandas.tseries.offsets import BusinessDay
 import numpy as np
 import requests
 from dotenv import load_dotenv
@@ -139,11 +140,15 @@ class cleanMmo():
         top_fpaths = sorted(top_fpaths)[:-1]
         last_df = pd.read_json(top_fpaths[-2], compression='gzip')
 
-        mod_df = pd.merge(nopop_top_2000, last_df, how='outer', indicator='Exist')
+        on_list = (['Cboe ADV', 'Underlying', 'expDate', 'liq_opp',
+                    'side', 'totVol', 'vol/avg', 'vol_opp'])
+
+        mod_df = pd.merge(nopop_top_2000, last_df, on=on_list, how='outer', indicator='Exist')
         mod_df = mod_df[mod_df['Exist'] == 'left_only'].copy(deep=True)
         mod_df.drop(columns=['Exist'], inplace=True)
         mod_df.reset_index(inplace=True, drop=True)
-        mod_df['dataDate'] = top_fpaths[-1][-13:-3]
+        mod_df['dataDate'] = ((date.today() - BusinessDay(n=0))).date()
+        # top_fpaths[-1][-13:-3]
 
         return mod_df
 
@@ -152,7 +157,7 @@ class cleanMmo():
         """Create groupby object for symbol, exp date, side."""
         self.df['liq_opp'].fillna(0, inplace=True)
         cols_to_drop = (['miss_liq', 'exh_liq', 'rout_liq',
-                         'strike', 'yr', 'mo', 'day'])
+                         'yr', 'mo', 'day'])  # 'strike'
         exist_columns = self.df.columns
         cols_to_include = exist_columns[~exist_columns.isin(cols_to_drop)]
         nopop_vol_sums = self.df[cols_to_include].copy(deep=True)
@@ -161,6 +166,7 @@ class cleanMmo():
         nopop_vol_sums.dropna(inplace=True)
         nopop_vol_sums.reset_index(inplace=True)
 
+        nopop_vol_sums['Cboe ADV'] = nopop_vol_sums['Cboe ADV'].where(nopop_vol_sums['Cboe ADV'] != 0, 1)
         nopop_vol_sums['vol/avg'] = (nopop_vol_sums['totVol'] /
                                      nopop_vol_sums['Cboe ADV']).astype(np.float16)
 
