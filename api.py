@@ -34,7 +34,7 @@ class serverAPI():
     })
 
     # Data to conacatenate
-    concat = ['st_trend', 'cboe_mmo_top']
+    concat = ['st_trend', 'cboe_mmo_top', 'iex_quotes_raw']
 
     def __init__(self, which):
         df = self.get_data(self, which)
@@ -67,6 +67,20 @@ class serverAPI():
     @classmethod
     def concat_data(cls, self, dict):
         """Loop through and concatenate dataframes."""
+
+        # Convert all keys to dataframes
+        for key in dict.keys():
+            dict[key] = pd.DataFrame(dict[key])
+
+        # Get a flattened list of dataframes
+        items = list(dict.values())
+        # Concatenate dataframes
+        this_df = pd.concat(items)
+        this_df.reset_index(inplace=True, drop=True)
+
+        return this_df
+
+        """
         all_df = pd.DataFrame()
 
         # Loop through dictionary and append data to dataframe
@@ -79,6 +93,7 @@ class serverAPI():
         all_df.reset_index(inplace=True, drop=True)
 
         return all_df
+        """
 
     @classmethod
     def _clean_st_trend(cls, self, df):
