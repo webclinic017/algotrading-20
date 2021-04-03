@@ -36,14 +36,21 @@ pd.set_option('display.max_rows', 500)
 iex_eod = serverAPI('iex_quotes_raw')
 iex_df = iex_eod.df.T.copy(deep=True)
 
+iex_eod.df.shape
+
+fpath = '/Users/unknown1/Algo/data/iex_eod_quotes/combined/2021-03-29.gz'
+iex_df = pd.read_json(fpath, compression='gzip')
+
+
+iex_df.info(memory_usage='deep')
+iex_df.head(10)
+# iex_eod.df.to_json(fpath, compression='gzip')
+
+iex_eod.df.head(10)
+
 
 iex_get = requests.get('https://algotrading.ventures/api/v1/prices/eod/all')
 iex_json = iex_get.json()
-
-iex_get
-
-iex_get_df = iex_get
-
 
 all_df = pd.DataFrame()
 for key in iex_json.keys():
@@ -53,7 +60,39 @@ for key in iex_json.keys():
     except ValueError:
         print(key)
 
+# %% codecell
+##################################
 
+
+
+for key in iex_json.keys():
+    iex_json[key] = pd.DataFrame(iex_json[key])
+
+items = list(iex_json.values())
+this_df = pd.concat(items)
+
+
+# %% codecell
+##################################
+all_symbols = serverAPI('all_symbols').df
+wt_list = all_symbols[all_symbols['type'] == 'wt'][['symbol', 'name']]
+
+wt_df = pd.merge(iex_df, wt_list, on=['symbol'])
+
+wt_df.dropna(axis=0, subset=['iexClose'], inplace=True)
+
+wt_df.sort_values(by=['iexClose'], ascending=True)[['symbol', 'companyName', 'iexClose']].head(100)
+
+
+wt_df.head(10)
+
+all_symbols['type'].value_counts()
+
+all_symbols
+
+
+# %% codecell
+##################################
 
 for ix in iex_df.index:
     df = pd.DataFrame(iex_df.iloc[0, :])

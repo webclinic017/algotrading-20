@@ -6,19 +6,19 @@ Daily IEX data requests to run.
 import os
 import os.path
 
-import json
+# import json
 from json import JSONDecodeError
-from io import StringIO, BytesIO
-import gzip
+from io import StringIO
+# import gzip
 import importlib
 import sys
-import xml.etree.ElementTree as ET
 
 import pandas as pd
-import numpy as np
+# import numpy as np
 import requests
+from requests.exceptions import SSLError
 from dotenv import load_dotenv
-from pathlib import Path
+# from pathlib import Path
 
 import datetime
 from datetime import date, timedelta, time
@@ -146,6 +146,8 @@ class iexClose():
             try:
                 self._get_update_local(self, sym, year)
             except JSONDecodeError:
+                pass
+            except SSLError:
                 pass
 
     @classmethod

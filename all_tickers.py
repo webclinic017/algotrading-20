@@ -27,8 +27,12 @@ from datetime import timedelta, date
 
 from nested_lookup import nested_lookup
 
+from api import serverAPI
+
 # Display maximum rows
-pd.set_option('display.max_rows', None)
+pd.set_option('display.max_rows', 500)
+# Display max columns
+pd.set_option('display.max_columns', None)
 
 # %% codecell
 ################################################
@@ -64,8 +68,8 @@ otc.shape
 # %% codecell
 ################################################
 
-all_symbols['exchangeName'].value_counts()
-
+all_symbols = serverAPI('all_symbols').df
+all_symbols
 
 # %% codecell
 ################################################
