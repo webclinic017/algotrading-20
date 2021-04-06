@@ -142,17 +142,13 @@ class iexClose():
         """Where the for loop for getting and updating data starts."""
         year = date.today().year
 
-        for sn,sym in enumerate(self.symbols):
+        for sn, sym in enumerate(self.symbols):
             try:
                 self._get_update_local(self, sym, year)
             except JSONDecodeError:
                 pass
             except SSLError:
                 pass
-
-            # if sn >= 5:
-            #    break
-
 
     @classmethod
     def _get_update_local(cls, self, sym, year):
@@ -173,6 +169,9 @@ class iexClose():
             existing = pd.read_json(fpath, compression='gzip')
         except FileNotFoundError as fe:
             print(fe)
+            existing = pd.DataFrame()
+        except ValueError as ve:
+            print(ve)
             existing = pd.DataFrame()
 
         try:

@@ -83,13 +83,6 @@ for key in iex_json.keys():
 # %% codecell
 ##################################
 
-iex_close = iexClose()
-
-
-fpath = '/Users/unknown1/Algo/data/iex_eod_quotes/2021/a/_A.gz'
-test_df = pd.read_json(fpath, compression='gzip')
-
-test_df.head(10)
 
 # %% codecell
 ##################################
@@ -112,16 +105,27 @@ all_df.iloc[0]
 
 # %% codecell
 ##################################
+import glob
 
-iex_get = requests.get('https://algotrading.ventures/api/v1/prices/eod/one')
-iex_json = iex_get.json()
+base_dir = baseDir().path
+fpath = f"{base_dir}/iex_eod_quotes/{date.today().year}/*/**.gz"
+choices = glob.glob(fpath)
 
-iex_one_df = pd.DataFrame.from_dict(iex_json)
+my_list = []
+for choice in choices:
+    my_list.append(pd.read_json(choice, compression='gzip'))
 
-iex_rone = iex_one_df.iloc[0]
-pd.DataFrame.from_records(iex_rone)
+# Concatenate all dataframes
+all_df = pd.concat(my_list)
+all_df.reset_index(inplace=True, drop=True)
+# Convert datatypes to minimize space
+all_df = dataTypes(all_df).df
 
-iex_one_df.head(10)
+fpath = f"{base_dir}/iex_eod_quotes/combined/{getDate.query('cboe')}"
+
+
+
+all_df.head(10)
 
 # %% codecell
 ##################################
@@ -147,21 +151,6 @@ all_symbols
 # %% codecell
 ##################################
 
-for ix in iex_df.index:
-    df = pd.DataFrame(iex_df.iloc[0, :])
-    break
-
-iex_df.reset_index(drop=True, inplace=True)
-
-iex_df.info(memory_usage='deep')
-
-iex_times = pd.to_datetime(iex_df['closeTime'], unit='ms')
-iex_times.value_counts(ascending=False).head(500)
-
-iex_times.max()
-
-iex_df.head(10)
-
 # %% codecell
 ##################################
 
@@ -175,30 +164,8 @@ get = requests.get(url)
 # %% codecell
 ##################################
 
-
-iex_close = iexClose()
-
-len(iex_close.get.content)
-iex_close.url
-
-a_today = pd.DataFrame(iex_close.get.json(), index=range(1))
-iex_close.get.content
-
-year = date.today().year
-sym = 'A'
-
-fpath_base = f"{baseDir().path}/iex_eod_quotes"
-fpath = f"{fpath_base}/{year}/{sym.lower()[0]}/_{sym}.gz"
-
-
-exist = pd.DataFrame([pd.read_json(fpath, compression='gzip', typ='series')])
-exist
-exist.head(10)
-
 # %% codecell
 ##################################
-
-iex_close = iexClose()
 
 
 # %% codecell
