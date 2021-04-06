@@ -34,7 +34,7 @@ class serverAPI():
     })
 
     # Data to conacatenate
-    concat = ['st_trend', 'cboe_mmo_top', 'iex_quotes_raw']
+    concat = ['st_trend', 'cboe_mmo_top']
 
     def __init__(self, which):
         df = self.get_data(self, which)

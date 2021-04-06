@@ -29,3 +29,5 @@ def remove_StockEOD():
         print(fpath)
 # %% codecell
 ####################################################################
+
+remove_eod_quotes()
