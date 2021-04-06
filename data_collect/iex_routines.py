@@ -142,13 +142,17 @@ class iexClose():
         """Where the for loop for getting and updating data starts."""
         year = date.today().year
 
-        for sym in self.symbols:
+        for sn,sym in enumerate(self.symbols):
             try:
                 self._get_update_local(self, sym, year)
             except JSONDecodeError:
                 pass
             except SSLError:
                 pass
+
+            # if sn >= 5:
+            #    break
+
 
     @classmethod
     def _get_update_local(cls, self, sym, year):
@@ -163,17 +167,21 @@ class iexClose():
 
         fpath = f"{self.fpath_base}/{year}/{sym.lower()[0]}/_{sym}.gz"
 
-        existing = pd.DataFrame()
+        existing = ''
         try:
-            existing = pd.DataFrame([pd.read_json(fpath, compression='gzip', typ='series')])
-        except ValueError as ve:
-            pass
-        except FileNotFoundError:
-            pass
+            # existing = pd.DataFrame([pd.read_json(fpath, compression='gzip')])
+            existing = pd.read_json(fpath, compression='gzip')
+        except FileNotFoundError as fe:
+            print(fe)
+            existing = pd.DataFrame()
 
-        new_df = pd.concat([existing, new_data])
-        new_df.reset_index(drop=True, inplace=True)
-        new_df.to_json(fpath, compression='gzip')
+        try:
+            new_df = pd.concat([existing, new_data])
+            new_df.reset_index(drop=True, inplace=True)
+            new_df.to_json(fpath, compression='gzip')
+        except ValueError as ve:
+            print(ve)
+            pass
 
 # %% codecell
 ##############################################

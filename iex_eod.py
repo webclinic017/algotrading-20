@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from io import StringIO, BytesIO
 from json import JSONDecodeError
 from datetime import date
+from nested_lookup import nested_lookup
 
 from api import serverAPI
 importlib.reload(sys.modules['api'])
@@ -25,8 +26,13 @@ from api import serverAPI
 
 from multiuse.help_class import baseDir, dataTypes, getDate, local_dates
 from data_collect.iex_class import readData, urlData
+
+from data_collect.iex_routines import iexClose
+importlib.reload(sys.modules['data_collect.iex_routines'])
+from data_collect.iex_routines import iexClose
+
 # Display max 50 columns
-pd.set_option('display.max_columns', None)
+pd.set_option('display.max_columns', 10)
 # Display maximum rows
 pd.set_option('display.max_rows', 500)
 
@@ -35,6 +41,16 @@ pd.set_option('display.max_rows', 500)
 
 iex_eod = serverAPI('iex_quotes_raw')
 iex_df = iex_eod.df.T.copy(deep=True)
+
+iex_json = iex_eod.df.json()
+
+
+
+iex_eod.df.head(10)
+
+
+iex_df.head(10)
+
 
 iex_eod.df.shape
 
@@ -49,8 +65,12 @@ iex_df.head(10)
 iex_eod.df.head(10)
 
 
+# %% codecell
+##################################
+
 iex_get = requests.get('https://algotrading.ventures/api/v1/prices/eod/all')
 iex_json = iex_get.json()
+
 
 all_df = pd.DataFrame()
 for key in iex_json.keys():
@@ -59,6 +79,17 @@ for key in iex_json.keys():
         all_df = pd.concat([all_df, df])
     except ValueError:
         print(key)
+
+# %% codecell
+##################################
+
+iex_close = iexClose()
+
+
+fpath = '/Users/unknown1/Algo/data/iex_eod_quotes/2021/a/_A.gz'
+test_df = pd.read_json(fpath, compression='gzip')
+
+test_df.head(10)
 
 # %% codecell
 ##################################
@@ -72,8 +103,30 @@ items = list(iex_json.values())
 this_df = pd.concat(items)
 
 
+this_df.dtypes
+
+
+all_df = pd.DataFrame.from_dict(iex_json)
+all_df.iloc[0]
+
+
 # %% codecell
 ##################################
+
+iex_get = requests.get('https://algotrading.ventures/api/v1/prices/eod/one')
+iex_json = iex_get.json()
+
+iex_one_df = pd.DataFrame.from_dict(iex_json)
+
+iex_rone = iex_one_df.iloc[0]
+pd.DataFrame.from_records(iex_rone)
+
+iex_one_df.head(10)
+
+# %% codecell
+##################################
+
+
 all_symbols = serverAPI('all_symbols').df
 wt_list = all_symbols[all_symbols['type'] == 'wt'][['symbol', 'name']]
 
@@ -111,6 +164,17 @@ iex_df.head(10)
 
 # %% codecell
 ##################################
+
+"""
+val = 'cboe_close'
+url = f"https://algotrading.ventures/api/v1/prices/eod/{val}"
+get = requests.get(url)
+
+"""
+
+# %% codecell
+##################################
+
 
 iex_close = iexClose()
 
