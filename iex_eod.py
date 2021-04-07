@@ -95,6 +95,8 @@ for key in iex_json.keys():
 items = list(iex_json.values())
 this_df = pd.concat(items)
 
+this_df.head(10)
+
 
 this_df.dtypes
 
@@ -105,27 +107,6 @@ all_df.iloc[0]
 
 # %% codecell
 ##################################
-import glob
-
-base_dir = baseDir().path
-fpath = f"{base_dir}/iex_eod_quotes/{date.today().year}/*/**.gz"
-choices = glob.glob(fpath)
-
-my_list = []
-for choice in choices:
-    my_list.append(pd.read_json(choice, compression='gzip'))
-
-# Concatenate all dataframes
-all_df = pd.concat(my_list)
-all_df.reset_index(inplace=True, drop=True)
-# Convert datatypes to minimize space
-all_df = dataTypes(all_df).df
-
-fpath = f"{base_dir}/iex_eod_quotes/combined/{getDate.query('cboe')}"
-
-
-
-all_df.head(10)
 
 # %% codecell
 ##################################
