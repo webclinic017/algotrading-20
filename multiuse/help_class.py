@@ -20,6 +20,7 @@ from datetime import timedelta, date
 import datetime
 import pytz
 from pandas.tseries.offsets import BusinessDay
+from gzip import BadGzipFile
 
 import pandas as pd
 import numpy as np
@@ -208,7 +209,11 @@ def local_dates(which):
     syms_not_get = []
     dl_ser_dt = pd.to_datetime(dl_ser)
     for st, path in zip(local_syms, local_stock_data):
-        syms_dict[st] = pd.read_json(path, compression='gzip')
+        try:
+            syms_dict[st] = pd.read_json(path, compression='gzip')
+        except BadGzipFile:
+            syms_dict[st] = pd.read_json(path)
+
         # syms_dict[st]['date'] = pd.to_datetime(syms_dict[st]['date'], unit='ms')
         try:
             syms_dict_to_get[st] = dl_ser[~dl_ser_dt.isin(syms_dict[st]['date'].astype('object'))]
