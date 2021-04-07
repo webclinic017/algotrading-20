@@ -12,6 +12,7 @@ from io import StringIO
 # import gzip
 import importlib
 import sys
+import glob
 
 import pandas as pd
 # import numpy as np
@@ -111,6 +112,7 @@ class iexClose():
     """Get end of day quotes for all symbols."""
 
     fpath_base = f"{baseDir().path}/iex_eod_quotes"
+    sym_dict_list = []
 
     def __init__(self):
         self.get_params(self)
@@ -144,6 +146,15 @@ class iexClose():
 
         for sn, sym in enumerate(self.symbols):
             try:
+                """
+                dict = {}
+                dict['url'] = f"{self.base_url}/stock/{sym}/quote"
+                dict['fpath'] = f"{self.fpath_base}/{year}/{sym.lower()[0]}/_{sym}.gz"
+                dict['pay'] = self.payload
+                dict['sym'] = sym
+
+                self._get_update_local(self, sym, dict)
+                """
                 self._get_update_local(self, sym, year)
             except JSONDecodeError:
                 pass
@@ -181,6 +192,60 @@ class iexClose():
         except ValueError as ve:
             print(ve)
             pass
+    """
+    @classmethod
+    def _cget_update_local(cls, self, sym, dict):
+        #Get quote data, update fpath, upate gzip, write to gzip
+        get = requests.get(dict['url'], params=dict['pay'])
+        existing, new_data = '', ''
+        try:
+            new_data = pd.DataFrame(get.json(), index=range(1))
+        except JSONDecodeError:
+            return
+
+        fpath = dict['fpath']
+
+        try:
+            existing = pd.read_json(fpath, compression='gzip')
+        except FileNotFoundError as fe:
+            print(fe)
+            existing = pd.DataFrame()
+        except ValueError as ve:
+            print(ve)
+            existing = pd.DataFrame()
+
+        try:
+            new_df = pd.concat([existing, new_data])
+            new_df.reset_index(drop=True, inplace=True)
+            new_df.to_json(fpath, compression='gzip')
+        except ValueError as ve:
+            print(ve)
+            pass
+    """
+
+# %% codecell
+##############################################
+
+def write_combined():
+    """Concat iex eod prices into one file."""
+    base_dir = baseDir().path
+    fpath = f"{base_dir}/iex_eod_quotes/{date.today().year}/*/**.gz"
+    choices = glob.glob(fpath)
+
+    my_list = []
+    for choice in choices:
+        my_list.append(pd.read_json(choice, compression='gzip'))
+
+    # Concatenate all dataframes
+    all_df = pd.concat(my_list)
+    all_df.reset_index(inplace=True, drop=True)
+    # Convert datatypes to minimize space
+    all_df = dataTypes(all_df).df
+
+    fpath = f"{base_dir}/iex_eod_quotes/combined/{getDate.query('cboe')}"
+
+    all_df.to_json(fpath, compression='gzip')
+
 
 # %% codecell
 ##############################################
