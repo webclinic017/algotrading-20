@@ -340,6 +340,7 @@ class histPrices():
         data = ''
         if (per == 'date') and (dt != ''):
             url = f"{self.base_url}/stock/{sym}/chart/date/{dt}"
+            print(url)
             data = requests.get(url, params=self.payload).json()
         elif (per == 'ytd') and (dt == ''):
             url = f"{self.base_url}/stock/{sym}/chart/ytd"

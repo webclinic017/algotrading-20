@@ -27,9 +27,9 @@ from api import serverAPI
 from multiuse.help_class import baseDir, dataTypes, getDate, local_dates
 from data_collect.iex_class import readData, urlData
 
-from data_collect.iex_routines import iexClose
+from data_collect.iex_routines import iexClose, histPrices
 importlib.reload(sys.modules['data_collect.iex_routines'])
-from data_collect.iex_routines import iexClose
+from data_collect.iex_routines import iexClose, histPrices
 
 # Display max 50 columns
 pd.set_option('display.max_columns', 10)
@@ -42,34 +42,30 @@ pd.set_option('display.max_rows', 500)
 iex_eod = serverAPI('iex_quotes_raw')
 iex_df = iex_eod.df.T.copy(deep=True)
 
-iex_json = iex_eod.df.json()
+# %% codecell
+##################################
 
+sym = 'OPTI'
+hp = histPrices([sym])
+hp.get_ytd_syms
 
+hp.ld_dict['dl_ser']
 
-iex_eod.df.head(10)
-
-
-iex_df.head(10)
-
-
-iex_eod.df.shape
-
-fpath = '/Users/unknown1/Algo/data/iex_eod_quotes/combined/2021-03-29.gz'
-iex_df = pd.read_json(fpath, compression='gzip')
-
-
-iex_df.info(memory_usage='deep')
-iex_df.head(10)
-# iex_eod.df.to_json(fpath, compression='gzip')
-
-iex_eod.df.head(10)
+hp.ld_dict['syms_dict_to_get'].keys()
 
 
 # %% codecell
 ##################################
 
-iex_get = requests.get('https://algotrading.ventures/api/v1/prices/eod/all')
-iex_json = iex_get.json()
+st = serverAPI('st_watch').df
+batch = st.T.symbols.tolist()
+payload = {'batch': batch}
+url = 'https://algotrading.ventures/api/v1/symbols/data/get/batch'
+get = requests.get(url, params=payload)
+get.content
+
+# %% codecell
+##################################
 
 
 all_df = pd.DataFrame()
@@ -82,6 +78,16 @@ for key in iex_json.keys():
 
 # %% codecell
 ##################################
+
+sym = 'SHIPZ'
+get = requests.get('https://algotrading.ventures/api/v1/symbols/data/SHIPZ')
+get_json = get.json()
+iex_close = pd.read_json(get_json['iex_close'])
+iex_hist = pd.read_json(get_json['iex_hist'])
+
+
+
+iex_hist.dtypes
 
 
 # %% codecell
@@ -108,12 +114,34 @@ all_df.iloc[0]
 # %% codecell
 ##################################
 
+url = "https://algotrading.ventures/api/v1/symbols/warrants"
+get = requests.get(url)
+get_json = get.json()
+
+wt_df = pd.DataFrame(get_json)
+
+wt_df_mr = wt_df[wt_df['date'] == wt_df['date'].max()]
+
+cols_to_keep = (['close', 'high', 'low', 'open', 'volume',
+                 'label', 'date', 'changePercent', 'symbol'])
+
+wt_df_mr = wt_df_mr[cols_to_keep]
+wt_df_mr.reset_index(inplace=True, drop=True)
+wt_df_mr.sort_values(by=['close'], ascending=True).head(25)
+
+
+date_list = pd.to_datetime(wt_df_mr['date'].iloc[0], unit='ms').date()
 # %% codecell
 ##################################
 
 
 all_symbols = serverAPI('all_symbols').df
+
 wt_list = all_symbols[all_symbols['type'] == 'wt'][['symbol', 'name']]
+
+
+wt_list = all_symbols[all_symbols['type'] == 'wt']['symbol'].tolist()
+wt_list
 
 wt_df = pd.merge(iex_df, wt_list, on=['symbol'])
 
@@ -131,6 +159,13 @@ all_symbols
 
 # %% codecell
 ##################################
+base_dir = baseDir().path
+fpath = f"{base_dir}/tickers/all_symbols.gz"
+all_symbols = pd.read_json(fpath, compression='gzip')
+wt_list = all_symbols[all_symbols['type'] == 'wt']['symbol'].tolist()
+
+histPrices(wt_list)
+
 
 
 # %% codecell
