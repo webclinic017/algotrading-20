@@ -185,6 +185,7 @@ class dataTypes():
 # %% codecell
 ###############################################################################
 
+
 def local_dates(which):
     """Get dict of missing local dates."""
     stock_suf = ({
@@ -204,15 +205,20 @@ def local_dates(which):
     for st in local_stock_data:  # Split strings and store symbol names
         local_syms.append(st.split('_')[1][:-3])
 
-    syms_dict = {}
-    syms_dict_to_get = {}
-    syms_not_get = []
+    syms_dict, syms_dict_to_get = {}, {}
+    syms_not_get, error = [], False
     dl_ser_dt = pd.to_datetime(dl_ser)
     for st, path in zip(local_syms, local_stock_data):
         try:
             syms_dict[st] = pd.read_json(path, compression='gzip')
         except BadGzipFile:
             syms_dict[st] = pd.read_json(path)
+        except:
+            error = True
+        finally:
+            if error:
+                os.remove(path)
+
 
         # syms_dict[st]['date'] = pd.to_datetime(syms_dict[st]['date'], unit='ms')
         try:
