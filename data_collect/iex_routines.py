@@ -112,12 +112,13 @@ class iexClose():
     """Get end of day quotes for all symbols."""
 
     fpath_base = f"{baseDir().path}/iex_eod_quotes"
-    sym_dict_list = []
+    data_list = []
 
     def __init__(self):
         self.get_params(self)
         self.get_all_symbols(self)
         self.start_quote_process(self)
+        self.combine_write(self)
 
     @classmethod
     def get_params(cls, self):
@@ -169,6 +170,7 @@ class iexClose():
         existing, new_data = '', ''
         try:
             new_data = pd.DataFrame(get.json(), index=range(1))
+            self.data_list.append(new_data)
         except JSONDecodeError:
             return
 
@@ -192,6 +194,20 @@ class iexClose():
         except ValueError as ve:
             print(ve)
             pass
+
+    @classmethod
+    def combine_write(cls, self):
+        """Concat and write to local combined df."""
+        all_df = pd.concat(self.data_list)
+        all_df.reset_index(drop=True, inplace=True)
+        # Get date for data to use for fpath
+        latest_dt = pd.to_datetime(all_df['latestUpdate'], unit='ms').dt.date[0]
+        # Construct fpath
+        fpath = f"{self.fpath_base}/combined/_{latest_dt}.gz"
+        # Write to local file
+        all_df.to_json(fpath, compression='gzip')
+
+
     """
     @classmethod
     def _cget_update_local(cls, self, sym, dict):
@@ -232,19 +248,25 @@ def write_combined():
     fpath = f"{base_dir}/iex_eod_quotes/{date.today().year}/*/**.gz"
     choices = glob.glob(fpath)
 
-    my_list = []
+    concat_list = []
     for choice in choices:
-        my_list.append(pd.read_json(choice, compression='gzip'))
+        concat_list.append(pd.DataFrame(choices[choice]))
 
-    # Concatenate all dataframes
-    all_df = pd.concat(my_list)
-    all_df.reset_index(inplace=True, drop=True)
-    # Convert datatypes to minimize space
-    all_df = dataTypes(all_df).df
+    all_df = pd.concat(concat_list)
+    this_df = all_df.copy(deep=True)
+    this_df['date'] = pd.to_datetime(this_df['latestUpdate'], unit='ms').dt.date
+    cutoff = datetime.date(2021, 4, 7)
+    this_df = this_df[this_df['date'] >= cutoff].copy(deep=True)
 
-    fpath = f"{base_dir}/iex_eod_quotes/combined/{getDate.query('cboe')}"
+    this_df.sort_values(by=['symbol', 'latestUpdate'], inplace=True, ascending=False)
+    this_df.drop_duplicates(subset=['symbol', 'date'], inplace=True)
 
-    all_df.to_json(fpath, compression='gzip')
+    dt_counts = this_df['date'].value_counts().index
+    for dt in dt_counts:
+        mod_df = this_df[this_df['date'] == dt]
+        mod_df.reset_index(inplace=True, drop=True)
+        mod_fpath = f"{baseDir().path}/iex_eod_quotes/combined/_{dt}.gz"
+        mod_df.to_json(mod_fpath, compression='gzip')
 
 
 # %% codecell
@@ -331,7 +353,7 @@ class histPrices():
                 path = f"{base_path}/{sym.lower()[0]}/_{sym}.gz"
                 df = self.get_hist(self, sym, per, dt)
                 df.to_json(path, compression='gzip')
-            except ValueError:
+            except ValueError or JSONDecodeError:
                 self.json_errors.append(sym)
 
     @classmethod

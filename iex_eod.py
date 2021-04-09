@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import sys
 from datetime import date
+import datetime
 import os
 import importlib
 from dotenv import load_dotenv
@@ -42,6 +43,34 @@ pd.set_option('display.max_rows', 500)
 iex_eod = serverAPI('iex_quotes_raw')
 iex_df = iex_eod.df.T.copy(deep=True)
 
+iex_df.head(10)
+
+url = "https://algotrading.ventures/api/v1/prices/eod/all"
+get = requests.get(url).json()
+
+
+
+concat_list = []
+for key in get.keys():
+    concat_list.append(pd.DataFrame(get[key]))
+
+all_df = pd.concat(concat_list)
+this_df = all_df.copy(deep=True)
+this_df['date'] = pd.to_datetime(this_df['latestUpdate'], unit='ms').dt.date
+cutoff = datetime.date(2021, 4, 7)
+this_df = this_df[this_df['date'] >= cutoff].copy(deep=True)
+
+this_df.sort_values(by=['symbol', 'latestUpdate'], inplace=True, ascending=False)
+this_df.drop_duplicates(subset=['symbol', 'date'], inplace=True)
+
+dt_counts = this_df['date'].value_counts().index
+for dt in dt_counts:
+    mod_df = this_df[this_df['date'] == dt]
+    mod_df.reset_index(inplace=True, drop=True)
+    mod_fpath = f"{baseDir().path}/iex_eod_quotes/combined/_{dt}.gz"
+    mod_df.to_json(mod_fpath, compression='gzip')
+
+
 # %% codecell
 ##################################
 
@@ -57,12 +86,36 @@ hp.ld_dict['syms_dict_to_get'].keys()
 # %% codecell
 ##################################
 
+url = "https://algotrading.ventures/api/v1/symbols/data/SHIPW"
+get = requests.get(url)
+
+get_json = get.json()
+shipw_df = pd.read_json(get_json['iex_close'])
+shipw_df.head(10)
+
+latest = shipw_df.sort_values(by='latestUpdate', ascending=False).head(1)
+pd.to_datetime(latest['latestUpdate'], unit='ms')
+
+iex_last = pd.to_datetime(shipw_df['latestUpdate'], unit='ms')
+iex_last.dt.date
+
+shipw_df['latestUpdate']
+
+shipw_df.dtypes
+
+
+'mr_close'
+
+# %% codecell
+##################################
+
 st = serverAPI('st_watch').df
 batch = st.T.symbols.tolist()
 payload = {'batch': batch}
-url = 'https://algotrading.ventures/api/v1/symbols/data/get/batch'
+url = 'https://algotrading.ventures/api/v1/symbols/get/batch'
 get = requests.get(url, params=payload)
-get.content
+
+payload
 
 # %% codecell
 ##################################
