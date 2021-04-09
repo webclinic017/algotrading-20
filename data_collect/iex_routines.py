@@ -250,7 +250,7 @@ def write_combined():
 
     concat_list = []
     for choice in choices:
-        concat_list.append(pd.DataFrame(choices[choice]))
+        concat_list.append(pd.read_json(choice, compression='gzip'))
 
     all_df = pd.concat(concat_list)
     this_df = all_df.copy(deep=True)
