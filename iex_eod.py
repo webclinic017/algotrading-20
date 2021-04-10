@@ -5,6 +5,7 @@ Analyze IEX End of Day Quotes.
 ##################################
 import requests
 import pandas as pd
+from pandas.tseries.offsets import BusinessDay
 import numpy as np
 import sys
 from datetime import date
@@ -49,10 +50,13 @@ url = "https://algotrading.ventures/api/v1/prices/eod/all"
 get = requests.get(url).json()
 
 
+base_dir = baseDir().path
+fpath = f"{base_dir}/iex_eod_quotes/{date.today().year}/*/**.gz"
+choices = glob.glob(fpath)
 
 concat_list = []
-for key in get.keys():
-    concat_list.append(pd.DataFrame(get[key]))
+for choice in choices:
+    concat_list.append(pd.DataFrame(choices[choice]))
 
 all_df = pd.concat(concat_list)
 this_df = all_df.copy(deep=True)
@@ -121,14 +125,6 @@ payload
 ##################################
 
 
-all_df = pd.DataFrame()
-for key in iex_json.keys():
-    try:
-        df = pd.DataFrame(iex_json[key])
-        all_df = pd.concat([all_df, df])
-    except ValueError:
-        print(key)
-
 # %% codecell
 ##################################
 
@@ -138,14 +134,14 @@ get_json = get.json()
 iex_close = pd.read_json(get_json['iex_close'])
 iex_hist = pd.read_json(get_json['iex_hist'])
 
-
+requests.get('https://algotrading.ventures/api/v1/prices/eod/iex_close')
 
 iex_hist.dtypes
 
 
 # %% codecell
 ##################################
-
+iexClose()
 
 
 for key in iex_json.keys():
