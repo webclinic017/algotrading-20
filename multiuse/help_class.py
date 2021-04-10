@@ -96,14 +96,20 @@ class getDate():
     def query(site):
         """Call which_fname_date but shorter."""
         # query_date = getDate.which_fname_date()
-        query_date = ''
+        weekend, query_date = False, ''
+        if date.today().weekday() in (5, 6):
+            weekend = True
+
         if site in ('cboe', 'occ'):
-            if getDate.time_cutoff(cutoff_hm=17.15):
+            if getDate.time_cutoff(cutoff_hm=17.15) or weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
             else:
                 query_date = (date.today() - BusinessDay(n=0)).date()
         elif site in ('iex_close'):
-            query_date = (date.today() - BusinessDay(n=0)).date()
+            if weekend:
+                query_date = (date.today() - BusinessDay(n=1)).date()
+            else:
+                query_date = (date.today() - BusinessDay(n=0)).date()
         elif site in ('last_syms'):
             pass
         return query_date

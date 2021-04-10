@@ -147,7 +147,7 @@ class cleanMmo():
         mod_df = mod_df[mod_df['Exist'] == 'left_only'].copy(deep=True)
         mod_df.drop(columns=['Exist'], inplace=True)
         mod_df.reset_index(inplace=True, drop=True)
-        mod_df['dataDate'] = ((date.today() - BusinessDay(n=0))).date()
+        mod_df['dataDate'] = getDate.query('cboe')
         # top_fpaths[-1][-13:-3]
 
         return mod_df
@@ -272,9 +272,12 @@ class cboeData():
         """Get the right date to use."""
         nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))
         nyc_hm = nyc_datetime.hour + (nyc_datetime.minute/60)
-        cutoff_hm = 16.30
+        cutoff_hm, weekend = 16.30, False
+        # Check if today is a weekend
+        if date.today().weekday() in (5, 6):
+            weekend = True
         # While current hh.mm < cuttoff
-        if nyc_hm < cutoff_hm:
+        if (nyc_hm < cutoff_hm) or (weekend):
             self.date = (date.today() - BusinessDay(n=1)).date()
         else:
             self.date = (date.today() - BusinessDay(n=0)).date()
