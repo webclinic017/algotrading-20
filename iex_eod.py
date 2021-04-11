@@ -62,12 +62,15 @@ iex_df.head(5)
 ##################################
 
 sym = 'OPTI'
-hp = histPrices([sym])
-hp.get_ytd_syms
+hp = histPrices([])
 
-hp.ld_dict['dl_ser']
+opti_df = pd.read_json('/Users/unknown1/Algo/data/StockEOD/2021/o/_OPTI.gz', compression='gzip')
+opti_df['date'].max()
 
-hp.ld_dict['syms_dict_to_get'].keys()
+import glob
+path_to_glob = f"{baseDir().path}/StockEOD/2021/*/**"
+glob.glob(path_to_glob)
+
 
 
 # %% codecell
