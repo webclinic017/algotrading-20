@@ -69,8 +69,7 @@ class cleanMmo():
         """Pre process data and call next function in line."""
         # Delete unsused dataframes
         try:
-            del mmo.mmo_df
-            del mmo.sym_df
+            del mmo
         except AttributeError:
             pass
         self._convert_cols(self)
@@ -192,7 +191,10 @@ class cleanMmo():
     def _filter_nopop_by_time_frame(cls, self, nopop_top_2000):
         """Filter non popular symbols by short, medium, and long term frames."""
         cols_to_float16 = nopop_top_2000.dtypes[nopop_top_2000.dtypes == 'float64'].index.to_list()
-        nopop_top_2000[cols_to_float16] = nopop_top_2000[cols_to_float16].astype(np.float16)
+        try:
+            nopop_top_2000[cols_to_float16] = nopop_top_2000[cols_to_float16].astype(np.float16)
+        except ValueError:
+            pass
         nopop_top_2000.reset_index(inplace=True, drop=True)
 
         # Create empty dict to store short-medium-long term dataframes

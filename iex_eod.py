@@ -34,7 +34,7 @@ importlib.reload(sys.modules['data_collect.iex_routines'])
 from data_collect.iex_routines import iexClose, histPrices
 
 # Display max 50 columns
-pd.set_option('display.max_columns', 10)
+pd.set_option('display.max_columns', 100)
 # Display maximum rows
 pd.set_option('display.max_rows', 500)
 
@@ -50,30 +50,13 @@ url = "https://algotrading.ventures/api/v1/prices/eod/all"
 get = requests.get(url).json()
 
 
-base_dir = baseDir().path
-fpath = f"{base_dir}/iex_eod_quotes/{date.today().year}/*/**.gz"
-choices = glob.glob(fpath)
+url = "https://algotrading.ventures/api/v1/prices/combined/dt"
+get = requests.get(url).json()
+iex_df = pd.DataFrame(get)
 
-concat_list = []
-for choice in choices:
-    concat_list.append(pd.DataFrame(choices[choice]))
+iex_df[iex_df['symbol'] == 'ITOS']
 
-all_df = pd.concat(concat_list)
-this_df = all_df.copy(deep=True)
-this_df['date'] = pd.to_datetime(this_df['latestUpdate'], unit='ms').dt.date
-cutoff = datetime.date(2021, 4, 7)
-this_df = this_df[this_df['date'] >= cutoff].copy(deep=True)
-
-this_df.sort_values(by=['symbol', 'latestUpdate'], inplace=True, ascending=False)
-this_df.drop_duplicates(subset=['symbol', 'date'], inplace=True)
-
-dt_counts = this_df['date'].value_counts().index
-for dt in dt_counts:
-    mod_df = this_df[this_df['date'] == dt]
-    mod_df.reset_index(inplace=True, drop=True)
-    mod_fpath = f"{baseDir().path}/iex_eod_quotes/combined/_{dt}.gz"
-    mod_df.to_json(mod_fpath, compression='gzip')
-
+iex_df.head(5)
 
 # %% codecell
 ##################################
@@ -123,6 +106,9 @@ payload
 
 # %% codecell
 ##################################
+
+url = "https://algotrading.ventures/api/v1/redo/functions/cboe_close"
+requests.get(url)
 
 
 # %% codecell
