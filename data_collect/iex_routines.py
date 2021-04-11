@@ -283,6 +283,8 @@ class histPrices():
     # sym_list is literally just a list of symbols
     # Originated from the stocktwits trending data symbols
 
+    # ** If sym_list is empty, then update all local syms **
+
     def __init__(self, sym_list):
         self.get_params(self)
         self.get_local_dates(self, sym_list)
@@ -302,7 +304,7 @@ class histPrices():
     @classmethod
     def get_local_dates(cls, self, sym_list):
         """Get the dict of all revelant dates needed."""
-        self.ld_dict = local_dates('StockEOD')
+        self.ld_dict = local_dates('StockEOD', sym_list)
         # Get all the syms that are not saved locally
         not_local_syms = ([sym for sym in sym_list
                            if sym not in self.ld_dict['syms_list']])

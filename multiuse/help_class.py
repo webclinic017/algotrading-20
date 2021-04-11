@@ -194,7 +194,7 @@ class dataTypes():
 ###############################################################################
 
 
-def local_dates(which):
+def local_dates(which, sym_list):
     """Get dict of missing local dates."""
     stock_suf = ({
         'StockEOD': f"/StockEOD/{date.today().year}/*/**"
@@ -206,12 +206,19 @@ def local_dates(which):
     dl_ser = pd.Series(getDate.busDays(st_date_min))
 
     # Get fpaths for all local syms
-    local_stock_data = glob.glob(stock_fpath)
-    local_stock_data = sorted(local_stock_data)
+    local_stock_data = sorted(glob.glob(stock_fpath))
 
     local_syms = []  # Create an empty list
     for st in local_stock_data:  # Split strings and store symbol names
         local_syms.append(st.split('_')[1][:-3])
+
+    # If the length of the list of symbols > 0, only use those symbols.
+    if len(sym_list) > 0:
+        # Create sets of both the local syms and the arg sym_list
+        sym_list_set, local_syms_set = set(sym_list), set(local_syms)
+        # Get the intersection of the sets, then convert to a list
+        local_syms_ = sym_list_set.intersection(local_syms_set)
+        local_syms = list(local_syms_)
 
     syms_dict, syms_dict_to_get = {}, {}
     syms_not_get, error = [], False
@@ -226,7 +233,6 @@ def local_dates(which):
         finally:
             if error:
                 os.remove(path)
-
 
         # syms_dict[st]['date'] = pd.to_datetime(syms_dict[st]['date'], unit='ms')
         try:
