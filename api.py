@@ -11,7 +11,10 @@ import pandas as pd
 import numpy as np
 import requests
 
-from multiuse.help_class import getDate
+try:
+    from scripts.dev.multiuse.help_class import getDate
+except ModuleNotFoundError:
+    from multiuse.help_class import getDate
 
 # %% codecell
 ####################################
