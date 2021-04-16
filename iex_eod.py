@@ -97,7 +97,7 @@ payload
 # %% codecell
 ##################################
 
-url = "https://algotrading.ventures/api/v1/redo/functions/iex_get_hist"
+url = "https://algotrading.ventures/api/v1/redo/functions/sector_perf"
 requests.get(url)
 
 
