@@ -11,6 +11,8 @@ import pandas as pd
 import numpy as np
 import requests
 
+from multiuse.help_class import getDate
+
 # %% codecell
 ####################################
 
@@ -29,8 +31,11 @@ class serverAPI():
         'st_trend_today': '/stocktwits/trending/today/explore',
         'st_watch': '/stocktwits/watchlist',
         'iex_quotes_raw': '/prices/eod/all',
-        'new_symbols': '/symbols/new',
-        'all_symbols': '/symbols/all'
+        'iex_comb_today': f"/prices/combined/{getDate.query('cboe')}",
+        'new_syms_today': '/symbols/new/today',
+        'new_syms_all': '/symbols/new/all',
+        'all_symbols': '/symbols/all',
+        'cs_top_vol': '/scans/vol/avg'
     })
 
     # Data to conacatenate

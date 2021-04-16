@@ -272,6 +272,40 @@ def write_combined():
 # %% codecell
 ##############################################
 
+def get_sector_performance(drop_dup=False):
+    """Run each business day, every 60 minutes, from market open."""
+
+    iex_df = urlData("/stock/market/sector-performance").df
+    iex_df['perf_perc'] = (iex_df['performance'] * 100).round(1)
+
+    # Create a new column for the date
+    last_date = (pd.to_datetime(iex_df['lastUpdated'].iloc[0],
+                                unit='ms').date())
+    iex_df['date'] = last_date
+    # Create a new column for hour
+    last_hour = (pd.to_datetime(iex_df['lastUpdated'].iloc[0], unit='ms').hour)
+    iex_df['hour'] = last_hour
+
+    # Read local data and concatenate
+    base_dir = baseDir().path
+    fpath = f"{base_dir}/tickers/sectors/performance_{last_date}.gz"
+
+    if os.path.isfile(fpath):
+        old_df = pd.read_json(fpath, compression='gzip')
+    else:
+        old_df = pd.DataFrame()
+
+    all_df = pd.concat([old_df, iex_df])
+    if drop_dup:
+        # Drop duplicates based on the hour, if any exist
+        (iex_df.sort_values(by=['lastUpdated'])
+               .drop_duplicates(subset=['name', 'hour'], inplace=True))
+    all_df.reset_index(inplace=True, drop=True)
+    all_df.to_json(fpath)
+
+# %% codecell
+##############################################
+
 
 class histPrices():
     """Class for historical price data."""
@@ -336,11 +370,11 @@ class histPrices():
         for day in str_dates:
             # Get data and append to previous dataframe
             df_dl = df_dl.append(self.get_hist(self, sym, per, day))
-            # Combine previous dataframe with new data
-            df_all = pd.concat([pd.read_json(path), df_dl])
-            df_all.reset_index(inplace=True, drop=True)
-            # Write to local json file
-            df_all.to_json(path, compression='gzip')
+        # Combine previous dataframe with new data
+        df_all = pd.concat([pd.read_json(path), df_dl])
+        df_all.reset_index(inplace=True, drop=True)
+        # Write to local json file
+        df_all.to_json(path, compression='gzip')
 
     @classmethod
     def for_ytd_dates(cls, self):
