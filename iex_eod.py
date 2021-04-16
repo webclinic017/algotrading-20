@@ -60,19 +60,6 @@ iex_df.head(5)
 
 # %% codecell
 ##################################
-
-sym = 'OPTI'
-hp = histPrices([])
-
-opti_df = pd.read_json('/Users/unknown1/Algo/data/StockEOD/2021/o/_OPTI.gz', compression='gzip')
-opti_df['date'].max()
-
-import glob
-path_to_glob = f"{baseDir().path}/StockEOD/2021/*/**"
-glob.glob(path_to_glob)
-
-
-
 # %% codecell
 ##################################
 
@@ -110,70 +97,65 @@ payload
 # %% codecell
 ##################################
 
-url = "https://algotrading.ventures/api/v1/redo/functions/cboe_close"
+url = "https://algotrading.ventures/api/v1/redo/functions/iex_get_hist"
 requests.get(url)
 
 
 # %% codecell
 ##################################
 
-sym = 'SHIPZ'
-get = requests.get('https://algotrading.ventures/api/v1/symbols/data/SHIPZ')
-get_json = get.json()
-iex_close = pd.read_json(get_json['iex_close'])
-iex_hist = pd.read_json(get_json['iex_hist'])
-
-requests.get('https://algotrading.ventures/api/v1/prices/eod/iex_close')
-
-iex_hist.dtypes
-
-
 # %% codecell
 ##################################
-iexClose()
+"""
+Average volume = 30 day avg
 
-
-for key in iex_json.keys():
-    iex_json[key] = pd.DataFrame(iex_json[key])
-
-items = list(iex_json.values())
-this_df = pd.concat(items)
-
-this_df.head(10)
-
-
-this_df.dtypes
-
-
-all_df = pd.DataFrame.from_dict(iex_json)
-all_df.iloc[0]
-
-
+ad - ADR
+cs - Common Stock
+cef - Closed End Fund
+et - ETF
+oef - Open Ended Fund
+ps - Preferred Stock
+rt - Right
+struct - Structured Product
+ut - Unit
+wi - When Issued
+wt - Warrant
+empty - Other
+"""
 # %% codecell
 ##################################
 
-url = "https://algotrading.ventures/api/v1/symbols/warrants"
+url = "https://algotrading.ventures/api/v1/symbols/warrants/cheapest"
 get = requests.get(url)
 get_json = get.json()
-
 wt_df = pd.DataFrame(get_json)
 
-wt_df_mr = wt_df[wt_df['date'] == wt_df['date'].max()]
 
-cols_to_keep = (['close', 'high', 'low', 'open', 'volume',
-                 'label', 'date', 'changePercent', 'symbol'])
+wt_df['key'].value_counts()
 
-wt_df_mr = wt_df_mr[cols_to_keep]
-wt_df_mr.reset_index(inplace=True, drop=True)
-wt_df_mr.sort_values(by=['close'], ascending=True).head(25)
+wt_ser_65 = (wt_df['key'].value_counts()[wt_df['key'].value_counts() > 65])
+wt_ser_10 = (wt_df['key'].value_counts()[wt_df['key'].value_counts() < 10])
 
 
-date_list = pd.to_datetime(wt_df_mr['date'].iloc[0], unit='ms').date()
 # %% codecell
 ##################################
 
 
 all_symbols = serverAPI('all_symbols').df
+cs_syms = all_symbols[all_symbols['type'] == 'cs']['symbol'].tolist()
+cs_syms
+
+all_symbols['type'].value_counts()
+
+iex_eod = serverAPI('iex_comb_today').df
+iex_eod['vol/avg'] = (iex_eod['volume'] / iex_eod['avgTotalVolume'] * 100).round(2)
+iex_eod.sort_values(by=['vol/avg'], ascending=False).head(50)
+
+iex_eod.head(10)
+
+
+top_vol_df  = serverAPI('cs_top_vol').df
+top_vol_df.head(10)
 
 wt_list = all_symbols[all_symbols['type'] == 'wt'][['symbol', 'name']]
 
@@ -197,18 +179,32 @@ all_symbols
 
 # %% codecell
 ##################################
-base_dir = baseDir().path
-fpath = f"{base_dir}/tickers/all_symbols.gz"
-all_symbols = pd.read_json(fpath, compression='gzip')
-wt_list = all_symbols[all_symbols['type'] == 'wt']['symbol'].tolist()
+from datetime import timedelta
 
-histPrices(wt_list)
+new_symbols = serverAPI('new_syms_all').df
+new_symbols['dt'] = pd.to_datetime(new_symbols['date'], unit='ms')
 
+mr = new_symbols[new_symbols['dt'] == new_symbols['dt'].max()]
+mr_1 = new_symbols[new_symbols['dt'] == (new_symbols['dt'].max() - timedelta(days=1))]
 
+df_diff = (mr.set_index('symbol')
+            .drop(mr_1['symbol'], errors='ignore')
+            .reset_index(drop=False))
+
+df_diff
+
+mr.shape
+mr_1.shape
+new_symbols.shape
+mr.dtypes
+new_symbols['dt'].value_counts()
+new_symbols.head(10)
 
 # %% codecell
 ##################################
 
+
+iex_sup
 """
 val = 'cboe_close'
 url = f"https://algotrading.ventures/api/v1/prices/eod/{val}"
