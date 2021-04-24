@@ -101,6 +101,9 @@ url = "https://algotrading.ventures/api/v1/redo/functions/sector_perf"
 requests.get(url)
 
 
+
+
+
 # %% codecell
 ##################################
 
@@ -135,6 +138,12 @@ wt_df['key'].value_counts()
 
 wt_ser_65 = (wt_df['key'].value_counts()[wt_df['key'].value_counts() > 65])
 wt_ser_10 = (wt_df['key'].value_counts()[wt_df['key'].value_counts() < 10])
+
+
+# %% codecell
+##################################
+
+
 
 
 # %% codecell
@@ -202,18 +211,71 @@ new_symbols.head(10)
 
 # %% codecell
 ##################################
+load_dotenv()
+sym = 'OCGN'
 
+url = 'https://cloud-sse.iexapis.com/stable/news-stream'
+payload = ({'token': os.environ.get("iex_publish_api"),
+            'symbols': sym})
+get = requests.get(url, params=payload)
 
-iex_sup
+get = urlData(f"/stock/{sym}/news/last/{1}")
+get.df
 """
 val = 'cboe_close'
 url = f"https://algotrading.ventures/api/v1/prices/eod/{val}"
 get = requests.get(url)
 
 """
+# %% codecell
+##################################
+import glob
+base_dir = baseDir().path
+fpath_base = f"{base_dir}/intraday/2021/*/**"
+choices = glob.glob(fpath_base)
+
+for choice in choices:
+    os.remove(choice)
+
 
 # %% codecell
 ##################################
+true = True
+false = False
+ind = 'rsi'
+sym = 'OCGN'
+range = '1M'
+per = 14
+
+def get_technical_hist(ind, sym, range):
+    """Get historical technical indicator data."""
+    # ind = indicator, defined by iex. sym = 'OCGN' or similar
+    # per = range defined by IEX chart endpoint
+    payload = ({'token': os.environ.get("iex_publish_api"),
+                'lastIndicator': false,
+                'indicatorOnly': true,  # Only show the indicator
+                'chartByDay': true, 'period': per})
+    base_url = os.environ.get("base_url")
+    url = f"{base_url}/stock/{sym}/indicator/{ind}?range={range}"
+    get = requests.get(url, params=payload)
+    get_json = get.json()
+    get.content
+
+    df_chart = pd.DataFrame(get_json['chart'])
+    df_chart['rsi'] = pd.DataFrame(get_json['indicator']).T
+
+    return df_chart
+
+df_last = get_technical_hist(ind, sym, per)
+
+fpath = f"{base_dir}/intraday/2021/{sym.lower()[0]}/_{sym}.gz"
+df_chart.to_json(fpath, compression='gzip')
+
+df_chart.tail(10)
+# 365 minutes in the trading day
+df_chart.shape
+df_ind.shape[0]/ 60
+df_ind
 
 # %% codecell
 ##################################
