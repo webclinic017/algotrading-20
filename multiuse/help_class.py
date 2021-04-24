@@ -186,8 +186,15 @@ class dataTypes():
     def pos_or_neg_floats(cls, self):
         """Convert floats to correct data type."""
         cols_float64 = self.dtypes[self.dtypes == 'float64'].index.to_list()
-        self.df[cols_float64] = self.df[cols_float64].astype(np.float16)
-
+        for col in cols_float64:
+            min = self.df[col].min()
+            max = self.df[col].max()
+            if min > np.finfo('float16').min and max < np.finfo('float16').max:
+                self.df[col] = self.df[col].astype(np.float16)
+            elif min > np.finfo('float32').min and max < np.finfo('float32').max:
+                self.df[col] = self.df[col].astype(np.float32)
+            else:
+                pass
 
 
 # %% codecell

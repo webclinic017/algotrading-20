@@ -103,7 +103,7 @@ class stwitsUserStream():
     def make_user_list(cls, self):
         """Make and return user list."""
         user_list = (['Nightmare919', 'Law306', 'billythekid123',
-                      'TheInvestor23'])
+                      'TheInvestor23', 'InsiderFinance', 'Sherlock'])
         return user_list
 
     @classmethod

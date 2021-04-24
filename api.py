@@ -19,6 +19,7 @@ except ModuleNotFoundError:
 # %% codecell
 ####################################
 
+
 class serverAPI():
     """Methods for server API endpoints."""
     base_url = "https://algotrading.ventures/api/v1"
