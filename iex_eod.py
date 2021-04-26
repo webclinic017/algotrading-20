@@ -8,6 +8,7 @@ import pandas as pd
 from pandas.tseries.offsets import BusinessDay
 import numpy as np
 import sys
+import glob
 from datetime import date
 import datetime
 import os
@@ -60,28 +61,17 @@ iex_df.head(5)
 
 # %% codecell
 ##################################
+
+hist_prices = histPrices(['OCGN'], '2y')
+
+
+all_StockEOD_fpaths = f"{base_dir}/StockEOD/*/**/***"
+choices = glob.glob(all_StockEOD_fpaths)
+choices
+
 # %% codecell
 ##################################
 
-url = "https://algotrading.ventures/api/v1/symbols/data/SHIPW"
-get = requests.get(url)
-
-get_json = get.json()
-shipw_df = pd.read_json(get_json['iex_close'])
-shipw_df.head(10)
-
-latest = shipw_df.sort_values(by='latestUpdate', ascending=False).head(1)
-pd.to_datetime(latest['latestUpdate'], unit='ms')
-
-iex_last = pd.to_datetime(shipw_df['latestUpdate'], unit='ms')
-iex_last.dt.date
-
-shipw_df['latestUpdate']
-
-shipw_df.dtypes
-
-
-'mr_close'
 
 # %% codecell
 ##################################
@@ -127,7 +117,8 @@ empty - Other
 """
 # %% codecell
 ##################################
-
+"""
+# Cheapest warrants
 url = "https://algotrading.ventures/api/v1/symbols/warrants/cheapest"
 get = requests.get(url)
 get_json = get.json()
@@ -138,7 +129,7 @@ wt_df['key'].value_counts()
 
 wt_ser_65 = (wt_df['key'].value_counts()[wt_df['key'].value_counts() > 65])
 wt_ser_10 = (wt_df['key'].value_counts()[wt_df['key'].value_counts() < 10])
-
+"""
 
 # %% codecell
 ##################################
@@ -211,16 +202,7 @@ new_symbols.head(10)
 
 # %% codecell
 ##################################
-load_dotenv()
-sym = 'OCGN'
 
-url = 'https://cloud-sse.iexapis.com/stable/news-stream'
-payload = ({'token': os.environ.get("iex_publish_api"),
-            'symbols': sym})
-get = requests.get(url, params=payload)
-
-get = urlData(f"/stock/{sym}/news/last/{1}")
-get.df
 """
 val = 'cboe_close'
 url = f"https://algotrading.ventures/api/v1/prices/eod/{val}"
@@ -229,13 +211,7 @@ get = requests.get(url)
 """
 # %% codecell
 ##################################
-import glob
-base_dir = baseDir().path
-fpath_base = f"{base_dir}/intraday/2021/*/**"
-choices = glob.glob(fpath_base)
 
-for choice in choices:
-    os.remove(choice)
 
 
 # %% codecell
@@ -283,10 +259,6 @@ df_ind
 
 # %% codecell
 ##################################
-
-# GET /stock/{symbol}/quote/{field}
-
-
 
 
 # %% codecell

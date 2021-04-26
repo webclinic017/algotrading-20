@@ -311,6 +311,7 @@ class histPrices():
     """Class for historical price data."""
 
     base_dir = baseDir().path
+    full_hist = False
     # period can equal 'ytd', 'previous', 'date'
     # replace is a boolean value: False for testing
 
@@ -319,13 +320,17 @@ class histPrices():
 
     # ** If sym_list is empty, then update all local syms **
 
-    def __init__(self, sym_list):
+    def __init__(self, sym_list, date_range='ytd'):
+        self.date_range = date_range
         self.get_params(self)
-        self.get_local_dates(self, sym_list)
-        # Update missing individual dates
-        self.for_ind_dates(self)
-        # Get ytd data for syms with no local data
-        self.for_ytd_dates(self)
+        if self.full_hist:
+            self.get_full_hist(self, sym_list)
+        else:
+            self.get_local_dates(self, sym_list)
+            # Update missing individual dates
+            self.for_ind_dates(self)
+            # Get ytd data for syms with no local data
+            self.for_ytd_dates(self)
 
     @classmethod
     def get_params(cls, self):
@@ -334,6 +339,9 @@ class histPrices():
         self.base_url = os.environ.get("base_url")
         self.payload = {'token': os.environ.get("iex_publish_api")}
         self.json_errors = []
+        # Determine if local dates/ytd data should be pulled.
+        if self.date_range in ('1y', '2y', '5y'):
+            self.full_hist = True
 
     @classmethod
     def get_local_dates(cls, self, sym_list):
@@ -364,32 +372,44 @@ class histPrices():
     def else_ind_dates(cls, self, sym, dates, path):
         """Else part of previous for loop ^^."""
         str_dates = pd.to_datetime(dates).dt.strftime("%Y%m%d")
-        df_dl = pd.DataFrame()
+        # df_dl = pd.DataFrame()
+        df_dl, df_all = [], ''
         # Call get request for individual dates, append to df
         per = 'date'
         for day in str_dates:
             # Get data and append to previous dataframe
-            df_dl = df_dl.append(self.get_hist(self, sym, per, day))
-        # Combine previous dataframe with new data
-        df_all = pd.concat([pd.read_json(path), df_dl])
-        df_all.reset_index(inplace=True, drop=True)
-        # Write to local json file
-        df_all.to_json(path, compression='gzip')
+            df_dl.append(self.get_hist(self, sym, per, day))
+        try:
+            df_dl = [x for x in df_dl if x]
+            if len(df_dl) > 0:
+                # Combine previous dataframes with new data
+                df_all = pd.concat([pd.read_json(path, compression='gzip'), df_dl])
+            else:
+                df_all = pd.read_json(path, compression='gzip')
+            df_all.reset_index(inplace=True, drop=True)
+            # Write to local json file
+            df_all.to_json(path, compression='gzip')
+        except TypeError:
+            self.df_dl = df_dl
+            print('Except TypeError. Check class.df_dl for var df_dl')
 
     @classmethod
     def for_ytd_dates(cls, self):
-        """Get ytd dates for dates in self.get_ytd_syms."""
+        """Get ytd dates for dates in self.get_ytd_syms from __init__."""
         # Get the year to use in file path
         # Set period to year-to-date and dt(date) to empty string
-        per, dt = 'ytd', ''
+        dt = ''
         base_path = f"{self.base_dir}/StockEOD/{date.today().year}"
 
         for sym in self.get_ytd_syms:
             try:
                 path = f"{base_path}/{sym.lower()[0]}/_{sym}.gz"
-                df = self.get_hist(self, sym, per, dt)
+                # print(f"ytd-path:{path}")
+                df = self.get_hist(self, sym, self.date_range, dt)
                 df.to_json(path, compression='gzip')
-            except ValueError or JSONDecodeError:
+            except ValueError:
+                self.json_errors.append(sym)
+            except JSONDecodeError:
                 self.json_errors.append(sym)
 
     @classmethod
@@ -398,11 +418,29 @@ class histPrices():
         data = ''
         if (per == 'date') and (dt != ''):
             url = f"{self.base_url}/stock/{sym}/chart/date/{dt}"
-            print(url)
+            # print(url)
             data = requests.get(url, params=self.payload).json()
-        elif (per == 'ytd') and (dt == ''):
-            url = f"{self.base_url}/stock/{sym}/chart/ytd"
+        # If individual dates are not getting called
+        elif (per != 'date') and (dt == ''):
+            url = f"{self.base_url}/stock/{sym}/chart/{per}"
             get = requests.get(url, params=self.payload)
             data = pd.read_json(StringIO(get.content.decode('utf-8')))
 
         return data
+
+    @classmethod
+    def get_full_hist(cls, self, sym_list):
+        """Get full history with the date_range param."""
+        for sym in sym_list:
+            url = f"{self.base_url}/stock/{sym}/chart/{self.date_range}"
+            df = pd.DataFrame(requests.get(url, params=self.payload).json())
+
+            df['year'] = pd.to_datetime(df['date']).dt.year
+            years = df['year'].value_counts().index.tolist()
+            for yr in years:
+                df_mod = df[df['year'] == yr].copy(deep=True)
+                df_mod.drop(columns=['year'], inplace=True)
+                df_mod.reset_index(drop=True, inplace=True)
+                df_mod = dataTypes(df_mod).df
+                fpath = f"{self.base_dir}/StockEOD/{yr}/{sym.lower()[0]}/_{sym}.gz"
+                df_mod.to_json(fpath, compression='gzip')
