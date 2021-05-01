@@ -33,10 +33,6 @@ from multiuse.help_class import baseDir, getDate
 importlib.reload(sys.modules['multiuse.help_class'])
 from multiuse.help_class import baseDir, getDate
 
-from data_collect.iex_routines import dailySymbols
-importlib.reload(sys.modules['data_collect.iex_routines'])
-from data_collect.iex_routines import dailySymbols
-
 from data_collect.iex_class import readData
 importlib.reload(sys.modules['data_collect.iex_class'])
 from data_collect.iex_class import readData, urlData
@@ -173,6 +169,16 @@ my_syms =  my_watch['symbols'].values.tolist()
 # %% codecell
 ##############################################################
 
+fpath = '/Users/unknown1/Algo/data/derivatives/cboe_symref/symref_2021-02-18.gz'
+symref_df = pd.read_json(fpath, compression='gzip')
+symref_df.info(memory_usage='deep')
+
+from multiuse.help_class import dataTypes
+smref_df = dataTypes(symref_df).df
+
+smref_df.to_json(fpath, compression='gzip')
+
+smref_df.info(memory_usage='deep')
 # %% codecell
 ##############################################################
 top_df_og = cboeLocalRecDiff(which='top_2000', fresh=True).df
@@ -201,19 +207,7 @@ top_df[(top_df['expDate'] == '2021-02-26') & (top_df['dataDate'] == '2021-02-24'
 
 # %% codecell
 ##############################################################
-# Write function to get and display top 100 short term symbols
 
-from data_collect.econ_class import yahooTbills
-
-tb_df = yahooTbills().df.copy(deep=True)
-tb_df.head(10)
-
-base_url = "https://algotrading.ventures/api/v1"
-url = f"{base_url}/econ/treasuries"
-
-get = requests.get(url)
-
-get.content
 # %% codecell
 ##############################################################
 
@@ -347,6 +341,7 @@ except TypeError:
 return df
 """
 mmo = cboeData('mmo')
+
 clean_mmo = cleanMmo(mmo)
 top_df = clean_mmo.nopop_top_1000.copy(deep=True)
 # %% codecell

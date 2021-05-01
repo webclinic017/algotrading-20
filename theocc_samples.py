@@ -26,20 +26,15 @@ from charset_normalizer import CharsetNormalizerMatch
 from charset_normalizer import detect
 from charset_normalizer import CharsetNormalizerMatches as CnM
 
+from data_collect.iex_class import expDates, marketHolidays
+importlib.reload(sys.modules['data_collect.iex_class'])
+from data_collect.iex_class import expDates, marketHolidays
 
-from options import DerivativeExpirations, DerivativesHelper
-importlib.reload(sys.modules['options'])
-from options import DerivativeExpirations, DerivativesHelper
+from multiuse.help_class import dataTypes, getDate
 
-from iex_class import expDates, marketHolidays
-importlib.reload(sys.modules['iex_class'])
-from iex_class import expDates, marketHolidays
-
-from help_class import dataTypes, getDate
-
-from theocc_class import tradeVolume, occFlex
-importlib.reload(sys.modules['theocc_class'])
-from theocc_class import tradeVolume, occFlex
+from data_collect.theocc_class import tradeVolume, occFlex
+importlib.reload(sys.modules['data_collect.theocc_class'])
+from data_collect.theocc_class import tradeVolume, occFlex
 
 import xml.etree.ElementTree as ET
 
@@ -52,6 +47,16 @@ pd.set_option('display.max_rows', None)
 
 # %% codecell
 ##############################################################
+
+url = 'https://marketdata.theocc.com/delo-download?prodType=ALL&downloadFields=OS;US;SN&format=txt'
+get = requests.get(url)
+dlp_df = pd.DataFrame(pd.read_csv(BytesIO(get.content)), escapechar='\n', delimiter='\t')
+print(CnM.from_bytes(get.content).best().first())
+get_sample = get.content[0:1000]
+get_sample
+
+
+
 """
 sym = 'IBM'
 occ = requests.get(f"https://marketdata.theocc.com/series-search?symbolType=U&symbol={sym}")
