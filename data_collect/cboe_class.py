@@ -1,23 +1,12 @@
-"""
-CBOE Options Data Classes
-
-#try:
-#    self.df = self.df[~self.df['Underlying'].isin(etf_list['symbol'])]
-#except KeyError:  # To avoid the 'symbol' error
-"""
+"""CBOE Options Data Classes."""
 
 # %% codecell
 ##############################################################
 import os
 import json
-from json import JSONDecodeError
-from io import StringIO, BytesIO
+from io import BytesIO
 import glob
-import importlib
-import sys
-import copy
 import zlib
-import gzip
 
 import pandas as pd
 from pandas.tseries.offsets import BusinessDay
@@ -25,17 +14,10 @@ import numpy as np
 import requests
 from dotenv import load_dotenv
 from pathlib import Path
-import base64
 
 import datetime
 from datetime import date, timedelta
 import pytz
-
-from charset_normalizer import CharsetNormalizerMatch
-from charset_normalizer import detect
-from charset_normalizer import CharsetNormalizerMatches as CnM
-
-import xml.etree.ElementTree as ET
 
 try:
     from scripts.dev.data_collect.options import DerivativesHelper
@@ -381,7 +363,7 @@ class cboeData():
 
         df['sym_suf'] = df['OSI Symbol'].str[-15:]
         df['side'] = df['sym_suf'].str[6]
-        df['strike'] = (df['sym_suf'].str[7:12] + '.' + df['sym_suf'].str[13]).astype('float16')
+        df['strike'] = (df['sym_suf'].str[7:12] + '.' + df['sym_suf'].str[13])
         df['expirationDate'] = df['sym_suf'].str[0:6]
         df.drop(columns=['Closing Only', 'Matching Unit', 'sym_suf'], inplace=True)
 
@@ -393,6 +375,10 @@ class cboeData():
 
         cols_to_category = ['Symbol', 'Underlying', 'exchange']
         df[cols_to_category] = df[cols_to_category].astype('category')
+        cols_to_uint8 = ['yr', 'mo', 'day']
+        df[cols_to_uint8] = df[cols_to_uint8].astype(np.uint8)
+        df['strike'] = df['strike'].astype(np.float16)
+
 
         return df
 
@@ -406,11 +392,15 @@ class cboeData():
 
             # Change data types to reduce file size
             cols_to_float16 = ['strike', 'Liquidity Opportunity']
-            cols_to_int16 = (['Missed Liquidity', 'Exhausted Liquidity',
+            cols_to_uint8 = ['yr', 'mo', 'day']
+            cols_to_uint16 = (['Missed Liquidity', 'Exhausted Liquidity',
                               'Routed Liquidity', 'Volume Opportunity',
-                              'expirationDate', 'Cboe ADV', 'yr', 'mo', 'day'])
+                              'Cboe ADV'])
+            cols_to_uint32 = ['expirationDate']
             df[cols_to_float16] = df[cols_to_float16].astype(np.float16)
-            df[cols_to_int16] = df[cols_to_int16].astype(np.uint16)
+            df[cols_to_uint8] = df[cols_to_uint8].astype(np.uint8)
+            df[cols_to_uint16] = df[cols_to_uint16].astype(np.uint16)
+            df[cols_to_uint32] = df[cols_to_uint32].astype(np.uint32)
         except TypeError:
             df = pd.DataFrame()
         return df

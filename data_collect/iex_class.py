@@ -131,6 +131,7 @@ class urlData():
         base_url = os.environ.get("base_url")
         payload = {'token': os.environ.get("iex_publish_api")}
         get = requests.get(f"{base_url}{url_suf}", params=payload)
+        self.get = get.content
 
         # Set empty dataframe variable
         df = ''
