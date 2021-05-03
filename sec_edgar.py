@@ -105,7 +105,8 @@ D    - Basic information about the offering (Size/Date)
 10-Q - Quarterly report
 13F  - Quarterly report for institutions to disclose equity holdings
 13G  - Beneficial ownership
-13D  - Acitivist investor
+13D  - Activist investor
+14A  - Definitive proxy statement - when a shareholder vote is required
 5    -
 4    - Changes in beneficial ownership for company insiders
      - Directors/officers, shareholders with more than 10% of the company's stock
