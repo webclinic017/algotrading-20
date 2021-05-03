@@ -245,11 +245,12 @@ class secMasterIdx():
             f_quart = f"QTR{str((hist_dt.month - 1) // 3 + 1)}"
             dt_fmt = self.get_hist_date
         else:
-            yr = date.today().year  # Year
+            dt = getDate.query('sec_master')
+            yr = dt.year  # Year
             # Financial quarter that we are currently in
-            f_quart = f"QTR{str((date.today().month - 1) // 3 + 1)}"
+            f_quart = f"QTR{str((dt.month - 1) // 3 + 1)}"
             # Formatted year month day
-            dt_fmt = getDate.query('sec_master').strftime('%Y%m%d')
+            dt_fmt = dt.strftime('%Y%m%d')
         # Url suffix using the formatted date
         mast_suf = f"master.{dt_fmt}.idx"
         self.fpath = f"{self.baster}/{yr}/_{dt_fmt}.gz"
