@@ -22,5 +22,15 @@ def create_insider_trans_dirs():
         except FileExistsError:
             pass
 
+def create_company_index_dirs():
+    """Create insider trans directories 0-9."""
+    base_ci_dirs = f"{baseDir().path}/sec/company_index"
+    for num in list(range(10)):
+        dir_fpath = f"{base_ci_dirs}/{num}"
+        try:
+            os.mkdir(dir_fpath)
+        except FileExistsError:
+            pass
+
 # %% codecell
 ###############################################

@@ -94,6 +94,7 @@ all_wts['expDate'].head(25)
 D    - Basic information about the offering (Size/Date)
      - Filed up to 15 days after the first sale of securities
      - Can be a private placement to accredited investors
+6ks  - Foreign companies annual financial reports - catchall for else
 8Ks  - current reports
      - Earnings release, notice of delisting, acquisition
      - 8-K to announce significant events relevant to shareholders.
@@ -103,6 +104,8 @@ D    - Basic information about the offering (Size/Date)
 485BPOS  - Annual update filed by investment companies
 10-K - Annual report
 10-Q - Quarterly report
+10-D - Asset backed issuer distribution report.
+     - Interest, dividends, and capital distributions. Previous/upcoming
 13F  - Quarterly report for institutions to disclose equity holdings
 13G  - Beneficial ownership
 13D  - Activist investor

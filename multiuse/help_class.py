@@ -111,7 +111,7 @@ class getDate():
             else:
                 query_date = (date.today() - BusinessDay(n=0)).date()
         elif site in ('sec_master'):
-            if getDate.time_cutoff(cutoff_hm=18.30) or weekend:
+            if getDate.time_cutoff(cutoff_hm=22.15) or weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
             else:
                 query_date = (date.today() - BusinessDay(n=0)).date()
