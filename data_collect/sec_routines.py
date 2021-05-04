@@ -19,30 +19,15 @@ from bs4 import BeautifulSoup
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate
+    from scripts.dev.multiuse.sec_helpers import make_sec_cik_ref
     from scripts.dev.multiuse.bs4_funcs import bs4_child_values
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, getDate
+    from multiuse.sec_helpers import make_sec_cik_ref
     from multiuse.bs4_funcs import bs4_child_values
 
 # %% codecell
 ################################################
-
-
-def make_sec_cik_ref(sec_df):
-    """Make local dataframe with values from sec master."""
-    sec_ref = sec_df[['CIK', 'Company Name']].copy(deep=True)
-    base_dir, sec_ref_all = baseDir().path, pd.DataFrame()
-    sec_ref_fpath = f"{base_dir}/tickers/sec_ref.gz"
-
-    if os.path.isfile(sec_ref_fpath):
-        sec_ref_old = pd.read_json(sec_ref_fpath, compression='gzip')
-        sec_ref_all = pd.concat([sec_ref, sec_ref_old])
-        sec_ref_all.drop_duplicates(subset=['CIK'], inplace=True)
-        sec_ref_all.reset_index(drop=True, inplace=True)
-    else:
-        sec_ref_all = sec_ref.copy(deep=True)
-
-    sec_ref_all.to_json(sec_ref_fpath, compression='gzip')
 
 
 def form_4(get=False, url=False):
@@ -150,7 +135,6 @@ class secCompanyIdx():
     @classmethod
     def construct_params(cls, self, sym, cik):
         """Construct url and local fpath."""
-
         all_syms_fpath = f"{self.base_dir}/tickers/all_symbols.gz"
         all_symbols = pd.read_json(all_syms_fpath, compression='gzip')
         # Drop cik values that are NaNs or infinite
@@ -204,7 +188,7 @@ class secMasterIdx():
     sec_burl = 'https://www.sec.gov/Archives/edgar/daily-index'
     # Base master sec directory
     baster = f"{baseDir().path}/sec/daily_index"
-    df, get_hist_date = False, False
+    df, get_hist_date, url = False, False, False
     # hist_date is an optional param for a specific date
     # datetime.date or %Y%m%d formatted string
 
@@ -214,8 +198,6 @@ class secMasterIdx():
             self.retrieve_data(self)
             try:
                 self.process_data(self)
-                # Write ref data
-                make_sec_cik_ref(self.df)
                 self.write_to_json(self)
             except KeyError:
                 print(self.url)

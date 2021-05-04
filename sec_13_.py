@@ -87,46 +87,6 @@ row_test = sec_df_13G.iloc[10]
 # %% codecell
 #####################################################
 
-sec_url = "https://www.sec.gov/Archives"
-url_fname = row_test['File Name']
-
-url = f"{sec_url}/{url_fname}"
-get = requests.get(url)
-
-soup = BeautifulSoup(get.content.decode('utf-8'))
-
-col_dict = {''}
-
-
-tbls = soup.find_all("table")
-
-val_list = []
-for tbl in tbls:
-    for val in tbl.descendants:
-        if isinstance(val, bs4.element.NavigableString):
-            if val not in ('\n', ''):
-                val_list.append(val)
-        else:
-            pass
-
-tr_list = []
-for tbl in tbls:
-    tr_list.append(tbl.find_all("tr"))
-
-
-
-tr_list
-
-trs = soup.find_all("table")
-
-len(val_list)
-val_ser = pd.Series(val_list).str.strip()
-val_ser = val_ser.str.replace('\n', ' ')
-
-possible_cols =
-val_ser.value_counts()
-list(soup.find_all("p", text="  Name of reporting persons."))
-
 
 # %% codecell
 #####################################################
@@ -136,15 +96,41 @@ dt = getDate.query('sec_master')
 dt = dt.strftime('%Y%m%d')
 dt_test = datetime.datetime.strptime(dt, '%Y%m%d')
 dt = 'none'
-url = f"https://algotrading.ventures/api/v1/sec/master_idx"
+url = f"https://algotrading.ventures/api/v1/sec/master_idx/date/most_recent"
 get = requests.get(url)
+
+from datetime import date
+from pandas.tseries.offsets import BusinessDay
+dt = (date.today() - BusinessDay(n=1)).date()
+
+# """
+url_base = "https://algotrading.ventures/api/v1/sec/master_idx/date/"
+for n in list(range(15, 40)):
+    dt = (date.today() - BusinessDay(n=n)).date()
+    requests.get(f"{url_base}{dt.strftime('%Y%m%d')}")
+    time.sleep(1)
+# """
+
+# url = f"https://algotrading.ventures/api/v1/sec/master_idx/date/{dt.strftime('%Y%m%d')}"
+# get = requests.get(url)
+
+dt
 
 get.text
 url
 # overview_df = pd.DataFrame(tag_dict, index=range(1))
 # print(CnM.from_bytes(get.content[0:10000]).best().first())
+from multiuse.help_class import dataTypes
 
-dt
+url = "https://algotrading.ventures/api/v1/sec/data/master_idx/all"
+get = requests.get(url)
+
+all_df = pd.DataFrame(get.json())
+all_df = dataTypes(all_df).df
+
+all_df['Date Filed'].value_counts()
+
+all_df['Form Type'].value_counts()
 
 # %% codecell
 #####################################################
