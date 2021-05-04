@@ -13,6 +13,7 @@ from io import BytesIO
 
 import requests
 import pandas as pd
+from pandas.errors import EmptyDataError
 import numpy as np
 from bs4 import BeautifulSoup
 
@@ -27,17 +28,21 @@ except ModuleNotFoundError:
 ################################################
 
 
-def get_cik(sym):
-    """Get SEC CIK number from symbol."""
-    all_syms_fpath = f"{baseDir().path}/tickers/all_symbols.gz"
-    all_symbols = pd.read_json(all_syms_fpath, compression='gzip')
-    # Drop cik values that are NaNs or infinite
-    all_symbols.dropna(axis=0, subset=['cik'], inplace=True)
-    all_symbols['cik'] = all_symbols['cik'].astype(np.uint32)
+def make_sec_cik_ref(sec_df):
+    """Make local dataframe with values from sec master."""
+    sec_ref = sec_df[['CIK', 'Company Name']].copy(deep=True)
+    base_dir, sec_ref_all = baseDir().path, pd.DataFrame()
+    sec_ref_fpath = f"{base_dir}/tickers/sec_ref.gz"
 
-    cik = (all_symbols[all_symbols['symbol'] == sym]
-           .head(1)['cik'].astype('uint32').iloc[0])
-    return cik
+    if os.path.isfile(sec_ref_fpath):
+        sec_ref_old = pd.read_json(sec_ref_fpath, compression='gzip')
+        sec_ref_all = pd.concat([sec_ref, sec_ref_old])
+        sec_ref_all.drop_duplicates(subset=['CIK'], inplace=True)
+        sec_ref_all.reset_index(drop=True, inplace=True)
+    else:
+        sec_ref_all = sec_ref.copy(deep=True)
+
+    sec_ref_all.to_json(sec_ref_fpath, compression='gzip')
 
 
 def form_4(get=False, url=False):
@@ -160,7 +165,7 @@ class secCompanyIdx():
                    & (all_symbols['type'] == 'cs')])
 
         # Construct local fpath
-        self.fpath = f"{self.base_dir}/sec/company_index/_{cik}.gz"
+        self.fpath = f"{self.base_dir}/sec/company_index/{str(cik)[-1]}/_{cik}.gz"
         # Sec base url
         sec_burl = 'https://data.sec.gov/submissions/CIK'
         self.url = f"{sec_burl}{str(cik).zfill(10)}.json"
@@ -207,8 +212,15 @@ class secMasterIdx():
         self.determine_params(self, hist_date)
         if not isinstance(self.df, pd.DataFrame):
             self.retrieve_data(self)
-            self.process_data(self)
-            self.write_to_json(self)
+            try:
+                self.process_data(self)
+                # Write ref data
+                make_sec_cik_ref(self.df)
+                self.write_to_json(self)
+            except KeyError:
+                print(self.url)
+            except EmptyDataError:
+                print(self.url)
 
     @classmethod
     def determine_params(cls, self, hist_date):

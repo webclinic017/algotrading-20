@@ -14,13 +14,16 @@ from bs4 import BeautifulSoup
 import bs4.element
 from charset_normalizer import CharsetNormalizerMatches as CnM
 
-from data_collect.sec_routines import get_cik, secInsiderTrans, secMasterIdx
+from data_collect.sec_routines import secInsiderTrans, secMasterIdx
 importlib.reload(sys.modules['data_collect.sec_routines'])
-from data_collect.sec_routines import get_cik, secInsiderTrans, secMasterIdx
+from data_collect.sec_routines import secInsiderTrans, secMasterIdx
 
 from multiuse.help_class import baseDir
 
 from multiuse.bs4_funcs import bs4_child_values
+from multiuse.sec_helpers import get_cik
+importlib.reload(sys.modules['multiuse.sec_helpers'])
+from multiuse.sec_helpers import get_cik
 
 from data_collect.sec_form13s import get13F
 importlib.reload(sys.modules['data_collect.sec_form13s'])
@@ -127,15 +130,30 @@ list(soup.find_all("p", text="  Name of reporting persons."))
 
 # %% codecell
 #####################################################
+from multiuse.help_class import getDate
+import datetime
+dt = getDate.query('sec_master')
+dt = dt.strftime('%Y%m%d')
+dt_test = datetime.datetime.strptime(dt, '%Y%m%d')
+dt = 'none'
+url = f"https://algotrading.ventures/api/v1/sec/master_idx"
+get = requests.get(url)
 
+get.text
+url
 # overview_df = pd.DataFrame(tag_dict, index=range(1))
 # print(CnM.from_bytes(get.content[0:10000]).best().first())
+
+dt
 
 # %% codecell
 #####################################################
 
-print(CnM.from_bytes(get.content).best().first())
 
 
+
+
+fpath = secFpaths(sym='TDAC', cat='company_idx')
+]
 # %% codecell
 #####################################################
