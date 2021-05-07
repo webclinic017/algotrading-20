@@ -39,6 +39,11 @@ class get13F():
     @classmethod
     def make_params(cls, self, row):
         """Make local fpath params. See if file exists."""
+        # Create empty variable
+        fpath_quart = ''
+        # If row is dict, convert to Series
+        if isinstance(row, dict):
+            row = pd.Series(row)
         # Get datetime of row data
         row_dt = (pd.to_datetime(row['Date Filed'],
                                  format='%Y%m%d').date())
@@ -47,7 +52,10 @@ class get13F():
 
         # Construct local fpaths for file/dirs
         fpath_base = f"{self.base_dir}/sec/institutions/{row_dt.year}"
-        fpath_quart = f"{fpath_base}/{f_cik[-1]}/_{f_cik}/{f_quart}"
+        try:
+            fpath_quart = f"{fpath_base}/{f_cik[-1]}/_{f_cik}/{f_quart}"
+        except IndexError:
+            fpath_quart = f"{fpath_base}/{f_cik.astype('str').str[-1]}/_{f_cik}/{f_quart}"
         self.fpath_full = f"{fpath_quart}/_{f_file}.gz"
 
         # Make full fpath directory

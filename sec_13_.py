@@ -38,6 +38,7 @@ pd.set_option('display.max_rows', 500)
 #####################################################
 # Form 13G 13G/A 13D/A
 
+
 """
 OCGNs merger agreement
 https://fintel.io/doc/sec-hsgx-histogenics-8k-2019-april-08-17994
@@ -99,6 +100,21 @@ dt = 'none'
 url = f"https://algotrading.ventures/api/v1/sec/master_idx/date/most_recent"
 get = requests.get(url)
 
+df = pd.DataFrame(get.json())
+
+from api import serverAPI
+importlib.reload(sys.modules['api'])
+from api import serverAPI
+
+df = serverAPI('sec_master_mr', val='most_recent').df
+
+type(df.iloc[0])
+
+
+df.iloc[0]
+
+df.head(10)
+
 from datetime import date
 from pandas.tseries.offsets import BusinessDay
 dt = (date.today() - BusinessDay(n=1)).date()
@@ -108,7 +124,7 @@ url_base = "https://algotrading.ventures/api/v1/sec/master_idx/date/"
 for n in list(range(15, 40)):
     dt = (date.today() - BusinessDay(n=n)).date()
     requests.get(f"{url_base}{dt.strftime('%Y%m%d')}")
-    time.sleep(1)
+    time.sleep(.5)
 # """
 
 # url = f"https://algotrading.ventures/api/v1/sec/master_idx/date/{dt.strftime('%Y%m%d')}"
@@ -122,15 +138,23 @@ url
 # print(CnM.from_bytes(get.content[0:10000]).best().first())
 from multiuse.help_class import dataTypes
 
-url = "https://algotrading.ventures/api/v1/sec/data/master_idx/all"
+url = "https://algotrading.ventures/api/v1/sec/data/master_idx/all/false"
 get = requests.get(url)
 
 all_df = pd.DataFrame(get.json())
 all_df = dataTypes(all_df).df
 
 all_df['Date Filed'].value_counts()
+df_13FHR = all_df[all_df['Form Type'] == '13F-HR'].copy(deep=True)
+for ron, row in enumerate(df_13FHR):
+    print(df_13FHR.iloc[ron])
+    break
+df_13FHR.head(10)
 
 all_df['Form Type'].value_counts()
+
+url = "https://algotrading.ventures/api/v1/sec/data/form_13FHR"
+get = requests.get(url)
 
 # %% codecell
 #####################################################
