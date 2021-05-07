@@ -60,7 +60,8 @@ class get13F():
 
         # Make full fpath directory
         if not os.path.isdir(fpath_quart):
-            os.makedirs(fpath_quart)
+            os.umask(0)
+            os.makedirs(fpath_quart, mode=0o777)
 
         if os.path.isfile(self.fpath_full):
             self.df = pd.read_json(self.fpath_full, compression='gzip')
