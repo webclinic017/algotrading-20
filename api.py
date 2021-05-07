@@ -39,15 +39,32 @@ class serverAPI():
         'new_syms_today': '/symbols/new/today',
         'new_syms_all': '/symbols/new/all',
         'all_symbols': '/symbols/all',
-        'cs_top_vol': '/scans/vol/avg'
+        'cs_top_vol': '/scans/vol/avg',
+        'sec_master_mr': ''
     })
 
     # Data to conacatenate
     concat = ['st_trend', 'cboe_mmo_top']
 
-    def __init__(self, which):
+    def __init__(self, which, **kwargs):
+        self.check_params(self, which, **kwargs)
         df = self.get_data(self, which)
+
+        if df.shape[0] == 0:
+            print(self.url)
         self.df = df
+
+    @classmethod
+    def check_params(cls, self, which, **kwargs):
+        """Check passed parameters and urls."""
+        refresh, val = None, None
+        if which in ('sec_master_mr'):
+            if 'refresh' in kwargs.keys():
+                refresh = kwargs['refresh']
+            if 'val' in kwargs.keys():
+                val = kwargs['val']
+
+            self.url_dict[which] = f"/sec/data/master_idx/{val}/{refresh}"
 
     @classmethod
     def get_data(cls, self, which):

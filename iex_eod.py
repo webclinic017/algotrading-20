@@ -97,7 +97,9 @@ choices
 # %% codecell
 ##################################
 
+st = serverAPI('all_symbols').df
 
+st['type'].value_counts()
 # %% codecell
 ##################################
 
