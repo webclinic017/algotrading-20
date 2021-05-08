@@ -81,6 +81,7 @@ def add_ciks_to_13FHRs():
         df = pd.read_json(path, compression='gzip').copy(deep=True)
         df['CIK'] = key
         df.to_json(path, compression='gzip')
+    return choice_dict
 
 
 # %% codecell

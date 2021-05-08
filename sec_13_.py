@@ -20,14 +20,7 @@ from data_collect.sec_routines import secInsiderTrans, secMasterIdx
 
 from multiuse.help_class import baseDir, dataTypes
 
-from multiuse.bs4_funcs import bs4_child_values
-from multiuse.sec_helpers import get_cik
-importlib.reload(sys.modules['multiuse.sec_helpers'])
-from multiuse.sec_helpers import get_cik
-
-from data_collect.sec_form13s import get13F
-importlib.reload(sys.modules['data_collect.sec_form13s'])
-from data_collect.sec_form13s import get13F
+from multiuse.sec_helpers import add_ciks_to_13FHRs
 
 from api import serverAPI
 importlib.reload(sys.modules['api'])
@@ -161,26 +154,43 @@ ref_df = serverAPI('sec_ref').df
 ref_df.shape
 
 inst_holds_df = serverAPI('sec_inst_holdings').df
+
+inst_holds_df['CIK'].value_counts()
 inst_holds_df.head(10)
 
 # fpath = secFpaths(sym='TDAC', cat='company_idx')
+url = 'https://algotrading.ventures/api/v1/sec/funcs/add_ciks_13fhrs'
+get = requests.get(url)
+
+
+base_dir = baseDir().path
+forms_fpath = f"{base_dir}/sec/institutions/**/*.gz"
+choices = glob.glob(forms_fpath)
+
+for choice in choices:
+    df = pd.read_json(choice, compression='gzip')
+    break
+
+df.head(10)
+# %% codecell
+#####################################################
+
+add_ciks_to_13FHRs()
+base_dir = baseDir().path
+forms_fpath = f"{base_dir}/sec/institutions/**/*.gz"
 import glob
-# Add CIKs to existing data
+choices = glob.glob(forms_fpath, recursive=True)
+
+df = None
+for choice in choices:
+    df = pd.read_json(choice, compression='gzip').copy(deep=True)
+    print(choice)
+    break
 
 
-def add_ciks_to_13FHRs():
-    """Add cik column to existing 13FHRs."""
-    base_dir = baseDir().path
-    fpath = f"{base_dir}/sec/institutions/**/*.gz"
-    choices = glob.glob(fpath, recursive=True)
 
-    choice_dict = ({choice.split('_')[1].split('/')[0]:
-                    choice for choice in choices})
 
-    for key, path in choice_dict.items():
-        df = pd.read_json(path, compression='gzip').copy(deep=True)
-        df['CIK'] = key
-        df.to_json(path, compression='gzip')
+df.head(10)
 
 
 # %% codecell
