@@ -3,7 +3,7 @@
 ##############################################
 import datetime
 import os.path
-import time
+import glob
 
 import pandas as pd
 import numpy as np
@@ -66,6 +66,21 @@ def sec_ref_from_combined():
 
     # Write reference data to local file
     sec_ref.to_json(fpath, compression='gzip')
+
+
+def add_ciks_to_13FHRs():
+    """Add cik column to existing 13FHRs."""
+    base_dir = baseDir().path
+    fpath = f"{base_dir}/sec/institutions/**/*.gz"
+    choices = glob.glob(fpath, recursive=True)
+
+    choice_dict = ({choice.split('_')[1].split('/')[0]:
+                    choice for choice in choices})
+
+    for key, path in choice_dict.items():
+        df = pd.read_json(path, compression='gzip').copy(deep=True)
+        df['CIK'] = key
+        df.to_json(path, compression='gzip')
 
 
 # %% codecell

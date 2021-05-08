@@ -150,11 +150,38 @@ all_df['Form Type'].value_counts()
 url = "https://algotrading.ventures/api/v1/sec/data/form_13FHR"
 get = requests.get(url)
 
+
+
+get.content
+df = pd.DataFrame(get.json())
 # %% codecell
 #####################################################
 
 ref_df = serverAPI('sec_ref').df
+ref_df.shape
+
+inst_holds_df = serverAPI('sec_inst_holdings').df
+inst_holds_df.head(10)
+
 # fpath = secFpaths(sym='TDAC', cat='company_idx')
+import glob
+# Add CIKs to existing data
+
+
+def add_ciks_to_13FHRs():
+    """Add cik column to existing 13FHRs."""
+    base_dir = baseDir().path
+    fpath = f"{base_dir}/sec/institutions/**/*.gz"
+    choices = glob.glob(fpath, recursive=True)
+
+    choice_dict = ({choice.split('_')[1].split('/')[0]:
+                    choice for choice in choices})
+
+    for key, path in choice_dict.items():
+        df = pd.read_json(path, compression='gzip').copy(deep=True)
+        df['CIK'] = key
+        df.to_json(path, compression='gzip')
+
 
 # %% codecell
 #####################################################
