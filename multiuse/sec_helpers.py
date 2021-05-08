@@ -3,10 +3,10 @@
 ##############################################
 import datetime
 import os.path
+import time
 
 import pandas as pd
 import numpy as np
-
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate
@@ -46,6 +46,26 @@ def make_sec_cik_ref(sec_ref):
         sec_ref_all = sec_ref.copy(deep=True)
 
     sec_ref_all.to_json(sec_ref_fpath, compression='gzip')
+
+
+def sec_ref_from_combined():
+    """Make local sec ref data from combined master_idx."""
+    base_dir, mast_df = baseDir().path, None
+    fpath_all = f"{base_dir}/sec/daily_index/_all_combined.gz"
+
+    # Read sec_master_combined dataframe
+    mast_df = pd.read_json(fpath_all, compression='gzip')
+    mast_df.drop_duplicates(subset=['CIK'], inplace=True)
+
+    sec_ref = mast_df[['CIK', 'Company Name']].copy(deep=True)
+    sec_ref.reset_index(drop=True, inplace=True)
+
+    # Define fpath of reference data
+    base_dir = baseDir().path
+    fpath = f"{base_dir}/tickers/sec_ref.gz"
+
+    # Write reference data to local file
+    sec_ref.to_json(fpath, compression='gzip')
 
 
 # %% codecell

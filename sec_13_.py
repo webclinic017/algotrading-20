@@ -18,7 +18,7 @@ from data_collect.sec_routines import secInsiderTrans, secMasterIdx
 importlib.reload(sys.modules['data_collect.sec_routines'])
 from data_collect.sec_routines import secInsiderTrans, secMasterIdx
 
-from multiuse.help_class import baseDir
+from multiuse.help_class import baseDir, dataTypes
 
 from multiuse.bs4_funcs import bs4_child_values
 from multiuse.sec_helpers import get_cik
@@ -28,6 +28,10 @@ from multiuse.sec_helpers import get_cik
 from data_collect.sec_form13s import get13F
 importlib.reload(sys.modules['data_collect.sec_form13s'])
 from data_collect.sec_form13s import get13F
+
+from api import serverAPI
+importlib.reload(sys.modules['api'])
+from api import serverAPI
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
@@ -108,12 +112,7 @@ from api import serverAPI
 
 df = serverAPI('sec_master_mr', val='most_recent').df
 
-type(df.iloc[0])
-
-
-df.iloc[0]
-
-df.head(10)
+df = serverAPI('sec_inst_holdings').df
 
 from datetime import date
 from pandas.tseries.offsets import BusinessDay
@@ -129,11 +128,6 @@ for n in list(range(15, 40)):
 
 # url = f"https://algotrading.ventures/api/v1/sec/master_idx/date/{dt.strftime('%Y%m%d')}"
 # get = requests.get(url)
-
-dt
-
-get.text
-url
 # overview_df = pd.DataFrame(tag_dict, index=range(1))
 # print(CnM.from_bytes(get.content[0:10000]).best().first())
 from multiuse.help_class import dataTypes
@@ -159,11 +153,8 @@ get = requests.get(url)
 # %% codecell
 #####################################################
 
+ref_df = serverAPI('sec_ref').df
+# fpath = secFpaths(sym='TDAC', cat='company_idx')
 
-
-
-
-fpath = secFpaths(sym='TDAC', cat='company_idx')
-]
 # %% codecell
 #####################################################

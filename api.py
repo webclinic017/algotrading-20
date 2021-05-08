@@ -40,7 +40,10 @@ class serverAPI():
         'new_syms_all': '/symbols/new/all',
         'all_symbols': '/symbols/all',
         'cs_top_vol': '/scans/vol/avg',
-        'sec_master_mr': ''
+        'sec_ref': '/sec/data/ref',
+        'sec_inst_holdings': '/sec/data/institutions',
+        'sec_master_mr': '',
+        'sec_master_all': '/sec/data/master_idx/all/False'
     })
 
     # Data to conacatenate
