@@ -34,6 +34,7 @@ class get13F():
         if not isinstance(self.df, pd.DataFrame):
             self.retrieve_data(self)
             self.process_data(self)
+            self.add_cik(self)
             self.write_to_json(self)
 
     @classmethod
@@ -48,6 +49,8 @@ class get13F():
         row_dt = (pd.to_datetime(row['Date Filed'],
                                  format='%Y%m%d').date())
         f_cik, f_file = row['CIK'], row['Form Type']
+        # Define CIK that will be added to the dataframe later
+        self.cik = row['CIK']
         f_quart = f"Q{str((row_dt.month - 1) // 3 + 1)}"
 
         # Construct local fpaths for file/dirs
@@ -135,6 +138,11 @@ class get13F():
         df.replace('', np.nan, regex=False, inplace=True)
         df.dropna(axis=1, how='all', inplace=True)
         return df
+
+    @classmethod
+    def add_cik(cls, self):
+        """Add CIK to dataframe."""
+        self.df['CIK'] = self.cik
 
     @classmethod
     def write_to_json(cls, self):
