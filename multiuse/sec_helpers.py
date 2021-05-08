@@ -70,11 +70,19 @@ def sec_ref_from_combined():
 
 def add_ciks_to_13FHRs():
     """Add cik column to existing 13FHRs."""
-    base_dir = baseDir().path
+    base_dir, num_split = baseDir().path, None
     fpath = f"{base_dir}/sec/institutions/**/*.gz"
     choices = glob.glob(fpath, recursive=True)
 
-    choice_dict = ({choice.split('_')[1].split('/')[0]:
+    # Fix for server fpath vs local fpath
+    for choice in choices:
+        if choice.split('_')[1].split('/')[0] == 'flask':
+            num_split = 2
+        else:
+            num_split = 1
+        break
+
+    choice_dict = ({choice.split('_')[num_split].split('/')[0]:
                     choice for choice in choices})
 
     for key, path in choice_dict.items():
