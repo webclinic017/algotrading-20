@@ -20,9 +20,8 @@ except ModuleNotFoundError:
 ####################################
 
 
-class serverAPI():
-    """Methods for server API endpoints."""
-    base_url = "https://algotrading.ventures/api/v1"
+def make_url_dict():
+    """Make the url dict."""
     url_dict = ({
         'treasuries': '/econ/treasuries',
         'cboe_mmo_raw': '/cboe/mmo/raw',
@@ -43,8 +42,19 @@ class serverAPI():
         'sec_ref': '/sec/data/ref',
         'sec_inst_holdings': '/sec/data/institutions',
         'sec_master_mr': '',
-        'sec_master_all': '/sec/data/master_idx/all/False'
+        'sec_master_all': '/sec/data/master_idx/all/False',
+        'redo': ''
     })
+
+    return url_dict
+
+
+class serverAPI():
+    """Methods for server API endpoints."""
+
+    url, df = None, None
+    base_url = "https://algotrading.ventures/api/v1"
+    url_dict = make_url_dict()
 
     # Data to conacatenate
     concat = ['st_trend', 'cboe_mmo_top']
@@ -68,6 +78,9 @@ class serverAPI():
                 val = kwargs['val']
 
             self.url_dict[which] = f"/sec/data/master_idx/{val}/{refresh}"
+        elif which == 'redo' and 'val' in kwargs.keys():
+            val = kwargs['val']
+            self.url_dict[which] = f"/redo/functions/{val}"
 
     @classmethod
     def get_data(cls, self, which):
