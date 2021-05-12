@@ -42,10 +42,12 @@ class scansClass():
         # If path is a file, read file and return
         if os.path.isfile(path):
             self.df = pd.read_json(path)
-            return
         else:
             path_1 = fpath_dict[which][f"{by}_1"]
-            self.get_comb_path(self, path, path_1, dt)
+            if os.path.isfile(path_1):
+                self.df = pd.read_json(path_1)
+            else:
+                self.get_comb_path(self, path, path_1, dt)
 
     @classmethod
     def get_comb_path(cls, self, path, path_1, dt):

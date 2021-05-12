@@ -44,6 +44,12 @@ pd.set_option('display.max_rows', 500)
 # %% codecell
 ##################################
 
+redo_cboe = serverAPI('redo', val='cboe_close')
+
+
+# %% codecell
+##################################
+
 iex_eod = serverAPI('iex_quotes_raw')
 iex_eod_df = dataTypes(iex_eod.df.copy(deep=True)).df
 iex_df = iex_eod_df.copy(deep=True)
