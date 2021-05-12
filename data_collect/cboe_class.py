@@ -196,6 +196,7 @@ class cleanMmo():
         if os.path.isfile(nopop_fname):
             pass
         else:
+            nopop_top_2000 = nopop_top_2000.T.drop_duplicates().T
             nopop_top_2000.to_json(nopop_fname, compression='gzip')
 
         # Short-medium-long term data frames to json
@@ -209,6 +210,7 @@ class cleanMmo():
         if os.path.isfile(fname):
             pass
         else:
+            time_dict[t] = time_dict[t].T.drop_duplicates().T
             time_dict[t].to_json(fname, compression='gzip')
 
 
