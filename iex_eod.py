@@ -44,9 +44,6 @@ pd.set_option('display.max_rows', 500)
 # %% codecell
 ##################################
 
-redo_cboe = serverAPI('redo', val='cboe_close')
-
-
 # %% codecell
 ##################################
 
@@ -72,23 +69,7 @@ all_cs_wt[all_cs_wt['type'] != 'cs']['name']
 # MSCI and global funds have the same CIK number
 # Units have type NaN, although not sure if these are only units
 
-# I want to determine if
 
-iex_df.head(10)
-
-url = "https://algotrading.ventures/api/v1/prices/eod/all"
-get = requests.get(url)
-
-get.content[0:1000]
-
-
-url = "https://algotrading.ventures/api/v1/prices/combined/dt"
-get = requests.get(url).json()
-iex_df = pd.DataFrame(get)
-
-iex_df[iex_df['symbol'] == 'ITOS']
-
-iex_df.head(5)
 
 # %% codecell
 ##################################
@@ -102,18 +83,6 @@ choices
 
 # %% codecell
 ##################################
-
-st = serverAPI('all_symbols').df
-
-st['type'].value_counts()
-# %% codecell
-##################################
-
-st = serverAPI('st_watch').df
-batch = st.T.symbols.tolist()
-payload = {'batch': batch}
-url = 'https://algotrading.ventures/api/v1/symbols/get/batch'
-get = requests.get(url, params=payload)
 
 # %% codecell
 ##################################
@@ -168,8 +137,6 @@ To do:
 
 # %% codecell
 ##################################
-
-import json
 
 
 # %% codecell
@@ -240,13 +207,7 @@ all_wts.head(5)
 ##################################
 
 iex_eod = serverAPI('iex_comb_today').df
-iex_eod['vol/avg'] = (iex_eod['volume'] / iex_eod['avgTotalVolume'] * 100).round(2)
-iex_eod.sort_values(by=['vol/avg'], ascending=False).head(50)
 
-iex_wt = iex_eod[iex_eod['symbol'].isin(all_wts['symbol'].tolist())]
-iex_wt.head(10)
-
-iex_wt.shape
 
 
 top_vol_df  = serverAPI('cs_top_vol').df
@@ -274,26 +235,6 @@ all_symbols
 
 # %% codecell
 ##################################
-from datetime import timedelta
-
-new_symbols = serverAPI('new_syms_all').df
-new_symbols['dt'] = pd.to_datetime(new_symbols['date'], unit='ms')
-
-mr = new_symbols[new_symbols['dt'] == new_symbols['dt'].max()]
-mr_1 = new_symbols[new_symbols['dt'] == (new_symbols['dt'].max() - timedelta(days=1))]
-
-df_diff = (mr.set_index('symbol')
-            .drop(mr_1['symbol'], errors='ignore')
-            .reset_index(drop=False))
-
-df_diff
-
-mr.shape
-mr_1.shape
-new_symbols.shape
-mr.dtypes
-new_symbols['dt'].value_counts()
-new_symbols.head(10)
 
 # %% codecell
 ##################################
