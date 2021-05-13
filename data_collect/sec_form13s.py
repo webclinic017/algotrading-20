@@ -29,8 +29,10 @@ class get13F():
     df = False
     # Row data is passed to __init__ function
 
-    def __init__(self, row):
+    def __init__(self, row, delay=False):
         self.make_params(self, row)
+        if delay:
+            time.sleep(1)
         if not isinstance(self.df, pd.DataFrame):
             self.retrieve_data(self)
             self.process_data(self)

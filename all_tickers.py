@@ -60,6 +60,30 @@ sectors = read_symbols('sector_lists')
 sectors
 # %% codecell
 ################################################
+from datetime import timedelta
+
+new_symbols = serverAPI('new_syms_all').df
+new_symbols['dt'] = pd.to_datetime(new_symbols['date'], unit='ms')
+
+mr = new_symbols[new_symbols['dt'] == new_symbols['dt'].max()]
+mr_1 = new_symbols[new_symbols['dt'] == (new_symbols['dt'].max() - timedelta(days=1))]
+
+df_diff = (mr.set_index('symbol')
+            .drop(mr_1['symbol'], errors='ignore')
+            .reset_index(drop=False))
+
+df_diff
+
+mr.shape
+mr_1.shape
+new_symbols.shape
+mr.dtypes
+new_symbols['dt'].value_counts()
+new_symbols.head(10)
+
+# %% codecell
+################################################
+
 
 not_otc = all_symbols[~all_symbols.isin(otc)]
 not_otc.shape
