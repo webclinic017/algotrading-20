@@ -18,6 +18,10 @@ from data_collect.sec_routines import secInsiderTrans, secMasterIdx
 importlib.reload(sys.modules['data_collect.sec_routines'])
 from data_collect.sec_routines import secInsiderTrans, secMasterIdx
 
+from daily_front_funcs.scans import scansClass
+importlib.reload(sys.modules['daily_front_funcs.scans'])
+from daily_front_funcs.scans import scansClass
+
 from multiuse.help_class import baseDir, dataTypes
 
 from multiuse.sec_helpers import add_ciks_to_13FHRs
@@ -34,6 +38,11 @@ pd.set_option('display.max_rows', 500)
 # %% codecell
 #####################################################
 # Form 13G 13G/A 13D/A
+
+
+vol_avg = scansClass(which='vol', by='avg')
+vol_avg.path
+vol_avg.comb_path
 
 
 """
@@ -104,8 +113,13 @@ importlib.reload(sys.modules['api'])
 from api import serverAPI
 
 df = serverAPI('sec_master_mr', val='most_recent').df
+df['Form Type'].value_counts()
+
 
 df = serverAPI('sec_inst_holdings').df
+df.shape
+df.head(10)
+
 
 from datetime import date
 from pandas.tseries.offsets import BusinessDay
