@@ -32,7 +32,7 @@ class get13F():
     def __init__(self, row, delay=False):
         self.make_params(self, row)
         if delay:
-            time.sleep(1)
+            time.sleep(.25)
         if not isinstance(self.df, pd.DataFrame):
             self.retrieve_data(self)
             self.process_data(self)
