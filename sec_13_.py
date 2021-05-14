@@ -35,6 +35,9 @@ pd.set_option('display.max_rows', 500)
 #####################################################
 # Form 13G 13G/A 13D/A
 
+# sec_idx = serverAPI(which='redo', val='sec_idx_master')
+sec_inst = serverAPI(which='sec_inst_holdings')
+sec_inst.df.shape
 """
 OCGNs merger agreement
 https://fintel.io/doc/sec-hsgx-histogenics-8k-2019-april-08-17994
