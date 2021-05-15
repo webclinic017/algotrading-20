@@ -56,7 +56,9 @@ class FpathsTest():
             self.sys_dict['iex_close_combined'] = True
             iex_close = pd.read_json(iex_close_fpath, compression='gzip')
             iex_close_len = len(self.sym_list)
-            iex_close_over = iex_close[iex_close['symbol'].isin(self.sym_list)]
+            iex_close_over = (iex_close[iex_close['symbol']
+                              .isin(self.sym_list)]
+                              .shape[0])
             iex_close_cov = round((iex_close_over / iex_close_len) * 100, 2)
 
             self.sys_dict['iex_close_combined'] = True
