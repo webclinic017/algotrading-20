@@ -24,8 +24,10 @@ from gzip import BadGzipFile
 
 import pandas as pd
 import numpy as np
+
 # %% codecell
 ###############################################################################
+
 
 class baseDir():
     """Get the current base directory and adjust accordingly."""
@@ -52,6 +54,8 @@ class scriptDir():
 
 # %% codecell
 ###############################################################################
+
+
 class getDate():
     """Get the right query date."""
 
@@ -110,8 +114,13 @@ class getDate():
                 query_date = (date.today() - BusinessDay(n=1)).date()
             else:
                 query_date = (date.today() - BusinessDay(n=0)).date()
+        elif site in ('iex_eod'):
+            if getDate.time_cutoff(cutoff_hm=16.15) or weekend:
+                query_date = (date.today() - BusinessDay(n=1)).date()
+            else:
+                query_date = (date.today() - BusinessDay(n=0)).date()
         elif site in ('sec_master'):
-            if getDate.time_cutoff(cutoff_hm=22.15) or weekend:
+            if getDate.time_cutoff(cutoff_hm=22.35) or weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
             else:
                 query_date = (date.today() - BusinessDay(n=0)).date()
