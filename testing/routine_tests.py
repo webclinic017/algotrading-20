@@ -48,7 +48,7 @@ class FpathsTest():
     @classmethod
     def check_iex_close(cls, self):
         """Check for iex_close and iex_combined."""
-        dt = getDate.query('iex_close')
+        dt = getDate.query('iex_eod')
         # IEX Close
         iex_close_fpath = f"{self.base_dir}/iex_eod_quotes/combined/_{dt}.gz"
 
@@ -72,7 +72,7 @@ class FpathsTest():
     def check_warrants(cls, self):
         """Check if local warrant files exist."""
         wt_path_base = f"{self.base_dir}/tickers/warrants"
-        dt = getDate.query('iex_close')
+        dt = getDate.query('iex_eod')
 
         wt_path_dict = ({
             'cheapest': f"{wt_path_base}/cheapest/_{dt}.gz",
@@ -92,7 +92,7 @@ class FpathsTest():
     @classmethod
     def check_scans(cls, self):
         """Check for local scans files."""
-        dt = getDate.query('iex_close')
+        dt = getDate.query('iex_eod')
         scans_path_base = f"{self.base_dir}/scans"
 
         scans_path_dict = ({

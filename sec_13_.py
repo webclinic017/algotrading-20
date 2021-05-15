@@ -6,6 +6,7 @@ import os.path, os
 import importlib
 import sys
 import xml.etree.ElementTree as ET
+from datetime import time
 
 import requests
 import pandas as pd
@@ -37,6 +38,11 @@ pd.set_option('display.max_rows', 500)
 
 # sec_idx = serverAPI(which='redo', val='sec_idx_master')
 sec_inst = serverAPI(which='sec_inst_holdings')
+
+iex_close = serverAPI(which='redo', val='iex_close')
+
+sec_master = serverAPI(which='redo', val='sec_idx_master')
+
 sec_inst.df.shape
 """
 OCGNs merger agreement
