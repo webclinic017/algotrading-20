@@ -6,7 +6,7 @@ import os.path, os
 import importlib
 import sys
 import xml.etree.ElementTree as ET
-from datetime import time
+from datetime import datetime, time
 
 import requests
 import pandas as pd
