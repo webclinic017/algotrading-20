@@ -5,19 +5,15 @@ Analyze IEX End of Day Quotes.
 ##################################
 import requests
 import pandas as pd
-from pandas.tseries.offsets import BusinessDay
 import numpy as np
 import sys
 import glob
 from datetime import date
-import datetime
 import os
 import importlib
 from dotenv import load_dotenv
-from io import StringIO, BytesIO
 from json import JSONDecodeError
 from datetime import date
-from nested_lookup import nested_lookup
 
 from api import serverAPI
 importlib.reload(sys.modules['api'])
@@ -36,6 +32,11 @@ from data_collect.iex_routines import iexClose, histPrices
 importlib.reload(sys.modules['data_collect.iex_routines'])
 from data_collect.iex_routines import iexClose, histPrices
 
+
+from data_collect.hist_prices import HistPricesV2
+importlib.reload(sys.modules['data_collect.hist_prices'])
+from data_collect.hist_prices import HistPricesV2
+
 # Display max 50 columns
 pd.set_option('display.max_columns', 100)
 # Display maximum rows
@@ -43,6 +44,32 @@ pd.set_option('display.max_rows', 500)
 
 # %% codecell
 ##################################
+
+base_dir = baseDir().path
+dt = getDate.query('iex_eod')
+fpath_base = f"{base_dir}/StockEOD/{dt.year}/*/**.gz"
+choices = glob.glob(fpath_base)
+
+all_syms_fpath = f"{base_dir}/tickers/all_symbols.gz"
+all_syms = pd.read_json(all_syms_fpath, compression='gzip')
+sym_list = all_syms['symbol'].tolist()
+
+for n in list(range(10)):
+    histPrices([sym_list[n]])
+
+aa_fpath = '/Users/unknown1/Algo/data/StockEOD/2021/a/_AA.gz'
+aa_df = pd.read_json(aa_fpath, compression='gzip')
+
+aa_df['date'].max()
+
+aa_df = aa_df.sort_values(by='date', ascending=False).head(50)
+aa_df.to_json(aa_fpath)
+
+hp_aa = histPrices(['AA'])
+
+
+hpv2_aa = HistPricesV2('AA')
+hpv2_aa.df['date'].sort_values()
 
 # %% codecell
 ##################################
