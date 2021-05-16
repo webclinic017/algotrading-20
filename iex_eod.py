@@ -70,6 +70,16 @@ hp_aa = histPrices(['AA'])
 
 hpv2_aa = HistPricesV2('AA')
 hpv2_aa.df['date'].sort_values()
+hpv2_aa.df['date'].shape
+
+for sn, sym in enumerate(sym_list):
+    if sn < 15:
+        HistPricesV2(sym)
+    else:
+        break
+
+
+redo_iex = serverAPI('redo', val='iex_close')
 
 # %% codecell
 ##################################
