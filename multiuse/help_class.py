@@ -100,39 +100,30 @@ class getDate():
     def query(site):
         """Call which_fname_date but shorter."""
         # query_date = getDate.which_fname_date()
-        weekend, mon_after, query_date = False, False, ''
+        weekend, query_date = False, ''
         if date.today().weekday() in (5, 6):
             weekend = True
-
-        if (date.today().weekday() == 0 and
+        elif (date.today().weekday() == 0 and
                 not getDate.time_cutoff(cutoff_hm=17.15)):
-            mon_after = True
+            weekend = True
 
         if site in ('cboe', 'occ'):
-            if mon_after:
-                query_date = (date.today() - BusinessDay(n=2)).date()
-            elif getDate.time_cutoff(cutoff_hm=17.15) or weekend:
+            if getDate.time_cutoff(cutoff_hm=17.15) or weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
             else:
                 query_date = (date.today() - BusinessDay(n=0)).date()
         elif site in ('iex_close'):
-            if mon_after:
-                query_date = (date.today() - BusinessDay(n=2)).date()
-            elif weekend:
+            if weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
             else:
                 query_date = (date.today() - BusinessDay(n=0)).date()
         elif site in ('iex_eod'):
-            if mon_after:
-                query_date = (date.today() - BusinessDay(n=2)).date()
-            elif getDate.time_cutoff(cutoff_hm=16.15) or weekend:
+            if getDate.time_cutoff(cutoff_hm=16.15) or weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
             else:
                 query_date = (date.today() - BusinessDay(n=0)).date()
         elif site in ('sec_master'):
-            if mon_after:
-                query_date = (date.today() - BusinessDay(n=2)).date()
-            elif getDate.time_cutoff(cutoff_hm=22.35) or weekend:
+            if getDate.time_cutoff(cutoff_hm=22.35) or weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
             else:
                 query_date = (date.today() - BusinessDay(n=0)).date()
