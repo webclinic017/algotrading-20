@@ -103,6 +103,9 @@ class getDate():
         weekend, query_date = False, ''
         if date.today().weekday() in (5, 6):
             weekend = True
+        elif (date.today().weekday() == 0 and
+                not getDate.time_cutoff(cutoff_hm=17.15)):
+            weekend = True
 
         if site in ('cboe', 'occ'):
             if getDate.time_cutoff(cutoff_hm=17.15) or weekend:

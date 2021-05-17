@@ -24,12 +24,11 @@ from api import serverAPI
 #from data_collect.iex_routines import iexClose
 
 from multiuse.help_class import baseDir, dataTypes, getDate, local_dates
-from data_collect.iex_class import readData, urlData
-importlib.reload(sys.modules['data_collect.iex_class'])
+importlib.reload(sys.modules['multiuse.help_class'])
+from multiuse.help_class import baseDir, dataTypes, getDate, local_dates
+
 from data_collect.iex_class import readData, urlData
 
-from data_collect.iex_routines import iexClose, histPrices
-importlib.reload(sys.modules['data_collect.iex_routines'])
 from data_collect.iex_routines import iexClose, histPrices
 
 
@@ -45,42 +44,11 @@ pd.set_option('display.max_rows', 500)
 # %% codecell
 ##################################
 
-base_dir = baseDir().path
-dt = getDate.query('iex_eod')
-fpath_base = f"{base_dir}/StockEOD/{dt.year}/*/**.gz"
-choices = glob.glob(fpath_base)
+date.today().weekday()
 
-all_syms_fpath = f"{base_dir}/tickers/all_symbols.gz"
-all_syms = pd.read_json(all_syms_fpath, compression='gzip')
-sym_list = all_syms['symbol'].tolist()
-
-for n in list(range(10)):
-    histPrices([sym_list[n]])
-
-aa_fpath = '/Users/unknown1/Algo/data/StockEOD/2021/a/_AA.gz'
-aa_df = pd.read_json(aa_fpath, compression='gzip')
-
-aa_df['date'].max()
-
-aa_df = aa_df.sort_values(by='date', ascending=False).head(50)
-aa_df.to_json(aa_fpath)
-
-hp_aa = histPrices(['AA'])
-
-
-hpv2_aa = HistPricesV2('AA')
-hpv2_aa.df['date'].sort_values()
-hpv2_aa.df['date'].shape
-
-for sn, sym in enumerate(sym_list):
-    if sn < 15:
-        HistPricesV2(sym)
-    else:
-        break
-
-
-redo_iex = serverAPI('redo', val='iex_close')
-
+getDate.query('iex_eod')
+getDate.query('iex_close')
+getDate.query('cboe')
 # %% codecell
 ##################################
 
