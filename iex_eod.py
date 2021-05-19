@@ -43,6 +43,19 @@ pd.set_option('display.max_rows', 500)
 
 # %% codecell
 ##################################
+
+aapl = HistPricesV2('AAPL')
+aapl.fpath
+aapl.url
+aapl.get
+aapl.payload
+
+aapl.dts_need
+aapl.need_ytd
+
+# %% codecell
+##################################
+
 # Someone bought/sold 800 calls at $7 strike for RIG 2022
 
 all_syms = serverAPI('all_symbols').df
