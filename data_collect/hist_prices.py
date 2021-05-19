@@ -10,6 +10,7 @@ import requests
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes
+    # from app.tasks_test import print_arg_test
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, getDate, dataTypes
 
@@ -97,6 +98,7 @@ class HistPricesV2():
     def get_ytd(cls, self):
         """Get YTD data."""
         self.payload['range'] = 'ytd'
+        get_errors = []
         get = requests.get(self.url, params=self.payload)
         if get.status_code == 200:
             df = pd.DataFrame(get.json())
@@ -104,12 +106,18 @@ class HistPricesV2():
             # Write dataframe to json file
             self.write_to_json(self)
         else:
-            print(f"Error with {self.url}. {get.content}")
+            get_errors.append(f"Error with {self.url}. {get.content}")
+        # Print out any errors that may have arisen.
+        try:
+            print_arg_test.delay(get_errors)
+        except NameError:
+            print(get_errors)
 
     @classmethod
     def get_exact_dates(cls, self):
         """Get exact dates."""
         self.payload['range'], df_list = 'date', []
+        get_errors = []
         # For all the dates needed
         for fdt in self.dts_need:
             self.payload['exactDate'] = fdt
@@ -118,7 +126,12 @@ class HistPricesV2():
             if get.status_code == 200:
                 df_list.append(pd.DataFrame(get.json()))
             else:
-                print(f"Error with {self.url}. {get.content}")
+                get_errors.append(f"Error with {self.url}. {get.content}")
+        # Print out any errors that may have arisen.
+        try:
+            print_arg_test.delay(get_errors)
+        except NameError:
+            print(get_errors)
 
         # Concat all new dates if list is > 1
         if len(df_list) > 0:
