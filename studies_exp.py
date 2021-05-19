@@ -19,7 +19,6 @@ importlib.reload(sys.modules['multiuse.help_class'])
 from multiuse.help_class import baseDir, getDate, dataTypes
 
 
-
 # Display max 50 columns
 pd.set_option('display.max_columns', 100)
 # Display maximum rows

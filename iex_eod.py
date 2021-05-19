@@ -43,12 +43,15 @@ pd.set_option('display.max_rows', 500)
 
 # %% codecell
 ##################################
+# Someone bought/sold 800 calls at $7 strike for RIG 2022
 
-date.today().weekday()
+all_syms = serverAPI('all_symbols').df
 
-getDate.query('iex_eod')
-getDate.query('iex_close')
-getDate.query('cboe')
+cols_to_exclude = ['cef', 'et', 'oef', 'ps']
+
+
+
+
 # %% codecell
 ##################################
 
@@ -80,20 +83,6 @@ all_cs_wt[all_cs_wt['type'] != 'cs']['name']
 ##################################
 
 hist_prices = histPrices(['BNGO'], '2y')
-
-
-all_StockEOD_fpaths = f"{base_dir}/StockEOD/*/**/***"
-choices = glob.glob(all_StockEOD_fpaths)
-choices
-
-# %% codecell
-##################################
-
-# %% codecell
-##################################
-
-# %% codecell
-##################################
 
 # %% codecell
 ##################################
@@ -156,87 +145,8 @@ get = requests.get(url, params=payload)
 get.json()
 
 
-
-view = urlData('/time-series/advanced_right_to_purchase/VIEW?last=2')
-view.df
-
-url = f"{base_url}/stock/VIEWW/stats"
-vieww_stats_get = requests.get(url, params=payload)
-vieww_stats_json = vieww_stats_get.json()
-vieww_stats_json
-
-url = f"{base_url}/stock/VIEWW/company"
-vieww_comp_get = requests.get(url, params=payload)
-vieww_comp_json = vieww_comp_get.json()
-vieww_comp_json
-
-
-
-vieww_stats_get.content
-
-load_dotenv()
-base_url = os.environ.get("base_url")
-payload = {'token': os.environ.get("iex_publish_api")}
-url = f"{base_url}/time-series/advanced_right_to_purchase/APBCF?last=1"
-get = requests.get(url, params=payload)
-get.content
-
-all_symbols = serverAPI('all_symbols').df
-view_sym = all_symbols[all_symbols['symbol'].str.contains('VIEW')]
-view_sym
-
-BBG00XV49NV0
-
-all_symbols.head(1)
-
-all_symbols['type'].value_counts()
-all_derivs = all_symbols[all_symbols['type'].isin(['wt', 'rt', 'ut'])].copy(deep=True)
-all_derivs[all_derivs['type'] == 'ut']['name'].iloc[0]
-all_derivs['name'].head(50)
-
-cs_syms = all_symbols[all_symbols['type'] == 'cs']['symbol'].tolist()
-
-
-all_symbols['type'].value_counts()
-
-all_wts = all_symbols[all_symbols['type'] == 'wt'].copy(deep=True)
-wts_exp = all_wts['name'].str[-10:-1]
-wts_exp.head(5)
-
-
-
-all_wts['name'].head(25)
-all_wts.head(5)
-
 # %% codecell
 ##################################
-
-iex_eod = serverAPI('iex_comb_today').df
-
-
-
-top_vol_df  = serverAPI('cs_top_vol').df
-top_vol_df.head(10)
-
-wt_list = all_symbols[all_symbols['type'] == 'wt'][['symbol', 'name']]
-
-
-wt_list = all_symbols[all_symbols['type'] == 'wt']['symbol'].tolist()
-wt_list
-
-wt_df = pd.merge(iex_df, wt_list, on=['symbol'])
-
-wt_df.dropna(axis=0, subset=['iexClose'], inplace=True)
-
-wt_df.sort_values(by=['iexClose'], ascending=True)[['symbol', 'companyName', 'iexClose']].head(100)
-
-
-wt_df.head(10)
-
-all_symbols['type'].value_counts()
-
-all_symbols
-
 
 # %% codecell
 ##################################
@@ -244,12 +154,6 @@ all_symbols
 # %% codecell
 ##################################
 
-"""
-val = 'cboe_close'
-url = f"https://algotrading.ventures/api/v1/prices/eod/{val}"
-get = requests.get(url)
-
-"""
 # %% codecell
 ##################################
 

@@ -149,7 +149,7 @@ class cleanMmo():
 
         nopop_vol_sums['Cboe ADV'] = nopop_vol_sums['Cboe ADV'].where(nopop_vol_sums['Cboe ADV'] != 0, 1)
         nopop_vol_sums['vol/avg'] = (nopop_vol_sums['totVol'] /
-                                     nopop_vol_sums['Cboe ADV']).astype(np.float16)
+                                     nopop_vol_sums['Cboe ADV']).astype(np.float32)
 
         # Get top 2000 for vol/avg
         nopop_top_2000 = nopop_vol_sums.sort_values(by=['vol/avg', 'liq_opp'], ascending=False).head(2000)
@@ -172,11 +172,14 @@ class cleanMmo():
     @classmethod
     def _filter_nopop_by_time_frame(cls, self, nopop_top_2000):
         """Filter non popular symbols by short, medium, and long term frames."""
+        """
         cols_to_float16 = nopop_top_2000.dtypes[nopop_top_2000.dtypes == 'float64'].index.to_list()
         try:
             nopop_top_2000[cols_to_float16] = nopop_top_2000[cols_to_float16].astype(np.float16)
         except ValueError:
             pass
+        """
+        nopop_top_2000 = dataTypes(nopop_top_2000)
         nopop_top_2000.reset_index(inplace=True, drop=True)
 
         # Create empty dict to store short-medium-long term dataframes
@@ -221,6 +224,8 @@ class cleanMmo():
 
 # %% codecell
 ##############################################################
+
+
 class cboeData():
     """Read/write/get cboe symbol reference/other data."""
     cboe_ex_list = ['cone', 'opt', 'ctwo', 'exo']
@@ -261,6 +266,9 @@ class cboeData():
         cutoff_hm, weekend = 16.30, False
         # Check if today is a weekend
         if date.today().weekday() in (5, 6):
+            weekend = True
+        elif (date.today().weekday() == 0 and
+                not getDate.time_cutoff(cutoff_hm=17.15)):
             weekend = True
         # While current hh.mm < cuttoff
         if (nyc_hm < cutoff_hm) or (weekend):
@@ -341,7 +349,6 @@ class cboeData():
         sym_df = self.symref_to_pd(self, symref_dict)
         return sym_df
 
-
     @classmethod
     def symref_to_pd(cls, self, symref_dict):
         """Convert bytes to pandas dataframe."""
@@ -379,8 +386,7 @@ class cboeData():
         df[cols_to_category] = df[cols_to_category].astype('category')
         cols_to_uint8 = ['yr', 'mo', 'day']
         df[cols_to_uint8] = df[cols_to_uint8].astype(np.uint8)
-        df['strike'] = df['strike'].astype(np.float16)
-
+        df['strike'] = df['strike'].astype(np.float32)
 
         return df
 
@@ -388,7 +394,9 @@ class cboeData():
     def merge_dfs(cls, self):
         """Merge mmo and symref dataframes."""
         try:
-            df = pd.merge(self.mmo_df, self.sym_df, on=['Symbol', 'exchange', 'Underlying'], how='inner')
+            df = (pd.merge(self.mmo_df, self.sym_df,
+                           on=['Symbol', 'exchange', 'Underlying'],
+                           how='inner'))
             df.reset_index(inplace=True, drop=True)
             df['rptDate'] = date.today()
 
@@ -397,9 +405,9 @@ class cboeData():
             cols_to_uint8 = ['yr', 'mo', 'day']
             cols_to_uint16 = (['Missed Liquidity', 'Exhausted Liquidity',
                               'Routed Liquidity', 'Volume Opportunity',
-                              'Cboe ADV'])
+                               'Cboe ADV'])
             cols_to_uint32 = ['expirationDate']
-            df[cols_to_float16] = df[cols_to_float16].astype(np.float16)
+            df[cols_to_float16] = df[cols_to_float16].astype(np.float32)
             df[cols_to_uint8] = df[cols_to_uint8].astype(np.uint8)
             df[cols_to_uint16] = df[cols_to_uint16].astype(np.uint16)
             df[cols_to_uint32] = df[cols_to_uint32].astype(np.uint32)
@@ -415,9 +423,9 @@ class cboeData():
         self.comb_df.to_json(self.fname, compression='gzip')
 
 
-
 # %% codecell
 ##############################################################
+
 
 class cboeLocalRecDiff():
     """Get the recursive differences between CBOE data/days."""
