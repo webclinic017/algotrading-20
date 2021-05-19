@@ -51,7 +51,7 @@ class HistPricesV2():
             self.get_dates_or_ytd(self, fpath, dt)
         else:  # If file does not exists, get ytd
             self.is_file = False
-            self.get_ytd = True
+            self.need_ytd = True
 
         self.fpath = fpath
 
@@ -108,10 +108,8 @@ class HistPricesV2():
         else:
             get_errors.append(f"Error with {self.url}. {get.content}")
         # Print out any errors that may have arisen.
-        try:
-            print_arg_test.delay(get_errors)
-        except NameError:
-            print(get_errors)
+        self.get = get
+        self.class_print(get_errors)
 
     @classmethod
     def get_exact_dates(cls, self):
@@ -128,10 +126,7 @@ class HistPricesV2():
             else:
                 get_errors.append(f"Error with {self.url}. {get.content}")
         # Print out any errors that may have arisen.
-        try:
-            print_arg_test.delay(get_errors)
-        except NameError:
-            print(get_errors)
+        self.class_print(get_errors)
 
         # Concat all new dates if list is > 1
         if len(df_list) > 0:
@@ -148,3 +143,11 @@ class HistPricesV2():
     def write_to_json(cls, self):
         """Write dataframe to local file."""
         self.df.to_json(self.fpath, compression='gzip')
+
+    @classmethod
+    def class_print(cls, arg):
+        """Print argument that's passed for local/server environs."""
+        try:
+            print_arg_test.delay(arg)
+        except NameError:
+            print(arg)
