@@ -43,15 +43,12 @@ pd.set_option('display.max_rows', 500)
 
 # %% codecell
 ##################################
-
+dt = getDate.query('iex_eod')
+pd.bdate_range(date(dt.year, 1, 2), dt)
+dt
 aapl = HistPricesV2('AAPL')
-aapl.fpath
-aapl.url
-aapl.get
-aapl.payload
+wt = serverAPI('redo', val='warrants')
 
-aapl.dts_need
-aapl.need_ytd
 
 # %% codecell
 ##################################
@@ -94,7 +91,17 @@ all_cs_wt[all_cs_wt['type'] != 'cs']['name']
 # %% codecell
 ##################################
 
-hist_prices = histPrices(['BNGO'], '2y')
+# hist_prices = histPrices(['BNGO'], '2y')
+
+base_dir = baseDir().path
+fpath = f"{base_dir}/derivatives/cboe_symref/*"
+choice = glob.glob(fpath)[0]
+
+df = pd.read_json(choice, compression='gzip')
+df = dataTypes(df).df
+df.info(memory_usage='deep')
+data = {'row_1': 1, 'row_2': 2}
+ser = pd.Series(data)
 
 # %% codecell
 ##################################
