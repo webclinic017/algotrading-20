@@ -223,11 +223,11 @@ class dataTypes():
         """Convert floats to correct data type."""
         cols_float64 = self.dtypes[self.dtypes == 'float64'].index.to_list()
         for col in cols_float64:
-            min = self.df[col].min()
-            max = self.df[col].max()
-            if min > np.finfo('float16').min and max < np.finfo('float16').max:
+            _min = self.df[col].min()
+            _max = self.df[col].max()
+            if _min > np.finfo('float16').min and _max < np.finfo('float16').max:
                 self.df[col] = self.df[col].astype(np.float16)
-            elif min > np.finfo('float32').min and max < np.finfo('float32').max:
+            elif _min > np.finfo('float32').min and _max < np.finfo('float32').max:
                 self.df[col] = self.df[col].astype(np.float32)
             else:
                 pass
