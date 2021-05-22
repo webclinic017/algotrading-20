@@ -182,7 +182,7 @@ class cleanMmo():
         except ValueError:
             pass
         """
-        nopop_top_2000 = dataTypes(nopop_top_2000).df
+        # nopop_top_2000 = dataTypes(nopop_top_2000).df
         nopop_top_2000.reset_index(inplace=True, drop=True)
 
         # Create empty dict to store short-medium-long term dataframes
