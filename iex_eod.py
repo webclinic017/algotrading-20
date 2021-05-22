@@ -47,7 +47,7 @@ dt = getDate.query('iex_eod')
 pd.bdate_range(date(dt.year, 1, 2), dt)
 dt
 aapl = HistPricesV2('AAPL')
-wt = serverAPI('redo', val='warrants')
+wt = serverAPI('redo', val='cboe_close')
 
 
 # %% codecell
