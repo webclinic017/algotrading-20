@@ -25,22 +25,24 @@ from gzip import BadGzipFile
 import pandas as pd
 import numpy as np
 
+"""
 try:
     from app.tasks_test import print_arg_test
 except ModuleNotFoundError:
     pass
+"""
 
 # %% codecell
 ###############################################################################
 
-
+"""
 def help_print_arg(arg):
-    """Print arg on local or server side."""
+    Print arg on local or server side
     try:
         print_arg_test.delay(arg)
     except NameError:
         print(arg)
-
+"""
 
 class baseDir():
     """Get the current base directory and adjust accordingly."""
