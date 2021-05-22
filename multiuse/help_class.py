@@ -25,8 +25,21 @@ from gzip import BadGzipFile
 import pandas as pd
 import numpy as np
 
+try:
+    from app.tasks_test import print_arg_test
+except ModuleNotFoundError:
+    pass
+
 # %% codecell
 ###############################################################################
+
+
+def help_print_arg(arg):
+    """Print arg on local or server side."""
+    try:
+        print_arg_test.delay(arg)
+    except NameError:
+        print(arg)
 
 
 class baseDir():
@@ -156,16 +169,20 @@ class getDate():
 # %% codecell
 ###############################################################################
 
+
 class dataTypes():
     """Helper class for implementing data type conversions."""
 
     def __init__(self, df):
-        self.dtypes = df.dtypes
-        self.df = df.copy(deep=True)
-        self._cols_to_cat(self)
-        self.pos_or_neg_ints(self)
-        self.pos_or_neg_floats(self)
-        print('Modified dataframe accessible with xxx.df')
+        if isinstance(df, pd.DataFrame):
+            self.dtypes = df.dtypes
+            self.df = df.copy(deep=True)
+            self._cols_to_cat(self)
+            self.pos_or_neg_ints(self)
+            self.pos_or_neg_floats(self)
+            print('Modified dataframe accessible with xxx.df')
+        else:
+            self.df = df
 
     @classmethod
     def _cols_to_cat(cls, self):

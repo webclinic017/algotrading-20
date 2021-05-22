@@ -37,6 +37,8 @@ pd.set_option('display.max_rows', None)
 # %% codecell
 ##############################################################
 
+# Need to adjust dates to use the self.date param for historical cleaning.
+
 class cleanMmo():
     """Clean mmo data."""
 
@@ -161,11 +163,12 @@ class cleanMmo():
         exp_dates = pd.to_datetime(self.df['expDate'].value_counts().index, yearfirst=True).date
         # Create empty dict to store dates
         exp_dict = {}
+        dt = self.date
 
-        exp_dict['short'] = exp_dates[exp_dates < (date.today() + timedelta(days=45))].astype(str)
-        exp_dict['med'] = (exp_dates[(exp_dates > (date.today() + timedelta(days=45))) &
-                                     (exp_dates < (date.today() + timedelta(days=180)))]).astype(str)
-        exp_dict['long'] = exp_dates[exp_dates > (date.today() + timedelta(days=180))].astype(str)
+        exp_dict['short'] = exp_dates[exp_dates < (dt + timedelta(days=45))].astype(str)
+        exp_dict['med'] = (exp_dates[(exp_dates > (dt + timedelta(days=45))) &
+                                     (exp_dates < (dt + timedelta(days=180)))]).astype(str)
+        exp_dict['long'] = exp_dates[exp_dates > (dt + timedelta(days=180))].astype(str)
 
         return exp_dict
 
@@ -214,6 +217,8 @@ class cleanMmo():
             pass
         else:
             time_dict[t] = time_dict[t].T.drop_duplicates().T
+            # Minimize size of data
+            time_dict[t] = dataTypes(time_dict[t]).df
             time_dict[t].to_json(fname, compression='gzip')
 
 
@@ -305,11 +310,17 @@ class cboeData():
     def concat_dfs(cls, self, df_dict):
         """Concat exchange dfs into one."""
         # Create an empty dataframe
-        df = pd.DataFrame()
+        # df = pd.DataFrame()
+
+        # Create an empty list of dataframes
+        df_list = []
         # Loop through dict and concat
         for ex in self.cboe_ex_list:
             df_dict[ex]['exchange'] = ex
-            df = pd.concat([df, df_dict[ex]])
+            df_list.append(df_dict[ex])
+            # df = pd.concat([df, df_dict[ex]])
+
+        df = pd.concat(df_list)
         # Delete the df_dict
         del df_dict
         # Reset the index
@@ -382,11 +393,14 @@ class cboeData():
 
         df.rename(columns={'Cboe Symbol': 'Symbol'}, inplace=True)
 
+        """
         cols_to_category = ['Symbol', 'Underlying', 'exchange']
         df[cols_to_category] = df[cols_to_category].astype('category')
         cols_to_uint8 = ['yr', 'mo', 'day']
         df[cols_to_uint8] = df[cols_to_uint8].astype(np.uint8)
         df['strike'] = df['strike'].astype(np.float32)
+        """
+        df = dataTypes(df).df
 
         return df
 
@@ -398,9 +412,12 @@ class cboeData():
                            on=['Symbol', 'exchange', 'Underlying'],
                            how='inner'))
             df.reset_index(inplace=True, drop=True)
-            df['rptDate'] = date.today()
+            # df['rptDate'] = date.today()
+            df['rptDate'] = getDate.query('cboe')
 
             # Change data types to reduce file size
+            df = dataTypes(df).df
+            """
             cols_to_float16 = ['strike', 'Liquidity Opportunity']
             cols_to_uint8 = ['yr', 'mo', 'day']
             cols_to_uint16 = (['Missed Liquidity', 'Exhausted Liquidity',
@@ -411,6 +428,8 @@ class cboeData():
             df[cols_to_uint8] = df[cols_to_uint8].astype(np.uint8)
             df[cols_to_uint16] = df[cols_to_uint16].astype(np.uint16)
             df[cols_to_uint32] = df[cols_to_uint32].astype(np.uint32)
+            """
+            # df = dataTypes(df).df
         except TypeError:
             df = pd.DataFrame()
         return df
@@ -488,12 +507,15 @@ class cboeLocalRecDiff():
     @classmethod
     def convert_to_dataframe(cls, self):
         """Convert data to dataframe, add report date."""
-        all_df = pd.DataFrame()
+        # all_df = pd.DataFrame()
+        all_df_list = []
 
         for fs in self.cboe_dict:
             self.cboe_dict[fs] = pd.DataFrame(self.cboe_dict[fs])
             self.cboe_dict[fs]['dataDate'] = fs[-13:-3]
-            all_df = pd.concat([all_df, self.cboe_dict[fs]])
+            all_df_list.append(self.cboe_dict[fs])
+            # all_df = pd.concat([all_df, self.cboe_dict[fs]])
+        all_df = pd.concat(all_df_list)
 
         return all_df
 
@@ -505,6 +527,7 @@ class cboeLocalRecDiff():
         on_list = list(self.unmerged_df.columns.drop('dataDate'))
 
         top_df = pd.DataFrame()
+
         for fsn, fs in enumerate(flist):
             try:
                 # print(flist[(fsn - 1)])
@@ -517,6 +540,7 @@ class cboeLocalRecDiff():
                 df.to_json(self.local_flist[fsn], compression='gzip')
             except IndexError:
                 pass
+
         # Drop columns from merge
         top_df.drop(columns=['dataDate_x', 'dataDate_y'], inplace=True)
         return top_df
