@@ -102,9 +102,11 @@ class HistPricesV2():
         get = requests.get(self.url, params=self.payload)
         if get.status_code == 200:
             df = pd.DataFrame(get.json())
-            self.df = dataTypes(df).df
+            # self.df = dataTypes(df).df
+            mod_df = dataTypes(df).df
             # Write dataframe to json file
-            self.write_to_json(self)
+            mod_df.to_json(self.fpath, compression='gzip')
+            # self.write_to_json(self)
         else:
             get_errors.append(f"Error with {self.url}. {get.content}")
         # Print out any errors that may have arisen.
@@ -125,8 +127,10 @@ class HistPricesV2():
                 df_list.append(pd.DataFrame(get.json()))
             else:
                 get_errors.append(f"Error with {self.url}. {get.content}")
+
         # Print out any errors that may have arisen.
-        self.class_print(get_errors)
+        if len(get_errors) > 1:
+            self.class_print(get_errors)
 
         # Concat all new dates if list is > 1
         if len(df_list) > 0:
@@ -135,9 +139,13 @@ class HistPricesV2():
             all_df = pd.concat([self.df, new_df])
             all_df.drop_duplicates(subset=['date'], inplace=True)
             all_df.reset_index(drop=True, inplace=True)
-            self.df = dataTypes(all_df).df
+
+            mod_df = dataTypes(all_df).df
             # Write dataframe to json file
-            self.write_to_json(self)
+            mod_df.to_json(self.fpath, compression='gzip')
+            # self.df = dataTypes(all_df).df.copy(deep=True)
+            # Write dataframe to json file
+            # self.write_to_json(self)
 
     @classmethod
     def write_to_json(cls, self):

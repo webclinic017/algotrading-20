@@ -24,13 +24,11 @@ from api import serverAPI
 #from data_collect.iex_routines import iexClose
 
 from multiuse.help_class import baseDir, dataTypes, getDate, local_dates
-importlib.reload(sys.modules['multiuse.help_class'])
-from multiuse.help_class import baseDir, dataTypes, getDate, local_dates
+# importlib.reload(sys.modules['multiuse.help_class'])
+# from multiuse.help_class import baseDir, dataTypes, getDate, local_dates
 
 from data_collect.iex_class import readData, urlData
-
 from data_collect.iex_routines import iexClose, histPrices
-
 
 from data_collect.hist_prices import HistPricesV2
 importlib.reload(sys.modules['data_collect.hist_prices'])
@@ -47,7 +45,10 @@ dt = getDate.query('iex_eod')
 pd.bdate_range(date(dt.year, 1, 2), dt)
 dt
 aapl = HistPricesV2('AAPL')
-wt = serverAPI('redo', val='cboe_close')
+
+wt = serverAPI('redo', val='warrants')
+
+cboe = serverAPI('redo', val='cboe_close')
 
 
 # %% codecell
@@ -58,6 +59,12 @@ wt = serverAPI('redo', val='cboe_close')
 all_syms = serverAPI('all_symbols').df
 
 cols_to_exclude = ['cef', 'et', 'oef', 'ps']
+
+dt = getDate.query('iex_eod')
+bd_range = pd.bdate_range(date(dt.year, 1, 2), dt)
+
+times_need = bd_range[~bd_range.isin(df['date'])]
+dts_need = [bd.date().strftime('%Y%m%d') for bd in times_need]
 
 
 
