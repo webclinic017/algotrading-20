@@ -43,13 +43,18 @@ pd.set_option('display.max_rows', 500)
 ##################################
 dt = getDate.query('iex_eod')
 pd.bdate_range(date(dt.year, 1, 2), dt)
-dt
+
 aapl = HistPricesV2('AAPL')
+
+aapl.dts_need
+aapl.df['date']
+
 
 wt = serverAPI('redo', val='warrants')
 
 cboe = serverAPI('redo', val='cboe_close')
 
+hist_wts = serverAPI('redo', val='hist_warrants')
 
 # %% codecell
 ##################################
@@ -70,6 +75,14 @@ dts_need = [bd.date().strftime('%Y%m%d') for bd in times_need]
 
 # %% codecell
 ##################################
+
+all_syms['type'].value_counts()
+
+
+
+# %% codecell
+##################################
+
 
 iex_eod = serverAPI('iex_quotes_raw')
 iex_eod_df = dataTypes(iex_eod.df.copy(deep=True)).df

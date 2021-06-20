@@ -37,11 +37,12 @@ pd.set_option('display.max_rows', 500)
 # Form 13G 13G/A 13D/A
 
 # sec_idx = serverAPI(which='redo', val='sec_idx_master')
-sec_inst = serverAPI(which='sec_inst_holdings')
+# sec_inst = serverAPI(which='sec_inst_holdings')
 
-iex_close = serverAPI(which='redo', val='iex_close')
+# iex_close = serverAPI(which='redo', val='iex_close')
 
 sec_master = serverAPI(which='redo', val='sec_idx_master')
+sec_master = serverAPI(which='redo', val='combine_all_sec_masters')
 
 sec_inst.df.shape
 """
@@ -92,6 +93,22 @@ row_test = sec_df_13G.iloc[10]
 
 # %% codecell
 #####################################################
+
+ms_all = serverAPI('sec_master_all').df
+ms_all = dataTypes(ms_all).df.copy(deep=True)
+ms_all.shape
+
+ms_all.info(memory_usage='deep')
+
+ms_all['Form Type'].value_counts()
+
+ms_all['Date Filed'].value_counts()
+
+f13f_hr = ms_all[ms_all['Form Type'] == '13F-HR'].copy(deep=True)
+f13f_hr.shape
+
+f13f_hr['Date Filed'].value_counts()
+f13f_hr.head(100)
 
 
 # %% codecell
