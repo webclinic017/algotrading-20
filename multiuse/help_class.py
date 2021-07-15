@@ -229,15 +229,16 @@ class getDate():
         fpath = f"{baseDir().path}/ref_data/bus_days.gz"
 
         if not os.path.isfile(fpath):
-            dt = getDate.query('iex_eod')
-            days = pd.bdate_range(date(dt.year, 1, 2), dt)
             rh = RecordHolidays()
-            holiday_list = pd.to_datetime(rh.df['date'])
-            # Find all business days not in the holiday list
-            dti = days[~days.isin(holiday_list)]
-            df = dti.to_frame().reset_index(drop=True)
-            df.columns = ['date']
-            df.to_json(fpath, compression='gzip')
+            # Record the earliest/latest holiday and use that as range
+            dt_min = rh.df['date'].min().date()
+            dt_max = rh.df['date'].max().date()
+            # Convert datetime index to series
+            days = pd.Series(pd.bdate_range(dt_min, dt_max))
+            # Get all business days that are not holidays
+            days = days[~days.isin(rh.df['date'])]
+            # Write to local json file
+            days.to_json(fpath, compression='gzip')
         else:
             df = pd.read_json(fpath, compression='gzip')
 
