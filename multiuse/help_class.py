@@ -240,6 +240,8 @@ class getDate():
             days.reset_index(drop=True, inplace=True)
             # Write to local json file
             days.to_json(fpath, compression='gzip')
+
+            df = days.copy(deep=True)
         else:
             df = pd.read_json(fpath, compression='gzip')
 
