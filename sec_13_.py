@@ -19,6 +19,8 @@ from data_collect.sec_routines import secInsiderTrans, secMasterIdx
 importlib.reload(sys.modules['data_collect.sec_routines'])
 from data_collect.sec_routines import secInsiderTrans, secMasterIdx
 
+from data_collect.sec_form13s import get13F
+
 from multiuse.help_class import baseDir, dataTypes
 
 from multiuse.sec_helpers import add_ciks_to_13FHRs
@@ -43,6 +45,8 @@ pd.set_option('display.max_rows', 500)
 
 sec_master = serverAPI(which='redo', val='sec_idx_master')
 sec_master = serverAPI(which='redo', val='combine_all_sec_masters')
+
+sec_masters = serverAPI(which='sec_master_all').df
 
 sec_inst.df.shape
 """
@@ -94,7 +98,14 @@ row_test = sec_df_13G.iloc[10]
 # %% codecell
 #####################################################
 
+all_syms = serverAPI('all_symbols').df
+all_syms.head(10)
+
+
+
 ms_all = serverAPI('sec_master_all').df
+
+
 ms_all = dataTypes(ms_all).df.copy(deep=True)
 ms_all.shape
 
@@ -105,6 +116,12 @@ ms_all['Form Type'].value_counts()
 ms_all['Date Filed'].value_counts()
 
 f13f_hr = ms_all[ms_all['Form Type'] == '13F-HR'].copy(deep=True)
+
+test_13f = get13F(f13f_hr.iloc[0])
+test_13f.df.head(10)
+f13f_hr.head(10)
+
+
 f13f_hr.shape
 
 f13f_hr['Date Filed'].value_counts()

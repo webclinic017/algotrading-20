@@ -15,6 +15,7 @@ uint32: Unsigned integer (0 to 4294967295)
 from dotenv import load_dotenv
 import glob
 import os
+import json
 from pathlib import Path
 from datetime import timedelta, date
 import datetime
@@ -24,6 +25,7 @@ from gzip import BadGzipFile
 
 import pandas as pd
 import numpy as np
+import requests
 
 """
 try:
@@ -43,6 +45,21 @@ def help_print_arg(arg):
     except NameError:
         print(arg)
 """
+
+
+def df_create_bins(df, bin_size=1000):
+    """Create bins sizes of default 1000 each. Add to df."""
+    if isinstance(df.index, object):
+        df.reset_index(drop=True, inplace=True)
+
+    qcut_bin_n = df.shape[0] // 1000
+    bin_labels = list(range(1, qcut_bin_n + 1))
+
+    # Create column with bin numbers
+    df['bins'] = pd.qcut(df.index.tolist(), q=qcut_bin_n, labels=bin_labels)
+    # Return dataframe
+    return df
+
 
 class baseDir():
     """Get the current base directory and adjust accordingly."""
@@ -66,6 +83,44 @@ class scriptDir():
             self.path = f"{Path(os.getcwd())}/scripts/dev/data_collect"
         else:
             self.path = f"{Path(os.getcwd()).parents[0]}/dev/data_collect"
+
+
+class RWJsonDicts():
+    """Read and write local json dictionaries."""
+
+    # When writing, set file arg to writable dict
+    # When reading, data accessible by .data attribute
+    data = False
+    base_dir = baseDir().path
+    local_dicts = ({
+        'iex_options_symref': f"{base_dir}/derivatives/iex_symref/expos.json"
+    })
+
+    def __init__(self, fpath=False, file=False, local_dict=False):
+        if local_dict:
+            fpath = self.get_local_fpath(self, local_dict)
+        if file:
+            self.write_dict_to_json(self, fpath, file)
+        if not file:
+            self.read_dict_from_json(self, fpath)
+
+    @classmethod
+    def get_local_fpath(cls, self, local_dict):
+        """Get fpath of local json file."""
+        fpath = self.local_dicts[local_dict]
+        return fpath
+
+    @classmethod
+    def write_dict_to_json(cls, self, fpath, file):
+        """Write dictionary to json file."""
+        with open(fpath, 'w') as write_this:
+            json.dump(file, write_this)
+
+    @classmethod
+    def read_dict_from_json(cls, self, fpath):
+        """Read local json file into dictionary."""
+        with open(fpath, 'rb') as read_this:
+            self.data = json.load(read_this)
 
 # %% codecell
 ###############################################################################
@@ -167,6 +222,26 @@ class getDate():
                 pass
 
         return date_list
+
+    @staticmethod
+    def get_bus_days():
+        """Get all business days. If file, read and return."""
+        fpath = f"{baseDir().path}/ref_data/bus_days.gz"
+
+        if not os.path.isfile(fpath):
+            dt = getDate.query('iex_eod')
+            days = pd.bdate_range(date(dt.year, 1, 2), dt)
+            rh = RecordHolidays()
+            holiday_list = pd.to_datetime(rh.df['date'])
+            # Find all business days not in the holiday list
+            dti = days[~days.isin(holiday_list)]
+            df = dti.to_frame().reset_index(drop=True)
+            df.columns = ['date']
+            df.to_json(fpath, compression='gzip')
+        else:
+            df = pd.read_json(fpath, compression='gzip')
+
+        return df
 
 # %% codecell
 ###############################################################################
@@ -292,6 +367,60 @@ def local_dates(which, sym_list):
     ld_dict['syms_data'] = syms_dict
     ld_dict['syms_fpaths'] = local_stock_data
     return ld_dict
+
+# %% codecell
+###############################################################################
+
+
+class RecordHolidays():
+    """Record holidays from IEX reference data."""
+    base_path = baseDir().path
+    fpath, df = '', None
+
+    def __init__(self):
+        self.construct_fpaths(self)
+        self.check_existing(self)
+        if not isinstance(self.df, pd.DataFrame):
+            next_url, last_url, payload = self.construct_params(self)
+            self.get_data(self, next_url, last_url, payload)
+            self.write_to_json(self)
+
+    @classmethod
+    def construct_fpaths(cls, self):
+        """Construct fpaths to use for data storage."""
+        self.fpath = f"{self.base_path}/ref_data/holidays.gz"
+
+    @classmethod
+    def check_existing(cls, self):
+        """Check for existing dataframe."""
+        if os.path.isfile(self.fpath):
+            self.df = pd.read_json(self.fpath, compression='gzip')
+
+    @classmethod
+    def construct_params(cls, self, type='holiday', last=50):
+        """Construct parameters for get request."""
+        load_dotenv()
+        base_url = os.environ.get("base_url")
+        payload = {'token': os.environ.get("iex_publish_api")}
+
+        next_url = f"{base_url}/ref-data/us/dates/{type}/next/{last}"
+        last_url = f"{base_url}/ref-data/us/dates/{type}/last/{last}"
+
+        return next_url, last_url, payload
+
+    @classmethod
+    def get_data(cls, self, next_url, last_url, payload):
+        """Get all holidays and store within class df."""
+        next_df = pd.DataFrame(requests.get(next_url, params=payload).json())
+        last_df = pd.DataFrame(requests.get(last_url, params=payload).json())
+
+        all_df = pd.concat([next_df, last_df]).reset_index(drop=True)
+        self.df = all_df
+
+    @classmethod
+    def write_to_json(cls, self):
+        """Write data to local compressed json."""
+        self.df.to_json(self.fpath)
 
 # %% codecell
 ###############################################################################

@@ -5,12 +5,16 @@
 import os
 from datetime import date
 import string
+import importlib
+import sys
 
 import pandas as pd
 import requests
 from dotenv import load_dotenv
 
-from multiuse.help_class import baseDir, dataTypes, getDate
+from multiuse.help_class import baseDir, dataTypes, getDate, RWJsonDicts
+importlib.reload(sys.modules['multiuse.help_class'])
+from multiuse.help_class import baseDir, dataTypes, getDate, RWJsonDicts
 
 from api import serverAPI
 
@@ -47,75 +51,71 @@ def iex_options_symbol_ref():
     all_syms = pd.read_json(syms_fpath, compression='gzip')
 
     all_cs = all_syms[all_syms['type'] == 'cs'].tolist()
+    for sym in all_cs:
+
+
+
+load_dotenv()
+base_url = os.environ.get("base_url")
+payload = {'token': os.environ.get("iex_publish_api")}
+url = f"{base_url}/ref-data/options/symbols"
+get = requests.get(url, params=payload)
+get_json = get.json()
+
+np_json = get_json.values()
+
+
+# Dictionary of expiration dates needs to be written to local file.
+import json
+fpath = f"{base_dir}/derivatives/iex_symref/expos.json"
+
+# %% codecell
+########################################################
+
+iex_options_symref = serverAPI('redo', val='get_iex_symbol_ref')
+
+data = RWJsonDicts(local_dict='iex_options_symref').data
+
+# 1000 per symbol per expo date.
+len(data['AAPL'])
+
+29000 * 1000
+
+50000000 / 30 / 21
+
+all_syms = serverAPI('all_symbols').df
+
+all_etfs = all_syms[all_syms['type'] == 'et']['symbol'].tolist()
+
+non_etfs = []
+non_etfs_counts = 0
+for key, val in data.items():
+    if key not in all_etfs:
+        non_etfs.append(key)
+        non_etfs_counts += len(val)
+
+print(non_etfs)
+print(non_etfs_counts)
+
+
+25000 * 1000
+all_syms['type'].value_counts()
+
+
 
 # %% codecell
 ########################################################
 
 
-class IexOptionSymref():
-    """Get iex options symref data, write to json."""
-    fpath = ''
+def count_exp_dates(data):
+    """Count the number of option expo dates."""
+    exp_counts = 0
+    for key, val in data.items():
+        exp_counts += len(val)
 
-    def __init__(self, sym):
-        self.construct_fpath(self, sym)
-        df_raw = self.get_data(self, sym)
-
-        self.concat_data(self, df_raw)
-        self.write_to_json(self)
-
-    @classmethod
-    def construct_fpath(cls, self, sym):
-        """Construct local fpath."""
-        base_dir, yr = baseDir().path, date.today().year
-        fpath_base = f"{base_dir}/derivatives/iex_symref/{yr}"
-        fpath = f"{fpath_base}/{sym.lower()[0]}/_{sym}.gz"
-        self.fpath = fpath
-
-    @classmethod
-    def get_data(cls, self, sym):
-        """Construct parameters."""
-        load_dotenv()
-        base_url = os.environ.get("base_url")
-        payload = {'token': os.environ.get("iex_publish_api")}
-        url = f"{base_url}/ref-data/options/symbols/{sym}"
-
-        get = requests.get(url, params=payload)
-        df = pd.DataFrame(get.json())
-        return df
-
-    @classmethod
-    def concat_data(cls, self, df):
-        """Concat data with previous file if it exists."""
-
-        if os.path.isfile(self.fpath):
-            df_all = pd.concat([pd.read_json(self.fpath), df])
-            df_all = (df_all.drop_duplicates(subset='symbol')
-                            .reset_index(drop=True))
-            df = dataTypes(df_all).df.copy(deep=True)
-        else:
-            # Minimize size of data
-            df = dataTypes(df).df.copy(deep=True)
-
-        self.df = df
-
-    @classmethod
-    def write_to_json(cls, self):
-        """Write data to local json file."""
-        self.df.to_json(self.fpath, compression='gzip')
-
-
-# %% codecell
-########################################################
-
-base_path = f"{baseDir().path}/derivatives/iex_symref"
-
-
-
-
-
-
-
-
+    print(f"There are {len(data.keys())} unique symbols.")
+    print()
+    print(f"There are {exp_counts} expo dates.")
 
 
 # %% codecell

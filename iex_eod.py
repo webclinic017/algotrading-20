@@ -14,6 +14,7 @@ import importlib
 from dotenv import load_dotenv
 from json import JSONDecodeError
 from datetime import date
+import json
 
 from api import serverAPI
 importlib.reload(sys.modules['api'])
@@ -23,9 +24,9 @@ from api import serverAPI
 #importlib.reload(sys.modules['data_collect.iex_routines'])
 #from data_collect.iex_routines import iexClose
 
+from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, df_create_bins
+importlib.reload(sys.modules['multiuse.help_class'])
 from multiuse.help_class import baseDir, dataTypes, getDate, local_dates
-# importlib.reload(sys.modules['multiuse.help_class'])
-# from multiuse.help_class import baseDir, dataTypes, getDate, local_dates
 
 from data_collect.iex_class import readData, urlData
 from data_collect.iex_routines import iexClose, histPrices
@@ -42,12 +43,13 @@ pd.set_option('display.max_rows', 500)
 # %% codecell
 ##################################
 dt = getDate.query('iex_eod')
-pd.bdate_range(date(dt.year, 1, 2), dt)
 
+bus_days = getDate.get_bus_days()
+
+
+
+bus_days['date'].tolist()
 aapl = HistPricesV2('AAPL')
-
-aapl.dts_need
-aapl.df['date']
 
 
 wt = serverAPI('redo', val='warrants')
@@ -56,12 +58,42 @@ cboe = serverAPI('redo', val='cboe_close')
 
 hist_wts = serverAPI('redo', val='hist_warrants')
 
+
+# This should be run at the beginning of every weekday
+
 # %% codecell
 ##################################
 
 # Someone bought/sold 800 calls at $7 strike for RIG 2022
 
+# We probably want the last 50 holidays, the next 50 holidays, to run every 6 months
+
+# %% codecell
+##################################
+
 all_syms = serverAPI('all_symbols').df
+
+all_syms = df_create_bins(all_syms)
+
+
+base_dir = baseDir().path
+
+
+new_syms = urlData('/ref-data/symbols')
+new_syms_df = new_syms.df.copy(deep=True)
+new_syms_df['type'].value_counts()
+
+all_syms['type'].value_counts()
+
+otc_syms = urlData('/ref-data/otc/symbols').df
+otc_df = otc_syms.copy(deep=True)
+
+all_syms['bins'].value_counts()
+
+#  pd.qcut(df['ext price'], q=4)
+
+otc_df['type'].value_counts()
+
 
 cols_to_exclude = ['cef', 'et', 'oef', 'ps']
 

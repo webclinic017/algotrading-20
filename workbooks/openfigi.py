@@ -62,8 +62,14 @@ load_dotenv()
 
 figi_api = os.environ.get("openfigi_api")
 
+# FIGI - Financial instrument global identifier
+# (Formerly bloomberg global identifier)
+# Composite FIGI = cs traded on American exchanges
+
 fpath = "/Users/unknown1/Algo/data/sec/inst_holds_com/_comb.gz"
 comb_holdings_df = pd.read_json(fpath, compression='gzip')
+comb_holdings_df.head(10)
+
 cusip_list = comb_holdings_df['cusip'].value_counts().index.tolist()
 
 comb_holdings_df.head(10)
@@ -71,8 +77,16 @@ comb_holdings_df.head(10)
 headers = {'content-type': 'text/json', 'X-OPENFIGI-APIKEY': figi_api}
 base_url = 'https://api.openfigi.com/v3/mapping'
 url = f"{base_url}"
+payload = [{'idType': 'ID_CUSIP', 'idValue': '88579Y101', "exchCode": "US"}]
+post = requests.post(url, data=json.dumps(payload), headers=headers)
+post_json = post.json()
+post_json
+
+
 
 payload_all = [{'idType': 'ID_CUSIP', 'idValue': val} for val in cusip_list]
+
+
 all_df_list = []
 while len(payload_all) != 0:
     payload = []
