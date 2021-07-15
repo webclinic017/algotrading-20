@@ -38,6 +38,7 @@ def make_url_dict():
         'new_syms_today': '/symbols/new/today',
         'new_syms_all': '/symbols/new/all',
         'all_symbols': '/symbols/all',
+        'otc_syms': 'symbols/otc',
         'cs_top_vol': '/scans/vol/avg',
         'sec_ref': '/sec/data/ref',
         'sec_inst_holdings': '/sec/data/institutions',

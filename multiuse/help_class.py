@@ -237,6 +237,7 @@ class getDate():
             days = pd.Series(pd.bdate_range(dt_min, dt_max))
             # Get all business days that are not holidays
             days = days[~days.isin(rh.df['date'])]
+            days.reset_index(drop=True, inplace=True)
             # Write to local json file
             days.to_json(fpath, compression='gzip')
         else:
