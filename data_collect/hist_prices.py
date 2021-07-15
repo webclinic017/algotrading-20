@@ -82,8 +82,9 @@ class HistPricesV2():
         # Assuming df exists and is valid
         else:
             # Make a pandas datetime range
-            bd_range = pd.bdate_range(date(dt.year, 1, 2), dt)
-            times_need = bd_range[~bd_range.isin(df['date'])]
+            # bd_range = pd.bdate_range(date(dt.year, 1, 2), dt)
+            bd_range = getDate.get_bus_days()
+            times_need = bd_range['date'][~bd_range['date'].isin(df['date'])]
             dts_need = [bd.date().strftime('%Y%m%d') for bd in times_need]
 
             # If more than 10 dates are needed, just get YTD

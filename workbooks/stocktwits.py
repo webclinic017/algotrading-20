@@ -1,5 +1,5 @@
 """
-Let's have some fun with stocktwits data
+Stocktwits Data.
 - Rate limit of 200 get requests/hour with unauthenticated
 - Rate limit of 400 get requests/hour with authenticated
 - Unauthenticated is tied to IP address (rotating proxies)
@@ -68,24 +68,18 @@ sym_list = st_df['symbol'].value_counts().index.to_list()
 # %% codecell
 #############################################################
 
-readData.get_all_symbols()
-syms_fpath = f"{baseDir().path}/tickers/all_symbols.gz"
+st_all = serverAPI('st_trend_all')
 
-all_syms = pd.read_json(syms_fpath, compression='gzip')
+st_df = dataTypes(st_all.df).df.copy(deep=True)
 
-all_syms.info(memory_usage='deep')
+st_df.info(memory_usage='deep')
 
-all_syms.head(10)
+st_df.head(1)
 
 # %% codecell
 #############################################################
-# /StockEOD/{date.today().year}/*/**
 
-ld_dict = local_dates()
 
-# Get all the syms that are not saved locally
-not_local_syms = [sym for sym in sym_list if sym not in ld_dict['syms_list']]
-get_ytd_syms = [].append(not_local_syms)
 # %% codecell
 #############################################################
 
