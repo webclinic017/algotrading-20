@@ -227,16 +227,18 @@ class getDate():
     def get_bus_days():
         """Get all business days. If file, read and return."""
         fpath = f"{baseDir().path}/ref_data/bus_days.gz"
+        df = None
 
         if not os.path.isfile(fpath):
-            rh = RecordHolidays()
+            rh = RecordHolidays().df['date']
             # Record the earliest/latest holiday and use that as range
-            dt_min = rh.df['date'].min().date()
-            dt_max = rh.df['date'].max().date()
+            dt_min = rh.min().date()
+            dt_max = rh.max().date()
             # Convert datetime index to series
-            days = pd.Series(pd.bdate_range(dt_min, dt_max))
+            days_df = (pd.DataFrame(pd.bdate_range(dt_min, dt_max),
+                                    columns=['date']))
             # Get all business days that are not holidays
-            days = days[~days.isin(rh.df['date'])]
+            days = days_df[~days_df.isin(rh)]
             days.reset_index(drop=True, inplace=True)
             # Write to local json file
             days.to_json(fpath, compression='gzip')

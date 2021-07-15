@@ -66,11 +66,12 @@ hist_wts = serverAPI('redo', val='hist_warrants')
 
 # %% codecell
 ##################################
-
+redo_otc_syms = serverAPI('redo', val='otc_ref_data')
+otc_syms = serverAPI('otc_syms').df
 
 all_syms = serverAPI('all_symbols').df
-
 all_syms = df_create_bins(all_syms)
+
 all_syms.dtypes
 
 base_dir = baseDir().path
