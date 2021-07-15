@@ -47,6 +47,19 @@ pd.set_option('display.max_rows', 500)
 # %% codecell
 ##############################################
 
+
+def otc_ref_data():
+    """Get all otc reference data from IEX cloud."""
+    # Use urlData function to get all otc sym ref data
+    otc_syms = urlData('/ref-data/otc/symbols').df
+    # Minimize data types for otc symbols dataframe
+    otc_syms_df = dataTypes(otc_syms).df
+    # Create fpath to store otc_syms
+    fpath = f"{baseDir().path}/tickers/otc_syms.gz"
+    # Write otc symbols to local gzip file
+    otc_syms_df.to_json(fpath, compression='gzip')
+
+
 class dailySymbols():
     """Get a list of all symbols supported by IEX."""
 

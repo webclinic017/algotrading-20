@@ -44,32 +44,9 @@ pd.set_option('display.max_rows', 500)
 ##################################
 dt = getDate.query('iex_eod')
 
-rh = RecordHolidays()
-
-# Record the earliest/latest holiday and use that as range
-dt_min = rh.df['date'].min().date()
-dt_max = rh.df['date'].max().date()
-# Convert datetime index to series
-days = pd.Series(pd.bdate_range(dt_min, dt_max))
-# Get all business days that are not holidays
-days = days[~days.isin(rh.df['date'])]
-
-fpath = f"{baseDir().path}/ref_data/bus_days.gz"
-days.to_json(fpath, compression='gzip')
-
-
-fpath_holidays = f"{baseDir().path}/ref_data/holidays.gz"
-df_holidays = pd.read_json(fpath_holidays)
-df_holidays.shape
-df_holidays.head(10)
-
-fpath
-days
-
-
-
 aapl = HistPricesV2('AAPL')
 
+serverAPI('redo', val='get_bus_days')
 
 wt = serverAPI('redo', val='warrants')
 
@@ -89,6 +66,7 @@ hist_wts = serverAPI('redo', val='hist_warrants')
 
 # %% codecell
 ##################################
+
 
 all_syms = serverAPI('all_symbols').df
 
