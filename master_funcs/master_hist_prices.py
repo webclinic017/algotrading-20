@@ -25,12 +25,10 @@ class SplitGetHistPrices():
         self.determine_params(self, testing, normal, otc)
         bins_unique = self.create_df_bins(self)
 
-        if testing:
-            self.testing_get_data(self)
-        elif remote:
-            self.remote_get_data(self, bins_unique)
+        if remote:
+            self.remote_get_data(self, bins_unique, testing)
         else:
-            self.local_get_data(self, bins_unique)
+            self.local_get_data(self, bins_unique, testing)
 
     @classmethod
     def determine_params(cls, self, testing, normal, otc):
@@ -54,21 +52,13 @@ class SplitGetHistPrices():
         return bins_unique
 
     @classmethod
-    def testing_get_data(cls, self):
-        """Testing for 50 otc symbols at random to see if this works."""
-        sample_df = self.df.sample(n=50)
-        # Convert symbol column to list
-        syms_list = sample_df['symbol'].tolist()
-
-        for sym in syms_list:
-            HistPricesV2(sym)
-
-    @classmethod
-    def remote_get_data(cls, self, bins_unique):
+    def remote_get_data(cls, self, bins_unique, testing):
         """Call tasks.execute_func for subdivided remote server processes."""
         # For each of the 1000 symbol bins, get data
         for bin in bins_unique:
             syms_part = self.df[self.df['bins'] == bin]
+            if testing:
+                syms_part = syms_part.sample(n=5).copy(deep=True)
             sym_list = syms_part['symbol'].tolist()
             # Define **kwargs to unpack in execute_func, for each bin
             kwargs = {'sym_list': sym_list}
@@ -76,11 +66,13 @@ class SplitGetHistPrices():
             execute_func.delay('hist_prices_sub', **kwargs)
 
     @classmethod
-    def local_get_data(cls, self, bins_unique):
+    def local_get_data(cls, self, bins_unique, testing):
         """Get historical data using imported function."""
         # For each of the 1000 symbol bins, get data
         for bin in bins_unique:
             syms_part = self.df[self.df['bins'] == bin]
+            if testing:
+                syms_part = syms_part.sample(n=5).copy(deep=True)
             sym_list = syms_part['symbol'].tolist()
             # Using list of symbols, call function to get data and store local
             for sym in sym_list:
