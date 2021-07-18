@@ -64,3 +64,5 @@ def makedirs_with_permissions(path):
     if not os.path.isdir(path):
         os.umask(0)
         os.makedirs(path, mode=0o777)
+    else:
+        print('Directory already exists')

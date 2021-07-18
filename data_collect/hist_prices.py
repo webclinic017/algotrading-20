@@ -112,7 +112,9 @@ class HistPricesV2():
             get_errors.append(f"Error with {self.url}. {get.content}")
         # Print out any errors that may have arisen.
         self.get = get
-        self.class_print(get_errors)
+        
+        if len(get_errors) > 0:
+            self.class_print(get_errors)
 
     @classmethod
     def get_exact_dates(cls, self):
