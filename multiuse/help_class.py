@@ -263,7 +263,7 @@ class dataTypes():
             self._cols_to_cat(self)
             self.pos_or_neg_ints(self)
             self.pos_or_neg_floats(self)
-            print('Modified dataframe accessible with xxx.df')
+            # print('Modified dataframe accessible with xxx.df')
         else:
             self.df = df
 

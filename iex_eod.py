@@ -35,6 +35,8 @@ from data_collect.hist_prices import HistPricesV2
 importlib.reload(sys.modules['data_collect.hist_prices'])
 from data_collect.hist_prices import HistPricesV2
 
+from master_funcs.hist_prices_master import SplitGetHistPrices
+
 # Display max 50 columns
 pd.set_option('display.max_columns', 100)
 # Display maximum rows
@@ -42,6 +44,33 @@ pd.set_option('display.max_rows', 500)
 
 # %% codecell
 ##################################
+
+all_syms = serverAPI('all_symbols').df
+all_syms['symbol'].unique().tolist()
+
+
+
+url = "https://algotrading.ventures/api/v1/symbols/data/AAPL"
+sym = requests.get(url)
+sym_dict = sym.json()
+sym_dict.keys()
+aapl_hist = pd.read_json(sym_dict['iex_hist'])
+
+
+url = "https://algotrading.ventures/api/v1/symbols/data/RIG"
+sym = requests.get(url).json()
+rig_hist = pd.read_json(sym['iex_hist'])
+rig_hist['date']
+
+
+sghp = SplitGetHistPrices(testing=True, otc=True)
+
+
+all_syms['type'].value_counts()
+
+# %% codecell
+##################################
+
 dt = getDate.query('iex_eod')
 
 aapl = HistPricesV2('AAPL')
@@ -54,6 +83,14 @@ cboe = serverAPI('redo', val='cboe_close')
 
 hist_wts = serverAPI('redo', val='hist_warrants')
 
+hist_prices_v2_sub = serverAPI('redo', val='iex_hist_v2_sub')
+
+# OtcEod
+path = f"{baseDir().path}/OtcEod"
+path
+make_hist_prices_dir(path)
+
+from multiuse.create_file_struct import make_hist_prices_dir
 
 # This should be run at the beginning of every weekday
 
