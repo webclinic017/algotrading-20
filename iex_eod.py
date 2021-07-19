@@ -1,6 +1,4 @@
-"""
-Analyze IEX End of Day Quotes.
-"""
+"""Analyze IEX End of Day Quotes."""
 # %% codecell
 ##################################
 import requests
@@ -35,7 +33,7 @@ from data_collect.hist_prices import HistPricesV2
 importlib.reload(sys.modules['data_collect.hist_prices'])
 from data_collect.hist_prices import HistPricesV2
 
-from master_funcs.hist_prices_master import SplitGetHistPrices
+from master_funcs.master_hist_prices import SplitGetHistPrices
 
 # Display max 50 columns
 pd.set_option('display.max_columns', 100)
@@ -50,10 +48,11 @@ all_syms['symbol'].unique().tolist()
 
 
 
+
+
 url = "https://algotrading.ventures/api/v1/symbols/data/AAPL"
 sym = requests.get(url)
 sym_dict = sym.json()
-sym_dict.keys()
 aapl_hist = pd.read_json(sym_dict['iex_hist'])
 
 
@@ -66,16 +65,124 @@ rig_hist['date']
 sghp = SplitGetHistPrices(testing=True, otc=True)
 
 
-all_syms['type'].value_counts()
-
 # %% codecell
 ##################################
+
+def get_this_year_bus_days():
+    """Get a list of all of this years business days."""
+    bus_days = getDate.get_bus_days()
+    dt_today = date.today()
+    bus_days = (bus_days[(bus_days['date'].dt.year == dt_today.year) &
+                         (bus_days['date'].dt.dayofyear <
+                          dt_today.timetuple().tm_yday)])
+    return bus_days
+
+
+
+# Start of a fibonacci retracement opportunity.
+# Look for volume that is substantially higher than the last few days/weeks.
+# Say 2x the average volume for the previous 2 months
+# Significant up movement ~ greater than 3% let's call it.
+# Look for corporate events like news article or something similar within 1 day.
+
+# Look for overlap in social sentiment. One way to start doing this is to
+# Get all the stocktwits data, then the all symbols data, and map up the CIKs for the underlying SPACs.
+
+
+all_syms = serverAPI('all_symbols').df.copy(deep=True)
+all_syms = dataTypes(all_syms, resolve_floats=True).df.copy(deep=True)
+
+# %% codecell
+#######################
+
+
+# %% codecell
+#######################
+
+deriv_list = ['wt', 'ut']
+
+all_derivs = all_syms[all_syms['type'].isin(deriv_list)]
+
+all_cs_wts = (all_syms[(all_syms['cik'].isin(all_derivs['cik'].tolist())) &
+                       (all_syms['type'] == 'cs')])
+
+all_cs_syms = all_cs_wts['symbol'].tolist()
+
+all_st = serverAPI('st_trend_all')
+all_st_df = all_st.df.copy(deep=True)
+
+
+
+all_st_df = dataTypes(all_st.df).df
+all_st_df.head(10)
+
+all_st
+
+all_st_df.dropna(subset=['watchlist_count'], inplace=True)
+all_st_df.reset_index(drop=True, inplace=True)
+
+all_comb = all_st_df[all_st_df['symbol'].isin(all_cs_syms)].reset_index(drop=True)
+
+df_counts = pd.DataFrame(all_comb['symbol'].value_counts() > 1).reset_index()
+df_counts = df_counts[df_counts['symbol'] == True].copy(deep=True)
+all_comb = all_comb[all_comb['symbol'].isin(df_counts['index'].tolist())]
+
+all_ocgn = all_st_df[all_st_df['symbol'] == 'OCGN'].copy(deep=True)
+all_ocgn['timestamp'] = pd.to_datetime(all_ocgn['timestamp'], unit='ms')
+all_ocgn['date'] = all_ocgn['timestamp'].dt.date
+
+all_ocgn_by_day = all_ocgn.groupby(by='date').count().reset_index()[['date', 'id']].rename(columns={'id': 'count'})
+
+url = "https://algotrading.ventures/api/v1/symbols/data/OCGN"
+sym = requests.get(url).json()
+ocgn_hist = pd.read_json(sym['iex_hist'])
+all_ocgn_by_day['date'] = pd.to_datetime(all_ocgn_by_day['date'])
+ocgn_sub = pd.merge(ocgn_hist, all_ocgn_by_day, on='date').copy(deep=True)
+ocgn_sub.set_index(keys='date', inplace=True)
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+# %% codecell
+###########################################################################
+ocgn_sub['fClose'].plot(label='Close', figsize=(16, 8))
+ocgn_sub['count'].plot(label='Count', secondary_y=True)
+plt.legend()
+
+# %% codecell
+###########################################################################
+
+all_ocgn.plot(x='date', '')
+
+all_ocgn['date'].min()
+
+all_ocgn.shape
+all_comb.head(10)
+all_ocgn.head(10)
+
+all_comb.head(10)
+
+all_comb['symbol'].value_counts()
+
+all_comb.shape
+
+all_st_df['symbol'].value_counts().head(50)
+
+all_st_df.dtypes
+
+all_st_df_cols = {'id': np.uint16, 'symbol': 'category', 'watchlist_count': np.uint32, 'timestamp': }
+
+all_st_df['watchlist_count'] = all_st_df['watchlist_count'].astype(np.uint32)
+all_st_df.head(10)
+
+
 
 dt = getDate.query('iex_eod')
 
 aapl = HistPricesV2('AAPL')
 
 serverAPI('redo', val='get_bus_days')
+
+serverAPI('redo', val='split_get_hist_prices')
 
 wt = serverAPI('redo', val='warrants')
 
@@ -84,13 +191,6 @@ cboe = serverAPI('redo', val='cboe_close')
 hist_wts = serverAPI('redo', val='hist_warrants')
 
 hist_prices_v2_sub = serverAPI('redo', val='iex_hist_v2_sub')
-
-# OtcEod
-path = f"{baseDir().path}/OtcEod"
-path
-make_hist_prices_dir(path)
-
-from multiuse.create_file_struct import make_hist_prices_dir
 
 # This should be run at the beginning of every weekday
 

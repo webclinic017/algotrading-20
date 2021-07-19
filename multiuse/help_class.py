@@ -61,6 +61,17 @@ def df_create_bins(df, bin_size=1000):
     return df
 
 
+def check_size(var, name=False):
+    """Check size of variable in megabytes."""
+    from sys import getsizeof
+    mb = round(getsizeof(var) / 1000000, 2)
+
+    if name:
+        print(f"Var {name} is {mb} mb")
+    else:
+        print(f"Var is {mb} mb")
+
+
 class baseDir():
     """Get the current base directory and adjust accordingly."""
     load_dotenv()
@@ -173,8 +184,8 @@ class getDate():
         weekend, query_date = False, ''
         if date.today().weekday() in (5, 6):
             weekend = True
-        elif (date.today().weekday() == 0 and
-                not getDate.time_cutoff(cutoff_hm=17.15)):
+        elif (date.today().weekday() == 0
+                and not getDate.time_cutoff(cutoff_hm=17.15)):
             weekend = True
 
         if site in ('cboe', 'occ'):
@@ -255,17 +266,72 @@ class getDate():
 
 class dataTypes():
     """Helper class for implementing data type conversions."""
+    explicit, df = False, False
+    not_float_cols, not_float_cols_nans = [], []
 
-    def __init__(self, df):
+    def __init__(self, df, resolve_floats=False, explicit=False):
         if isinstance(df, pd.DataFrame):
-            self.dtypes = df.dtypes
+            self.dtypes, self.explicit = df.dtypes, explicit
             self.df = df.copy(deep=True)
+
+            if resolve_floats:
+                self.resolve_floats(self)
+            if self.not_float_cols_nans:
+                self.coerce_not_float_cols_nans(self)
             self._cols_to_cat(self)
             self.pos_or_neg_ints(self)
             self.pos_or_neg_floats(self)
             # print('Modified dataframe accessible with xxx.df')
         else:
             self.df = df
+
+    @classmethod
+    def resolve_floats(cls, self):
+        """Test all float columns for integer coercion instead."""
+        not_float_cols, not_float_cols_nans = [], []
+        col_floats = self.df.select_dtypes(include=[np.float]).columns.tolist()
+        for col in col_floats:
+            if self.df[col].isna().sum():  # If there are any nans
+                # But all remaining rows should be integers and not floats
+                if all(n.is_integer() for n in self.df[col].dropna()):
+                    not_float_cols_nans.append(col)
+            # If there aren't any nans and the float col should be an integer
+            elif all(n.is_integer() for n in self.df[col]):
+                not_float_cols.append(col)
+
+        self.not_float_cols = not_float_cols
+        self.not_float_cols_nans = not_float_cols_nans
+
+        if self.explicit:
+            print(not_float_cols)
+            print(f"Not float cols with nans: {not_float_cols_nans}")
+
+    @classmethod
+    def coerce_not_float_cols_nans(cls, self):
+        """Coerce cols with floats and nans to the correct integer dtype."""
+        cols = self.not_float_cols_nans
+
+        int8_val = 127
+        int16_val = 32767
+        int32_val = 2147483648
+
+        for col in cols:
+            min = self.df[col].min()
+            max = self.df[col].max()
+            if min >= 0:
+                if max < 255:
+                    self.df[col] = self.df[col].astype(pd.UInt8Dtype())
+                elif max < 65535:
+                    self.df[col] = self.df[col].astype(pd.UInt16Dtype())
+                elif max < 4294967295:
+                    self.df[col] = self.df[col].astype(pd.UInt32Dtype())
+            else:
+                if min > -int8_val and max < int8_val:
+                    self.df[col] = self.df[col].astype(pd.Int8Dtype())
+                elif min > -int16_val and max < int16_val:
+                    self.df[col] = self.df[col].astype(pd.Int16Dtype())
+                elif min > -int32_val and max < int32_val:
+                    self.df[col] = self.df[col].astype(pd.Int32Dtype())
 
     @classmethod
     def _cols_to_cat(cls, self):
@@ -276,12 +342,16 @@ class dataTypes():
     @classmethod
     def pos_or_neg_ints(cls, self):
         """Convert integers to correct data type."""
-        cols_int64 = self.dtypes[self.dtypes == 'int64'].index.to_list()
+        cols_int = self.df.select_dtypes(include=[np.int]).columns.tolist()
+        # Check if there are
+        if self.not_float_cols:
+            cols_int = cols_int + self.not_float_cols
+
         int8_val = 127
         int16_val = 32767
         int32_val = 2147483648
 
-        for col in cols_int64:
+        for col in cols_int:
             min = self.df[col].min()
             max = self.df[col].max()
             if min >= 0:
@@ -292,18 +362,18 @@ class dataTypes():
                 elif max < 4294967295:
                     self.df[col] = self.df[col].astype(np.uint32)
             else:
-                if max < int8_val and min > -int8_val:
+                if min > -int8_val and max < int8_val:
                     self.df[col] = self.df[col].astype(np.int8)
-                elif max < int16_val and min > -int16_val:
+                elif min > -int16_val and max < int16_val:
                     self.df[col] = self.df[col].astype(np.int16)
-                elif max < int32_val and min > -int32_val:
+                elif min > -int32_val and max < int32_val:
                     self.df[col] = self.df[col].astype(np.int32)
 
     @classmethod
     def pos_or_neg_floats(cls, self):
         """Convert floats to correct data type."""
-        cols_float64 = self.dtypes[self.dtypes == 'float64'].index.to_list()
-        for col in cols_float64:
+        cols_float = self.df.select_dtypes(include=[np.float]).columns.tolist()
+        for col in cols_float:
             _min = self.df[col].min()
             _max = self.df[col].max()
             if _min > np.finfo('float16').min and _max < np.finfo('float16').max:
@@ -360,7 +430,8 @@ def local_dates(which, sym_list):
 
         # syms_dict[st]['date'] = pd.to_datetime(syms_dict[st]['date'], unit='ms')
         try:
-            syms_dict_to_get[st] = dl_ser[~dl_ser_dt.isin(syms_dict[st]['date'].astype('object'))]
+            syms_dict_to_get[st] = dl_ser[~dl_ser_dt.isin(
+                syms_dict[st]['date'].astype('object'))]
         except KeyError:
             syms_dict_to_get[st] = dl_ser
             syms_not_get.append(st)
