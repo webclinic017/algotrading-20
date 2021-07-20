@@ -235,10 +235,17 @@ class getDate():
         return date_list
 
     @staticmethod
-    def get_bus_days():
+    def get_bus_days(testing=False, this_year=False):
         """Get all business days. If file, read and return."""
-        fpath = f"{baseDir().path}/ref_data/bus_days.gz"
-        df = None
+        df, dt_year, fpath = None, None, ''
+        if this_year:
+            dt_year = getDate.query('iex_eod').year
+            fpath = f"{baseDir().path}/ref_data/bus_days_{dt_year}.gz"
+        else:
+            fpath = f"{baseDir().path}/ref_data/bus_days.gz"
+
+        if testing:
+            print(fpath)
 
         if not os.path.isfile(fpath):
             rh = RecordHolidays().df['date']
@@ -249,7 +256,11 @@ class getDate():
             days_df = (pd.DataFrame(pd.bdate_range(dt_min, dt_max),
                                     columns=['date']))
             # Get all business days that are not holidays
-            days = days_df[~days_df.isin(rh)]
+            days = days_df[~days_df.isin(rh.tolist())]
+
+            if this_year:
+                days = days[days['date'].dt.year == dt_year].copy(deep=True)
+
             days.reset_index(drop=True, inplace=True)
             # Write to local json file
             days.to_json(fpath, compression='gzip')
