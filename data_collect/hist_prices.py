@@ -10,7 +10,7 @@ import requests
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes
-    # from app.tasks_test import print_arg_test
+    from app.tasks_test import print_arg_test
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, getDate, dataTypes
 
@@ -27,7 +27,8 @@ class HistPricesV2():
     need_data = True
     dts_need = []
 
-    def __init__(self, sym):
+    def __init__(self, sym, testing=False):
+        self.testing = testing
         self.check_existing(self, sym)
         # If existing data is current, do nothing. Else get data
         if self.need_data:
@@ -83,9 +84,13 @@ class HistPricesV2():
         else:
             # Make a pandas datetime range
             # bd_range = pd.bdate_range(date(dt.year, 1, 2), dt)
-            bd_range = getDate.get_bus_days()
+            bd_range = getDate.get_bus_days(testing=False, this_year=True)
+            bd_range = bd_range[bd_range['date'].dt.date <= dt].copy(deep=True)
             times_need = bd_range['date'][~bd_range['date'].isin(df['date'])]
             dts_need = [bd.date().strftime('%Y%m%d') for bd in times_need]
+
+            if self.testing:
+                self.class_print(dts_need)
 
             # If more than 10 dates are needed, just get YTD
             if len(dts_need) > 10:
@@ -112,7 +117,7 @@ class HistPricesV2():
             get_errors.append(f"Error with {self.url}. {get.content}")
         # Print out any errors that may have arisen.
         self.get = get
-        
+
         if len(get_errors) > 0:
             self.class_print(get_errors)
 
