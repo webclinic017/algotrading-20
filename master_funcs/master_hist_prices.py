@@ -8,7 +8,7 @@ import pandas as pd
 try:
     from scripts.dev.multiuse.help_class import baseDir, df_create_bins
     from scripts.dev.data_collect.hist_prices import HistPricesV2
-    from app.tasks import execute_func
+    # from app.tasks import execute_func
     # from app.tasks_test import print_arg_test
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, df_create_bins
@@ -20,6 +20,10 @@ except ModuleNotFoundError:
 
 class SplitGetHistPrices():
     """Master class to split cs/otc stocks and get data."""
+    try:
+        from app.tasks import execute_func
+    except ModuleNotFoundError:
+        pass
 
     def __init__(self, testing=False, remote=True, normal=False, otc=False):
         self.determine_params(self, testing, normal, otc)
