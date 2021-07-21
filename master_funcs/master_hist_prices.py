@@ -20,10 +20,6 @@ except ModuleNotFoundError:
 
 class SplitGetHistPrices():
     """Master class to split cs/otc stocks and get data."""
-    try:
-        from app.tasks import execute_func
-    except ModuleNotFoundError:
-        pass
 
     def __init__(self, testing=False, remote=True, normal=False, otc=False):
         self.determine_params(self, testing, normal, otc)
@@ -58,6 +54,10 @@ class SplitGetHistPrices():
     @classmethod
     def remote_get_data(cls, self, bins_unique, testing):
         """Call tasks.execute_func for subdivided remote server processes."""
+        try:
+            from app.tasks import execute_func
+        except ModuleNotFoundError:
+            pass
         # For each of the 1000 symbol bins, get data
         for bin in bins_unique:
             syms_part = self.df[self.df['bins'] == bin]
