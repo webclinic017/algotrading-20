@@ -26,25 +26,19 @@ from gzip import BadGzipFile
 import pandas as pd
 import numpy as np
 import requests
-
-"""
-try:
-    from app.tasks_test import print_arg_test
-except ModuleNotFoundError:
-    pass
-"""
+from dateutil.parser import parse
 
 # %% codecell
 ###############################################################################
 
-"""
+
 def help_print_arg(arg):
-    Print arg on local or server side
+    """Print arg on local or server side."""
     try:
+        from app.tasks_test import print_arg_test
         print_arg_test.delay(arg)
-    except NameError:
+    except ModuleNotFoundError:
         print(arg)
-"""
 
 
 def df_create_bins(df, bin_size=1000):
@@ -152,6 +146,29 @@ class getDate():
         return cutoff
 
     @staticmethod
+    def date_to_rfc(dt):
+        """Convert datetime.date to RFC-3339 format."""
+        from datetime import datetime
+
+        tz = pytz.timezone('US/Eastern')
+        dt_now = datetime.now().min.time()
+        dt_comb = datetime.combine(dt, dt_now)
+        dt_tz_aware = dt_comb.replace(tzinfo=tz)
+        dt_rfc = dt_tz_aware.isoformat()
+        return dt_rfc
+
+    @staticmethod
+    def rfc_to_date(dt):
+        """Convert rfc 3339 to datetime.date."""
+        dt_return = ''
+        if isinstance(dt, pd.Series):
+            dt_return = pd.to_datetime(dt).dt.date
+        else:
+            dt_return = parse(dt).date()
+
+        return dt_return
+
+    @staticmethod
     def which_fname_date():
         """Figure out which date to use for file names."""
         cutoff = getDate.time_cutoff()
@@ -185,7 +202,7 @@ class getDate():
         if date.today().weekday() in (5, 6):
             weekend = True
         elif (date.today().weekday() == 0
-                and not getDate.time_cutoff(cutoff_hm=17.15)):
+                and getDate.time_cutoff(cutoff_hm=16.15)):
             weekend = True
 
         if site in ('cboe', 'occ'):

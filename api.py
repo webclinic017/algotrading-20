@@ -37,6 +37,7 @@ def make_url_dict():
         'iex_comb_today': f"/prices/combined/{getDate.query('cboe')}",
         'new_syms_today': '/symbols/new/today',
         'new_syms_all': '/symbols/new/all',
+        'stock_data': '/symbols/data',
         'all_symbols': '/symbols/all',
         'otc_syms': 'symbols/otc',
         'cs_top_vol': '/scans/vol/avg',
@@ -82,16 +83,22 @@ class serverAPI():
         elif which == 'redo' and 'val' in kwargs.keys():
             val = kwargs['val']
             self.url_dict[which] = f"/redo/functions/{val}"
+        elif which == 'stock_data' and 'symbol' in kwargs.keys():
+            symbol = kwargs['symbol']
+            self.url_dict[which] = f"{self.url_dict[which]}/{symbol}"
 
     @classmethod
     def get_data(cls, self, which):
         """Get data from server."""
+        df, get_json = None, None
         url = f"{self.base_url}{self.url_dict[which]}"
         get = requests.get(url)
         try:
-            df = json.load(BytesIO(get.content))
+            get_json = json.load(BytesIO(get.content))
         except JSONDecodeError:
-            df = get.json()
+            get_json = get.json()
+
+        df = get_json
 
         # If data type needs to be looped/concatenated
         if which in self.concat:
@@ -101,6 +108,8 @@ class serverAPI():
                 df = self._clean_st_trend(self, df)
         elif which in ('cboe_mmo_exp_all', 'cboe_mmo_exp_last'):
             df = self._mmo_explore_all(self, df)
+        elif which == 'stock_data':
+            df = pd.read_json(df['iex_hist']).copy(deep=True)
         else:
             # Convert to dataframe
             df = pd.DataFrame(df)
