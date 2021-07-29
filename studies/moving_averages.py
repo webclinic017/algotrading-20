@@ -8,7 +8,7 @@ class movingAverages():
     # Adjusted closing price
     close_to_use = 'fClose'
     ma_list = [10, 20, 50, 200]
-    df = pd.DataFrame()
+    df = None
     cma_crossovers = []
     cma_differences = []
 

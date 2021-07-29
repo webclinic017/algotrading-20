@@ -18,11 +18,11 @@ from api import serverAPI
 importlib.reload(sys.modules['api'])
 from api import serverAPI
 
-#from data_collect.iex_routines import iexClose
-#importlib.reload(sys.modules['data_collect.iex_routines'])
-#from data_collect.iex_routines import iexClose
+from studies.moving_averages import movingAverages
+importlib.reload(sys.modules['studies.moving_averages'])
+from studies.moving_averages import movingAverages
 
-from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, df_create_bins, RecordHolidays
+from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, df_create_bins, RecordHolidays, check_size
 importlib.reload(sys.modules['multiuse.help_class'])
 from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, RecordHolidays
 
@@ -35,6 +35,10 @@ from data_collect.hist_prices import HistPricesV2
 
 from master_funcs.master_hist_prices import SplitGetHistPrices
 
+from charting.plt_standard import plot_cols
+importlib.reload(sys.modules['charting.plt_standard'])
+from charting.plt_standard import plot_cols
+
 # Display max 50 columns
 pd.set_option('display.max_columns', 100)
 # Display maximum rows
@@ -43,26 +47,88 @@ pd.set_option('display.max_rows', 500)
 # %% codecell
 ##################################
 
+url = f"https://algotrading.ventures/api/v1/symbols/data/AAPL"
+get = requests.get(url).json()
+df = pd.read_json(get['iex_hist'])
+
+val = getDate.query('iex_eod')
+val
+url = f"https://algotrading.ventures/api/v1/prices/combined/{val}"
+get = requests.get(url).json()
+df = pd.DataFrame(get)
+df = dataTypes(df).df.copy(deep=True)
+cols = ['symbol', 'close', 'change', 'changePercent', 'volume', 'avgTotalVolume', 'today/avg_vol']
+
+
+# df['avgTotalVolume'] = df['avgTotalVolume'].where(df['avgTotalVolume'] != 0, 1)
+df_sub = df[(df['avgTotalVolume'] > 100) & (df['changePercent'] > .05)].copy(deep=True)
+df_sub['today/avg_vol'] = ((df_sub['volume'] / df_sub['avgTotalVolume']).round(1) * 100)
+df_sub.sort_values(by=['today/avg_vol'], ascending=False).head(50)[cols]
+df['volume'].head(1)
+
+df.head(1)
+aapl = serverAPI('stock_data', symbol='AAPL').df
+aapl_ma = movingAverages(aapl).df
+
+# %% codecell
+##################################
+import requests
+import gzip
+import pandas as pd
+import json
+from io import StringIO
+
+url = 'https://algotrading.ventures/api/v1/prices/eod/test'
+get = requests.get(url)
+# gzip_decom = gzip.decompress(get.content)
+df = pd.read_json(gzip.decompress(get.content))
+df = dataTypes(df).df
+
+cols_to_include = ['symbol', 'latestTime', 'close', 'change', 'changePercent', 'volume', 'avgTotalVolume', 'today/avg_vol']
+df_sub = df[(df['avgTotalVolume'] > 100) & (df['changePercent'] > .05)].copy(deep=True)
+df_sub['today/avg_vol'] = ((df_sub['volume'] / df_sub['avgTotalVolume']).round(1) * 100)
+df_sub.sort_values(by=['today/avg_vol'], ascending=False).head(50)[cols_to_include]
+
+cols = df.columns
+for col in cols:
+    print(f"Column {col}: {df[col].isna().sum()}")
+
+
+df.info(memory_usage='deep')
+
+
+base_dir = baseDir().path
+fpath = f"{base_dir}/iex_eod_quotes/combined/_2021_all_2021-07-16.gz"
+df.to_json(fpath, compression='gzip')
+
+"""
+gzip_com = gzip_decom.decode('utf-8')
+df = pd.read_csv(StringIO(gzip_com))
+"""
+
+# pd.read_csv is significantly worse than just pd.read_json from decompressed data
+# Also takes up wayyyy more space. Good to know.
+
+# %% codecell
+##################################
+
+
+df_ohlc = plot_cols(aapl_ma, vol=True, candle=True, moving_averages='cma')
+
+# %% codecell
+##################################
+
+
+url_all = "https://algotrading.ventures/api/v1/prices/eod/all"
+get = requests.get(url_all)
+get.status_code
+
+
+
+iex_eod_all = serverAPI('iex_quotes_raw').df
+
+
 all_syms = serverAPI('all_symbols').df
-all_syms['symbol'].unique().tolist()
-
-
-
-
-
-url = "https://algotrading.ventures/api/v1/symbols/data/AAPL"
-sym = requests.get(url)
-sym_dict = sym.json()
-aapl_hist = pd.read_json(sym_dict['iex_hist'])
-
-
-url = "https://algotrading.ventures/api/v1/symbols/data/RIG"
-sym = requests.get(url).json()
-rig_hist = pd.read_json(sym['iex_hist'])
-rig_hist['date']
-
-
-sghp = SplitGetHistPrices(testing=True, otc=True)
 
 
 # %% codecell
@@ -95,6 +161,20 @@ all_syms = dataTypes(all_syms, resolve_floats=True).df.copy(deep=True)
 # %% codecell
 #######################
 
+all_iex_url = 'https://algotrading.ventures/api/v1/prices/combined/2021_all_2021-07-16'
+all_iex_get = requests.get(all_iex_url)
+
+
+all_iex_get.content
+all_iex_json = all_iex_get.json()
+
+all_iex = serverAPI('iex_quotes_raw').df
+
+
+# Celery tasks is overwriting tasks_captain and I don't know why.
+# Tried changing the names, verifying the code to no avail. No symlinks that I can find.
+# This is only a problem with tasks_captain, and not with the other celery instances.
+
 
 # %% codecell
 #######################
@@ -108,15 +188,12 @@ all_cs_wts = (all_syms[(all_syms['cik'].isin(all_derivs['cik'].tolist())) &
 
 all_cs_syms = all_cs_wts['symbol'].tolist()
 
+
+
 all_st = serverAPI('st_trend_all')
 all_st_df = all_st.df.copy(deep=True)
-
-
-
 all_st_df = dataTypes(all_st.df).df
-all_st_df.head(10)
 
-all_st
 
 all_st_df.dropna(subset=['watchlist_count'], inplace=True)
 all_st_df.reset_index(drop=True, inplace=True)
@@ -155,30 +232,30 @@ all_ocgn.plot(x='date', '')
 
 all_ocgn['date'].min()
 
-all_ocgn.shape
-all_comb.head(10)
-all_ocgn.head(10)
 
-all_comb.head(10)
-
-all_comb['symbol'].value_counts()
-
-all_comb.shape
-
-all_st_df['symbol'].value_counts().head(50)
-
-all_st_df.dtypes
 
 all_st_df_cols = {'id': np.uint16, 'symbol': 'category', 'watchlist_count': np.uint32, 'timestamp': }
 
 all_st_df['watchlist_count'] = all_st_df['watchlist_count'].astype(np.uint32)
 all_st_df.head(10)
 
+"""
+70,375,430
+70,376,800
+70,378,170
+70,379,540
+70,390,510
+72,581,410
+78,823,600
+"""
 
 
-dt = getDate.query('iex_eod')
 
-aapl = HistPricesV2('AAPL')
+serverAPI('redo', val='iex_close')
+
+serverAPI('redo', val='check_size')
+
+serverAPI('redo', val='scans_vol_avg')
 
 serverAPI('redo', val='get_bus_days')
 

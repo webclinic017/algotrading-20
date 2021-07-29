@@ -217,8 +217,10 @@ class iexClose():
         latest_dt = pd.to_datetime(all_df['latestUpdate'], unit='ms').dt.date[0]
         # Construct fpath
         fpath = f"{self.fpath_base}/combined/_{latest_dt}.gz"
+        # Minimize file size
+        df = dataTypes(all_df).df
         # Write to local file
-        all_df.to_json(fpath, compression='gzip')
+        df.to_json(fpath, compression='gzip')
 
 
     """
@@ -255,6 +257,7 @@ class iexClose():
 # %% codecell
 ##############################################
 
+
 def write_combined():
     """Concat iex eod prices into one file."""
     base_dir = baseDir().path
@@ -278,6 +281,7 @@ def write_combined():
     for dt in dt_counts:
         mod_df = this_df[this_df['date'] == dt]
         mod_df.reset_index(inplace=True, drop=True)
+        mod_df = dataTypes(mod_df).df
         mod_fpath = f"{baseDir().path}/iex_eod_quotes/combined/_{dt}.gz"
         mod_df.to_json(mod_fpath, compression='gzip')
 
