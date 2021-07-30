@@ -127,9 +127,9 @@ class iexClose():
     fpath_base = f"{baseDir().path}/iex_eod_quotes"
     data_list = []
 
-    def __init__(self):
+    def __init__(self, otc=False):
         self.get_params(self)
-        self.get_all_symbols(self)
+        self.get_all_symbols(self, otc)
         self.start_quote_process(self)
         self.combine_write(self)
 
@@ -141,9 +141,16 @@ class iexClose():
         self.payload = {'token': os.environ.get("iex_publish_api")}
 
     @classmethod
-    def get_all_symbols(cls, self):
+    def get_all_symbols(cls, self, otc):
         """Get list of all IEX supported symbols (9000 or so)."""
-        all_symbols_fpath = f"{baseDir().path}/tickers/all_symbols.gz"
+        all_symbols_fpath = ''
+        fpath_base = f"{baseDir().path}/tickers"
+
+        if otc:
+            all_symbols_fpath = f"{fpath_base}/otc_syms.gz"
+        else:
+            all_symbols_fpath = f"{fpath_base}/all_symbols.gz"
+
         try:
             df_all_syms = pd.read_json(all_symbols_fpath)
         except ValueError:
