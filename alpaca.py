@@ -16,14 +16,35 @@ from datetime import datetime, date
 
 from api import serverAPI
 
-from multiuse.help_class import baseDir, dataTypes, getDate, help_print_arg
+from multiuse.help_class import baseDir, dataTypes, getDate, help_print_arg, rate_limit
 importlib.reload(sys.modules['multiuse.help_class'])
-from multiuse.help_class import baseDir, dataTypes, getDate, help_print_arg
+from multiuse.help_class import baseDir, dataTypes, getDate, help_print_arg, rate_limit
 
 from multiuse.create_file_struct import make_hist_prices_dir
 
+from data_collect.apca_routines import apca_params, ApcaSymbols, ApcaHist
+importlib.reload(sys.modules['data_collect.apca_routines'])
+from data_collect.apca_routines import apca_params, ApcaSymbols, ApcaHist
+
 # %% codecell
 ####################################
+import time
+
+apca_syms = ApcaSymbols().df
+apca_syms_active = apca_syms[apca_syms['status'] == 'active'].copy(deep=True)
+apca_syms_active.shape
+apca_syms.shape
+
+kwargs = {'sym_list': apca_syms_active['symbol'].tolist()}
+rate_limit(ApcaHist, testing=True, **kwargs)
+
+capu_sym = 'CAP.U'
+
+
+apca_syms['symbol'].tolist()
+apca_syms.head(10)
+
+
 
 
 
@@ -47,10 +68,8 @@ ref_df.head(10)
 
 
 
-headers, base_url = apca_params(markets=True)
+headers, base_url = apca_params(markets=False)
 url = f"{base_url}/stocks/OCGN/bars"
-
-
 
 
 bus_days = getDate().get_bus_days(this_year=True)
@@ -59,8 +78,10 @@ iex_end_date = getDate.query('iex_eod')
 iex_start = getDate.date_to_rfc(iex_start_date)
 iex_end = getDate.date_to_rfc(iex_end_date)
 
+
 params = {'start': iex_start, 'end': iex_end, 'limit':10000, 'timeframe': '1Day'}
 get = requests.get(url, headers=headers, params=params)
+
 get_json = get.json()
 df = pd.DataFrame(get_json['bars'])
 df['date'] = getDate.rfc_to_date(df['t'])
@@ -125,70 +146,5 @@ ocgn_df = pd.DataFrame(get_json['quotes'])
 
 ocgn_df.head(10)
 
-
-
-api = REST(APCA_API_KEY_ID, APCA_API_SECRET_KEY)
-aapl = api.get_quotes("AAPL")
-
-
-bus_days = getDate().get_bus_days(this_year=True)
-iex_start_date = bus_days.min()['date'].date()
-iex_end_date = getDate.query('iex_eod')
-iex_start_date
-len(bus_days)
-
-aapl = api.get_quotes("AAPL", start=str(iex_start_date), end=str(iex_end_date), limit=len(bus_days)).df
-aapl.head(10)
-aapl['conditions'].value_counts()
-
 # %% codecell
 ####################################
-
-
-load_dotenv()
-redirect_uri = "http://localhost:8080"
-random_string = os.environ.get("alpaca_state")
-client_id = os.environ.get("alpaca_client_id")
-client_secret = os.environ.get("alpaca_client_secret")
-
-url_1 = 'https://app.alpaca.markets/oauth/authorize?'
-url_2 = f"response_type=code&client_id={client_id}&redirect_uri={redirect_uri}"
-url_3 = f"&state={random_string}&scope=account:write%20trading"
-
-full_url = f"{url_1}{url_2}{url_3}"
-full_url_dumped = json.dumps(full_url)
-random_string
-from urllib.parse import urlencode, quote
-url_dict = {'response_type': 'code', 'client_id': client_id, 'redirect_uri': redirect_uri, 'state': random_string}
-
-url_body = urlencode(url_dict)
-url_beginning = 'https://app.alpaca.markets/oauth/authorize?'
-url_end = f"&scope=data"
-
-url_all = f"{url_beginning}{url_body}{url_end}"
-url_all
-
-
-
-base_url = "https://api.alpaca.markets/v2"
-url = f"{base_url}/assets"
-load_dotenv()
-
-alpaca_code = os.environ.get("alpaca_code")
-
-
-post_url = "https://api.alpaca.markets/oauth/token"
-post_params = {'grant_type': 'authorization_code', 'code': alpaca_code, 'client_id': client_id, 'client_secret': client_secret, 'redirect_uri': 'https://algotrading.ventures'}
-post = requests.post(post_url, params=post_params)
-post.status_code
-post.content
-post_params
-client_id = os.environ.get("alpaca_client_id")
-client_secret = os.environ.get("alpaca_client_secret")
-
-payload = {"APCA-API-KEY-ID": client_id, "APCA-API-SECRET-KEY": client_secret}
-
-get = requests.get(url, headers=payload)
-get.status_code
-get.content
-payload
