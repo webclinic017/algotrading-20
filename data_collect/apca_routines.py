@@ -82,7 +82,7 @@ class ApcaHist():
     df, fpath = None, ''
 
     def __init__(self, sym, current_day=True, ytd=False, testing=False):
-        self.current_day, self.testing = current_day, testing
+        self.assign_variables(self, current_day, ytd, testing)
         self.construct_fpath(self, sym)
         # Construct parameters for request
         headers, url, params = self.construct_params(self, sym)
@@ -92,6 +92,16 @@ class ApcaHist():
         self.clean_concat_data(self)
         # Write to local json file
         self.write_to_json(self)
+
+    @classmethod
+    def assign_variables(cls, self, current_day, ytd, testing):
+        """Assign relevant variables to class."""
+        if current_day:
+            self.current_day = True
+        if ytd:
+            self.ytd = True
+        if testing:
+            self.testing = True
 
     @classmethod
     def construct_fpath(cls, self, sym):
@@ -109,16 +119,25 @@ class ApcaHist():
         headers, base_url = apca_params(markets=False)
         url = f"{base_url}/stocks/{sym.upper()}/bars"
 
-        if self.current_day:
-            # Get today, yesterday date in rfc format
-            today = getDate.query('iex_eod')
-            yesterday = (today - timedelta(days=1))
+        # End date would be today regardless of ytd or today's hist
+        today = getDate.query('iex_eod')
+        # Convert that to rfc-3339 format
+        today_rfc = getDate.date_to_rfc(today)
 
-            today_rfc = getDate.date_to_rfc(today)
+        if self.current_day:
+            # Get yesterday date in rfc format
+            yesterday = (today - timedelta(days=1))
             yest_rfc = getDate.date_to_rfc(yesterday)
 
             params = ({'start': yest_rfc, 'end': today_rfc,
                        'limit': 10, 'timeframe': '1Day'})
+        elif self.ytd:
+            bus_days = getDate().get_bus_days(this_year=True)
+            first_day = bus_days.min()['date'].date()
+            first_day_rfc = getDate.date_to_rfc(first_day)
+
+            params = ({'start': first_day_rfc, 'end': today_rfc,
+                       'limit': 10000, 'timeframe': '1Day'})
 
         return headers, url, params
 
@@ -138,7 +157,6 @@ class ApcaHist():
             help_print_arg(get.content)
             if self.testing:
                 help_print_arg(f"{url} {params} {headers}")
-
 
     @classmethod
     def clean_concat_data(cls, self):
