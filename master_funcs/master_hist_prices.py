@@ -6,14 +6,14 @@
 import pandas as pd
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, df_create_bins
+    from scripts.dev.multiuse.help_class import baseDir, df_create_bins, help_print_arg
     from scripts.dev.multiuse.api_helpers import rate_limit
     from scripts.dev.data_collect.hist_prices import HistPricesV2
     from scripts.dev.data_collect.apca_routines import ApcaHist
     # from app.tasks import execute_func  - imported in body of class
     # from app.tasks_test import print_arg_test
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, df_create_bins
+    from multiuse.help_class import baseDir, df_create_bins, help_print_arg
     from multiuse.api_helpers import rate_limit
     from data_collect.hist_prices import HistPricesV2
     from data_collect.apca_routines import ApcaHist
@@ -68,6 +68,10 @@ class SplitGetHistPrices():
     def apca_get_data(cls, self, testing):
         """Start long running apca historical data request."""
         kwargs = {'sym_list': self.df['symbol'].tolist()}
+
+        if testing:
+            kwargs['sym_list'] = self.df['symbol'].sample(n=10).tolist()
+            help_print_arg(kwargs)
         rate_limit(ApcaHist, testing=True, **kwargs)
 
     @classmethod
