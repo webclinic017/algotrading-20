@@ -91,7 +91,10 @@ class ApcaHist():
         # If file exists, concat, otherwise just clean
         self.clean_concat_data(self)
         # Write to local json file
-        self.write_to_json(self)
+        if isinstance(self.df, pd.DataFrame):
+            self.write_to_json(self)
+        else:
+            help_print_arg(f"Data Collection for symbol {sym} failed")
 
     @classmethod
     def assign_variables(cls, self, current_day, ytd, testing):
@@ -151,7 +154,7 @@ class ApcaHist():
             try:
                 df['date'] = getDate.rfc_to_date(df['t'])
             except KeyError:
-                help_print_arg(df.dtypes)
+                help_print_arg(str(df.dtypes))
             self.df = df
         else:
             help_print_arg(get.content)
