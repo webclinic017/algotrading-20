@@ -26,6 +26,9 @@ def rate_limit(func_to_execute, master_limit=0, duration=60, counter_limit=199, 
         sym_list = kwargs['sym_list']
         master_limit = len(sym_list)
 
+    if 'ytd' in kwargs.keys():
+        ytd = kwargs['ytd']
+
     def sleep_if_hit(counter, next_min):
         """Program should sleep if rate limit is hit."""
         if (next_min <= datetime.now()) or (counter >= counter_limit):
@@ -45,7 +48,12 @@ def rate_limit(func_to_execute, master_limit=0, duration=60, counter_limit=199, 
                     help_print_arg(sym)
                 counter += 1
                 master_count += 1
-                func_to_execute(sym)
+
+                if ytd:
+                    func_to_execute(sym, ytd=True)
+                else:
+                    func_to_execute(sym)
+
                 counter, next_min = sleep_if_hit(counter, next_min)
 
                 if master_count < master_limit:

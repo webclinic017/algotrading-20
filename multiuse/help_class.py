@@ -401,7 +401,9 @@ class dataTypes():
     @classmethod
     def pos_or_neg_floats(cls, self):
         """Convert floats to correct data type."""
-        cols_float = self.df.select_dtypes(include=[np.float]).columns.tolist()
+        float_type = [np.float, 'float16', 'float32', 'float64']
+        cols_float = self.df.select_dtypes(include=float_type).columns.tolist()
+
         for col in cols_float:
             _min = self.df[col].min()
             _max = self.df[col].max()

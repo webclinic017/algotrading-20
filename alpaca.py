@@ -45,10 +45,10 @@ apca_syms['symbol'].tolist()
 apca_syms.head(10)
 
 
+apca_ocgn = ApcaHist('OCGN', current_day=False, ytd=True)
+apca_ocgn.df.head(10)
 
-
-
-apca_syms = ApcaSymbols()
+apca_syms = ApcaSymbols('')
 
 
 ref_df['class'].value_counts()

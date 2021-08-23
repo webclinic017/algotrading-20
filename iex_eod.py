@@ -47,6 +47,50 @@ pd.set_option('display.max_rows', 500)
 # %% codecell
 ##################################
 
+fpath = "/Users/unknown1/Algo/data/iex_eod_quotes/combined/_2021_all_2021-07-16.gz"
+df = pd.read_json(fpath, compression='gzip')
+#df = pd.read_csv(fpath, compression='gzip')
+
+#df = pd.read_csv(fpath, compression='gzip', usecols=cols_to_keep)
+
+cols_to_keep = (['symbol', 'open', 'close', 'high', 'highTime', 'low',
+                 'lowTime', 'latestUpdate', 'previousClose', 'previousVolume',
+                 'change', 'changePercent', 'volume', 'avgTotalVolume',
+                 'marketCap', 'peRatio', 'week52High', 'week52Low',
+                 'ytdChange'])
+
+df = dataTypes(df).df.copy(deep=True)
+df_sub = df[cols_to_keep].copy(deep=True)
+df_sub.shape
+
+fpath = f"{baseDir().path}/iex_eod_quotes/subsets/_2021_all_2021-07-16.gz"
+df_sub.to_json(fpath, compression='gzip')
+df_sub = pd.read_json(fpath, compression='gzip')
+df_sub = dataTypes(df_sub).df.copy(deep=True)
+df = df_sub.copy(deep=True)
+
+# I'd like to see the SEC master index for all of the top performers
+
+sec_master = serverAPI('sec_master_all').df
+sec_master = dataTypes(sec_master).df.copy(deep=True)
+sec_master['date'] = pd.to_datetime(sec_master['Date Filed'], format='%Y%m%d')
+
+bus_days = getDate.get_bus_days(this_year=True).reset_index(drop=True)
+dates_needed = bus_days[~bus_days['date'].isin(sec_master['date'].tolist())]
+
+
+
+sec_master['date'].value_counts()
+sec_master.info(memory_usage='deep')
+sec_master.shape
+sec_master.dtypes
+
+
+
+# %% codecell
+##################################
+
+
 url = f"https://algotrading.ventures/api/v1/symbols/data/AAPL"
 get = requests.get(url).json()
 df = pd.read_json(get['iex_hist'])
@@ -84,22 +128,37 @@ get = requests.get(url)
 df = pd.read_json(gzip.decompress(get.content))
 df = dataTypes(df).df
 
+
+# Get CIKS to map up with sec_master list
+all_syms = serverAPI('all_symbols').df
+all_syms.head(1)
+
 cols_to_include = ['symbol', 'latestTime', 'close', 'change', 'changePercent', 'volume', 'avgTotalVolume', 'today/avg_vol']
 df_sub = df[(df['avgTotalVolume'] > 100) & (df['changePercent'] > .05)].copy(deep=True)
+df_sub['latestTime'] = pd.to_datetime(df_sub['latestUpdate'], unit='ms').dt.date
 df_sub['today/avg_vol'] = ((df_sub['volume'] / df_sub['avgTotalVolume']).round(1) * 100)
-df_sub.sort_values(by=['today/avg_vol'], ascending=False).head(50)[cols_to_include]
 
-cols = df.columns
-for col in cols:
-    print(f"Column {col}: {df[col].isna().sum()}")
+df_syms_to_check = all_syms[all_syms['symbol'].isin(df_sub_to_check['symbol'].tolist())]
+df_syms_to_check = dataTypes(df_syms_to_check).df.copy(deep=True)
+df_syms_to_check['cik'] = df_syms_to_check['cik'].astype(np.uint32)
+df_syms = df_syms_to_check[['symbol', 'cik']].copy(deep=True)
+df_syms.rename(columns={'cik': 'CIK'}, inplace=True)
+
+sec_syms = pd.merge(df_syms, sec_master, on='CIK')
+
+# Week before announcing results of trial RVPH raises 23 million with an SEC filing
+
+# MEDS - director buys shares that are reported on the 4th. Huge jump on the 10th, volume on the 9th of June
+
+from datetime import datetime
+
+sec_syms[sec_syms['symbol'] == 'MEDS'].sort_values(by='date')
 
 
-df.info(memory_usage='deep')
+df_sub_to_check = df_sub.sort_values(by=['today/avg_vol'], ascending=False).head(100)[cols_to_include]
+df_sub_to_check
 
 
-base_dir = baseDir().path
-fpath = f"{base_dir}/iex_eod_quotes/combined/_2021_all_2021-07-16.gz"
-df.to_json(fpath, compression='gzip')
 
 """
 gzip_com = gzip_decom.decode('utf-8')
@@ -249,7 +308,11 @@ all_st_df.head(10)
 78,823,600
 """
 
+serverAPI('redo', val='combine_daily_stock_eod')
 
+serverAPI('redo', val='split_get_hist_prices')
+
+serverAPI('redo', val='daily_symbols')
 
 serverAPI('redo', val='iex_close')
 
@@ -260,6 +323,8 @@ serverAPI('redo', val='scans_vol_avg')
 serverAPI('redo', val='get_bus_days')
 
 serverAPI('redo', val='split_get_hist_prices')
+
+serverAPI('redo', val='concat_all_iex')
 
 wt = serverAPI('redo', val='warrants')
 
