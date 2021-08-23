@@ -72,7 +72,9 @@ class SplitGetHistPrices():
         if testing:
             kwargs['sym_list'] = self.df['symbol'].sample(n=10).tolist()
             help_print_arg(kwargs)
-        rate_limit(ApcaHist, testing=True, **kwargs)
+            rate_limit(ApcaHist, testing=True, **kwargs)
+        else:
+            rate_limit(ApcaHist, testing=False, **kwargs)
 
     @classmethod
     def remote_get_data(cls, self, bins_unique, testing):
