@@ -17,7 +17,7 @@ def rate_limit(func_to_execute, master_limit=0, duration=60, counter_limit=199, 
     """Rate limit an API."""
     counter = 0
     master_count = 0
-    finished, sym, sym_list = False, False, False
+    finished, sym, sym_list, ytd = False, False, False, False
     if 'symbol' in kwargs.keys():
         sym = kwargs['symbol']
     elif 'sym' in kwargs.keys():
