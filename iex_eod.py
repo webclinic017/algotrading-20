@@ -79,14 +79,15 @@ sec_master['date'] = pd.to_datetime(sec_master['Date Filed'], format='%Y%m%d')
 bus_days = getDate.get_bus_days(this_year=True).reset_index(drop=True)
 dates_needed = bus_days[~bus_days['date'].isin(sec_master['date'].tolist())]
 
-
+dates_needed
 
 sec_master['date'].value_counts()
 sec_master.info(memory_usage='deep')
 sec_master.shape
 sec_master.dtypes
 
-
+dt = getDate.query('iex_close').year
+dt
 
 # %% codecell
 ##################################
@@ -310,6 +311,8 @@ all_st_df.head(10)
 """
 
 serverAPI('redo', val='combine_daily_stock_eod')
+
+serverAPI('redo', val='combine_apca_stock_eod')
 
 serverAPI('redo', val='split_get_hist_prices')
 
