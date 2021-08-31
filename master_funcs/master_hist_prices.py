@@ -32,12 +32,11 @@ class SplitGetHistPrices():
         if apca:
             self.apca_get_data(self, testing)
         elif remote and not apca:
-            self.remote_get_data(self, bins_unique, testing)
+            calls = self.remote_get_data(self, bins_unique, testing)
+            if calls and apca:
+                self.call_combined(self)
         else:
-            self.local_get_data(self, bins_unique, testing)
-
-        if apca:
-            self.call_combined(self)
+            calls = self.local_get_data(self, bins_unique, testing)
 
     @classmethod
     def determine_params(cls, self, testing, normal, otc, apca):
@@ -97,6 +96,8 @@ class SplitGetHistPrices():
             # Call tasks.execute_func to get data for each sym_list (bin int)
             execute_func.delay('hist_prices_sub', **kwargs)
 
+        return True
+
     @classmethod
     def local_get_data(cls, self, bins_unique, testing):
         """Get historical data using imported function."""
@@ -109,6 +110,8 @@ class SplitGetHistPrices():
             # Using list of symbols, call function to get data and store local
             for sym in sym_list:
                 HistPricesV2(sym)
+
+        return True
 
     @classmethod
     def call_combined(cls, self):
