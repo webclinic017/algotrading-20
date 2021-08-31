@@ -202,12 +202,12 @@ class getDate():
         weekend, query_date = False, ''
         if date.today().weekday() in (5, 6):
             weekend = True
-        elif (date.today().weekday() == 0
-                and getDate.time_cutoff(cutoff_hm=16.15)):
+        elif ((date.today().weekday() == 0)
+                and (getDate.time_cutoff(cutoff_hm=16.0))):
             weekend = True
 
         if site in ('cboe', 'occ'):
-            if getDate.time_cutoff(cutoff_hm=17.15) or weekend:
+            if getDate.time_cutoff(cutoff_hm=16.15) or weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
             else:
                 query_date = (date.today() - BusinessDay(n=0)).date()

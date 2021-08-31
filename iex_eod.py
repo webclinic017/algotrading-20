@@ -49,6 +49,7 @@ pd.set_option('display.max_rows', 500)
 
 fpath = "/Users/unknown1/Algo/data/iex_eod_quotes/combined/_2021_all_2021-07-16.gz"
 df = pd.read_json(fpath, compression='gzip')
+
 #df = pd.read_csv(fpath, compression='gzip')
 
 #df = pd.read_csv(fpath, compression='gzip', usecols=cols_to_keep)
