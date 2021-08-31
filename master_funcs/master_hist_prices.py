@@ -36,6 +36,8 @@ class SplitGetHistPrices():
         else:
             self.local_get_data(self, bins_unique, testing)
 
+        self.call_combined()
+
     @classmethod
     def determine_params(cls, self, testing, normal, otc, apca):
         """Determine fpath and other params."""
@@ -106,3 +108,12 @@ class SplitGetHistPrices():
             # Using list of symbols, call function to get data and store local
             for sym in sym_list:
                 HistPricesV2(sym)
+
+    @classmethod
+    def call_combined(cls, self):
+        """Combine all apca data."""
+        try:
+            from app.tasks import execute_func
+            execute_func.delay('combine_apca_stock_eod')
+        except ModuleNotFoundError:
+            pass
