@@ -36,7 +36,8 @@ class SplitGetHistPrices():
         else:
             self.local_get_data(self, bins_unique, testing)
 
-        self.call_combined()
+        if apca:
+            self.call_combined(self)
 
     @classmethod
     def determine_params(cls, self, testing, normal, otc, apca):
