@@ -203,7 +203,8 @@ class getDate():
         if date.today().weekday() in (5, 6):
             weekend = True
         elif ((date.today().weekday() == 0)
-                and (not getDate.time_cutoff(cutoff_hm=16.0))):
+                and (getDate.time_cutoff(cutoff_hm=16.0))):
+                # If it's before 4:00 PM, say it's still the weekend
             weekend = True
 
         if site in ('cboe', 'occ'):
