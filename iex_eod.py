@@ -39,10 +39,152 @@ from charting.plt_standard import plot_cols
 importlib.reload(sys.modules['charting.plt_standard'])
 from charting.plt_standard import plot_cols
 
+from multiuse.create_file_struct import make_hist_prices_dir
+
 # Display max 50 columns
 pd.set_option('display.max_columns', 100)
 # Display maximum rows
 pd.set_option('display.max_rows', 500)
+
+# %% codecell
+##################################
+
+# Daily treasury report
+url = "https://fsapps.fiscal.treasury.gov/dts/files/21091000.xlsx"
+url1 = "https://fsapps.fiscal.treasury.gov/dts/files/21091000.txt"
+
+# %% codecell
+##################################
+
+test_path = "/Users/unknown1/Algo/data/historical/2021/a/_A.parquet"
+df_A = pd.read_parquet(test_path)
+
+all_syms['symbol'].iloc[0]
+
+result = get_all_max_hist()
+result
+
+fpath_base = f"{baseDir().path}/historical/2021/*/**.parquet"
+globs = glob.glob(fpath_base)
+sym_list = [path.split('_') for path in globs]
+sym_list = [path.split('.')[0] for path in sym_list]
+
+all_syms = serverAPI('all_symbols').df
+all_cs = all_syms[all_syms['type'] == 'cs']['symbol'].tolist()
+
+syms_needed = list(set(all_cs) - set(sym_list))
+len(syms_needed)
+
+from pathlib import Path
+sf_fpath = Path('../../algo_jansen/data/single_factor_syms.parquet')
+sf_fpath.resolve()
+sf_syms = pd.read_parquet(sf_fpath)
+sf_syms.head()
+
+hs_fpath = Path('../data/historical/2021')
+hs_fpath.resolve()
+hs_fpaths = list(hs_fpath.glob('**/*.parquet'))
+hs_list = [str(path).split('_')[1].split('.')[0] for path in hs_fpaths]
+
+syms_needed = list(set(sf_syms['symbols'].tolist()) - set(hs_list))
+len(syms_needed)
+# Now what I'd like to do is get historical data for all stocks and store them in this folder
+
+result = get_max_hist(syms_needed)
+result.keys()
+result['hist_errors_dict']
+
+def get_max_hist(sym_list):
+    load_dotenv()
+    base_url = os.environ.get("base_url")
+    base_path = f"{baseDir().path}/historical/2021"
+    true, false = True, False
+    payload = {'token': os.environ.get("iex_publish_api"), 'chartByDay': true}
+
+    hist_list = []
+    hists_checked = []
+    hist_errors_dict = {}
+    hist_errors = []
+
+    for sym in sym_list:
+        fpath = f"{base_path}/{sym[0].lower()}/_{sym}.parquet"
+        if not os.path.exists(fpath):
+
+            url = f"{base_url}/stock/{sym}/chart/max"
+            # payload = {'token': os.environ.get("iex_publish_api"), 'chartByDay': true}
+            get = requests.get(url, params=payload)
+
+            try:
+                df = pd.DataFrame(get.json())
+                # hist_dict[sym] = df
+                hist_list.append(sym)
+                df.to_parquet(fpath)
+            except Exception as e:
+                print(e)
+                hist_errors_dict[sym] = e
+                hist_errors.append(sym)
+        else:
+            hists_checked.append(sym)
+
+    result = ({'hist_list': hist_list, 'hists_checked': hists_checked,
+               'hist_errors_dict': hist_errors_dict, 'hist_errors': hist_errors})
+
+    return result
+
+
+
+def get_all_max_hist():
+    load_dotenv()
+    base_url = os.environ.get("base_url")
+    base_path = f"{baseDir().path}/historical/2021"
+    true, false = True, False
+    payload = {'token': os.environ.get("iex_publish_api"), 'chartByDay': true}
+
+    all_symbols = serverAPI('all_symbols').df
+    # all_syms = all_symbols[all_symbols['type'].isin(['cs', 'et'])]
+
+    all_syms = all_symbols[all_symbols['type'].isin(['cs'])]
+
+    hist_dict = {}
+    hist_list = []
+    hists_checked = []
+    hist_errors_dict = {}
+    hist_errors = []
+
+    sym_list = all_syms['symbol'].tolist()
+
+
+    for sym in sym_list:
+        # sym = 'TWTR'
+        fpath = f"{base_path}/{sym[0].lower()}/_{sym}.parquet"
+
+        if not os.path.exists(fpath):
+
+            url = f"{base_url}/stock/{sym}/chart/max"
+            # payload = {'token': os.environ.get("iex_publish_api"), 'chartByDay': true}
+            get = requests.get(url, params=payload)
+
+            try:
+                df = pd.DataFrame(get.json())
+                # hist_dict[sym] = df
+                hist_list.append(sym)
+                df.to_parquet(fpath)
+            except Exception as e:
+                print(e)
+                hist_errors_dict[sym] = e
+                hist_errors.append(sym)
+        else:
+            hists_checked.append(sym)
+        # break
+
+    result = ({'hist_dict': hist_dict, 'hist_list': hist_list, 'hists_checked': hists_checked,
+               'hist_errors_dict': hist_errors_dict, 'hist_errors': hist_errors})
+
+    return result
+
+
+df.head(10)
+df = pd.read_json(get_json)
 
 # %% codecell
 ##################################
@@ -174,6 +316,8 @@ df = pd.read_csv(StringIO(gzip_com))
 ##################################
 
 
+
+
 df_ohlc = plot_cols(aapl_ma, vol=True, candle=True, moving_averages='cma')
 
 # %% codecell
@@ -190,6 +334,10 @@ iex_eod_all = serverAPI('iex_quotes_raw').df
 
 
 all_syms = serverAPI('all_symbols').df
+
+# Great so what I want to do here is get the last 5 days of data.
+
+
 
 
 # %% codecell
@@ -315,6 +463,8 @@ serverAPI('redo', val='combine_daily_stock_eod')
 serverAPI('redo', val='combine_apca_stock_eod')
 
 serverAPI('redo', val='split_get_hist_prices')
+
+serverAPI('redo', val='split_iex_hist')
 
 serverAPI('redo', val='daily_symbols')
 

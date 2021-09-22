@@ -177,10 +177,13 @@ class iexClose():
                 self._get_update_local(self, sym, dict)
                 """
                 self._get_update_local(self, sym, year)
-            except JSONDecodeError:
-                pass
-            except SSLError:
-                pass
+            except Exception as e:
+                print(e)
+            # except JSONDecodeError:
+            #    pass
+            # except SSLError:
+            #    pass
+
 
     @classmethod
     def _get_update_local(cls, self, sym, year):

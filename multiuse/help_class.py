@@ -40,6 +40,8 @@ def help_print_arg(arg):
         print_arg_test.delay(arg)
     except ModuleNotFoundError:
         print(arg)
+    except TypeError:
+        pass
 
 
 def df_create_bins(df, bin_size=1000):
@@ -201,10 +203,6 @@ class getDate():
         # query_date = getDate.which_fname_date()
         weekend, query_date = False, ''
         if date.today().weekday() in (5, 6):
-            weekend = True
-        elif ((date.today().weekday() == 0)
-                and (getDate.time_cutoff(cutoff_hm=16.0))):
-                # If it's before 4:00 PM, say it's still the weekend
             weekend = True
 
         if site in ('cboe', 'occ'):
