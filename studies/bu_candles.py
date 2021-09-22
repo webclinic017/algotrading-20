@@ -219,22 +219,24 @@ class buCandles():
         # 1st candle big decline, small shadows. 2nd candle big incline, small shadows
         # 2nd candle conditions need to be fixed
         df['cd_bukick'] = np.where(  # Candlestick #1
-                        (      # Change < -.5% decrease
-                               (df['changePercent'] < -.005)
-                            &  # Close between low, open - (range * .4)
+                        (       # Change < -.5% decrease
+                                (df['changePercent'] < -.005)
+                            &   # Close between low, open - (range * .4)
                                 df['fClose'].between(
                                     (df['fLow']),
                                     (df['fOpen'] -
                                     (df['fRange'] * .4))
                                 )
-                            &  # High < open + (range * .2)
+                            &   # High < open + (range * .2)
                                 (df['fHigh'] <
                                 (df['fOpen'] +
                                 (df['fRange'] * .2)))
-                            &  # Low > close - (range * .2)
+                            &   # Low > close - (range * .2)
                                 (df['fLow'] >
                                 (df['fClose'] -
                                 (df['fRange'] * .2)))
+                            &   # Check if the 1st and 2nd have the same symbol
+                                (df['sym'] == (df['sym'].shift(-1, axis=0)))
                         ),
 
                         np.where(  # Candlestick #2
@@ -270,9 +272,10 @@ class buCandles():
                         (df['fLow'] + (df['fRange'] * .80))
                     ))
                 &   # If the bottom tail is less than 1/3 of the range
-                  ((df['fClose'] - df['fLow']) <=
-                          (df['fRange'] * .33)
-                  )
+                    ((df['fClose'] - df['fLow']) <=
+                          (df['fRange'] * .33))
+                &   # Check if the 1st and 2nd have the same symbol
+                    (df['sym'] == (df['sym'].shift(-1, axis=0)))
             ),
 
             np.where(
@@ -315,6 +318,8 @@ class buCandles():
                       df['fLow']) <=
                      (df['fRange'] * .33)
                     )
+                &   # Check if the 1st and 2nd have the same symbol
+                    (df['sym'] == (df['sym'].shift(-1, axis=0)))
             ),
 
             np.where(  # Candlestick #2
@@ -382,6 +387,8 @@ class buCandles():
                          (df['fRange'].shift(-1, axis=0) * .33)
                        )
                     ))
+                &   # Check if the 1st and 2nd have the same symbol
+                    (df['sym'] == (df['sym'].shift(-1, axis=0)))
             ),
             np.where(  # Candlestick #2
                 (   # Second > .5% increase
@@ -424,6 +431,8 @@ class buCandles():
                           (df['fLow'].shift(-1, axis=0)),
                           (df['fClose'].shift(-1, axis=0))
                     ))
+                &   # Check if the 1st and 2nd have the same symbol
+                    (df['sym'] == (df['sym'].shift(-1, axis=0)))
             ),
             np.where(  # Candlestick #2
                 (   # Second > .5% increase
@@ -463,21 +472,30 @@ class buCandles():
                         (df['fLow'] + (df['fRange'] * .05)),
                         (df['fLow'] + (df['fRange'] * .40))
                     ))
+                &   # Check if the 1st and 3rd have the same symbol
+                    (df['sym'] == (df['sym'].shift(-2, axis=0)))
+                &   # Candle body takes up at least 50% of the range
+                    (((df['fOpen'] - df['fClose']) / df['fRange']) > .5)
 
             ),
             np.where(  # Candlestick #2
-                (   # Second > -.5% decrease, < .5% increase
+                (   # Second > -2.5% decrease, < 2.5% increase
                     (df['changePercent'].shift(-1, axis=0).between(
-                        - .005, .005
+                        - .025, .025
                     ))
-                &   # 2nd open < the 1st close
+                &   # 2nd open < the 1st low
                     (df['fOpen'].shift(-1, axis=0) <
-                     df['fClose']
-                    )
+                     df['fLow'])
+                &   # 2nd high < 1st low
+                    (df['fHigh'].shift(-1, axis=0) <
+                     df['fLow'])
             ),
            np.where(  # Candlestick #3
                 (   # Third > .5% increase
                     (df['changePercent'].shift(-2, axis=0) > .005)
+                &   # Third close > third open
+                    (df['fClose'].shift(-2, axis=0) >
+                     df['fOpen'].shift(-2, axis=0))
                 &   # 3rd open > 2nd low + .2 range
                     (df['fOpen'].shift(-2, axis=0) >
                        (df['fLow'].shift(-1, axis=0) +
@@ -487,6 +505,9 @@ class buCandles():
                     ((df['fClose'].shift(-2, axis=0)) >
                      (df['fClose'] + (df['fRange'].shift(-1, axis=0) * .5)
                     ))
+                &   # 3rd close > 2nd high
+                    (df['fClose'].shift(-2, axis=0) >
+                     df['fHigh'].shift(-1, axis=0))
 
                 )
         , 1, 0), 0), 0)
@@ -506,34 +527,48 @@ class buCandles():
         df['cd_buababy'] = np.where(  # Candlestick #1
                 (   # First < -.5% decrease
                     (df['changePercent'] < -.005)
-                &   # If the candlestick closed within the ...
-                    (df['fClose'].between(
-                        (df['fLow'] + (df['fRange'] * .15)),
-                        (df['fLow'] + (df['fRange'] * .50))
-                    ))
+                &   # 1st close < 1st open
+                    (df['fClose'] < df['fOpen'])
+                # &   # If the candlestick closed within the ...
+                #    (df['fClose'].between(
+                #        (df['fLow'] + (df['fRange'] * .10)),
+                #        (df['fLow'] + (df['fRange'] * .50))
+                #    ))
+                &   # Candle body > .5 of candle range
+                    (((df['fOpen'] - df['fClose']) / df['fRange']) > .5)
+                &   # 1st close < 3rd close
+                    (df['fClose'] < df['fClose'].shift(-2, axis=0))
+                &   # Check if the 1st and 3rd have the same symbol
+                    (df['sym'] == (df['sym'].shift(-2, axis=0)))
             ),
             np.where(  # Candlestick #2
-                (   # Second > .1% increase
-                    (df['changePercent'].shift(-1, axis=0) > .001)
-                &   # 2nd open < the 1st low
-                    (df['fOpen'].shift(-1, axis=0) < df['fLow'])
-                &   # 2nd open < 3rd low
-                    (df['fOpen'].shift(-1, axis=0) <
-                     df['fLow'].shift(-2, axis=0))
-                &   # 2nd close < 1st low
-                    (df['fClose'].shift(-2, axis=0) < df['fLow'])
-                &   # 2nd close < 3rd low
-                    (df['fClose'].shift(-2, axis=0) <
-                     df['fLow'].shift(-2, axis=0))
+                (   # Second < .1% decrease
+                    (df['changePercent'].shift(-1, axis=0) < -.01)
+                &   # Second close > 2nd open
+                    (df['fClose'].shift(-1, axis=0) >
+                     df['fOpen'].shift(-1, axis=0))
+                &   # 2nd high < 1st low
+                    (df['fHigh'].shift(-1, axis=0) < df['fLow'])
             ),
            np.where(  # Candlestick #3
-                (   # Third > .5% increase
-                    (df['changePercent'].shift(-2, axis=0) > .005)
-                &   # 3rd close within .3 range of 1st open +/-
-                    (df['fClose'].shift(-2, axis=0).between(
-                     (df['fOpen'] - (df['fRange'] * .3)),
-                     (df['fOpen'] + (df['fRange'] * .3))
-                    ))
+                (   # Third > 1.5% increase
+                    (df['changePercent'].shift(-2, axis=0) > .015)
+                &   # Third close > third open
+                    (df['fClose'].shift(-2, axis=0) >
+                     df['fOpen'].shift(-2, axis=0))
+                &   # Third low > 2nd high
+                    (df['fLow'].shift(-2, axis=0) >
+                     df['fHigh'].shift(-1, axis=0))
+                &   # Third close > 1st close
+                    (df['fClose'].shift(-2, axis=0) >
+                     df['fClose'])
+                # &   # Third range > .5 * 1st range
+                #    (df['fRange'].shift(-2, axis=0) > (.5 * df['fRange']))
+                # &   # 3rd close within .3 range of 1st open +/-
+                #    (df['fClose'].shift(-2, axis=0).between(
+                #     (df['fOpen'] - (df['fRange'] * .3)),
+                #     (df['fOpen'] + (df['fRange'] * .3))
+                #    ))
 
                 )
         , 1, 0), 0), 0)
@@ -561,6 +596,8 @@ class buCandles():
                 &   # Top tail < .3 range
                     ((df['fHigh'] - df['fClose']) <
                      (df['fRange']) * .3)
+                &   # Check if the 1st and 3rd have the same symbol
+                    (df['sym'] == (df['sym'].shift(-2, axis=0)))
             ),
             np.where(  # Candlestick #2
                 (   # Second > .25% increase
@@ -610,20 +647,35 @@ class buCandles():
         df['cd_butls'] = np.where(  # Candlestick #1
                 (   # First < -.25% decrease
                     (df['changePercent'] < -.0025)
+                &   # 1st close < 1st open
+                    (df['fClose'] < df['fOpen'])
                 &   # 1st open > 2nd open
                     (df['fOpen'] > df['fOpen'].shift(-1, axis=0))
+                &   # Check if the 1st and 4th have the same symbol
+                    (df['sym'] == (df['sym'].shift(-3, axis=0)))
             ),
             np.where(  # Candlestick #2
                 (   # Second < -.25% decrease
                     (df['changePercent'].shift(-1, axis=0) < -.0025)
+                &   # 2nd close < 2nd open
+                    (df['fClose'].shift(-1, axis=0) <
+                     df['fOpen'].shift(-1, axis=0))
                 &   # 2nd open > 3nd open
                     (df['fOpen'].shift(-1, axis=0) >
                      df['fOpen'].shift(-2, axis=0))
+                &   # 2nd close < 1st close
+                    (df['fClose'].shift(-1, axis=0) <
+                     df['fClose'])
             ),
            np.where(  # Candlestick #3
                 (   # Third < -.25% decrease
                     (df['changePercent'].shift(-2, axis=0) < -.0025)
-
+                &   # Third close < third open
+                    (df['fClose'].shift(-2, axis=0) <
+                     df['fOpen'].shift(-2, axis=0))
+                &   # 3rd close < 3rd open
+                    (df['fClose'].shift(-2, axis=0) <
+                     df['fOpen'].shift(-2, axis=0))
                 &   # 3rd close < 2nd close
                     (df['fClose'].shift(-2, axis=0) <
                      df['fClose'].shift(-1, axis=0))
@@ -631,8 +683,22 @@ class buCandles():
            np.where(  # Candlestick #4
                 (   # 4th > 1% increase
                     (df['changePercent'].shift(-3, axis=0) > .01)
+                &   # 4th close > 4th open
+                    (df['fClose'].shift(-3, axis=0) >
+                     df['fOpen'].shift(-3, axis=0))
+                &   # 4th open < 3rd close
+                    (df['fOpen'].shift(-3, axis=0) <
+                     df['fClose'].shift(-2, axis=0))
                 &   # 4th close > 1st open
                     (df['fClose'].shift(-3, axis=0) > df['fOpen'])
+                &   # Top tail < 20% of the 4th range
+                    (((df['fHigh'].shift(-3, axis=0) -
+                       df['fClose'].shift(-3, axis=0)) /
+                       df['fRange'].shift(-3, axis=0)) < .2)
+                &   # Bottom tail < 20% of the 4th range
+                    (((df['fOpen'].shift(-3, axis=0) -
+                       df['fLow'].shift(-3, axis=0)) /
+                       df['fRange'].shift(-3, axis=0)) < .2)
 
                 )
         , 1, 0), 0), 0), 0)
@@ -654,11 +720,16 @@ class buCandles():
                     (df['changePercent'] < -.005)
                 &   # 1st close < 2nd high
                     (df['fClose'] < df['fHigh'].shift(-1, axis=0))
+                &   # Check if the 1st and 3rd have the same symbol
+                    (df['sym'] == (df['sym'].shift(-2, axis=0)))
+                &   # 1st body > .67 of candle range
+                    ((abs(df['fOpen'] - df['fClose']) /
+                          df['fRange']) > .67)
             ),
             np.where(  # Candlestick #2
-                (   # Second < .20% increase, > -.20 decrease
+                (   # Second < .33% increase, > -.33 decrease
                     (df['changePercent'].shift(-1, axis=0).between(
-                        -.0020, .0020
+                        -.0033, .0033
                     ))
                 &   # Bottom tail > .3 range
                     ((df['fOpen'].shift(-1, axis=0) -
@@ -668,13 +739,31 @@ class buCandles():
                     ((df['fHigh'].shift(-1, axis=0) -
                       df['fClose'].shift(-1, axis=0)) >
                      (df['fRange'].shift(-1, axis=0)) * .3)
+                &   # 2nd high < 1st open
+                    (df['fHigh'].shift(-1, axis=0) < df['fOpen'])
+                &   # 2nd high < 3rd close
+                    (df['fHigh'].shift(-1, axis=0) <
+                     df['fClose'].shift(-2, axis=0))
+                &   # 2nd body < .5 of candle range
+                    ((abs(df['fOpen'].shift(-1, axis=0) -
+                          df['fClose'].shift(-1, axis=0)) /
+                          df['fRange'].shift(-1, axis=0)
+                      ) < .5)
             ),
            np.where(  # Candlestick #3
                 (   # Third > .5% increase
                     (df['changePercent'].shift(-2, axis=0) > .005)
+                &   # Third close > third open
+                    (df['fClose'].shift(-2, axis=0) >
+                     df['fOpen'].shift(-2, axis=0))
                 &   # 3rd close < 1st open
                     (df['fClose'].shift(-2, axis=0) <
                      df['fOpen'])
+                &   # 3rd body > .67 of candle range
+                    ((abs(df['fOpen'].shift(-2, axis=0) -
+                          df['fClose'].shift(-2, axis=0)) /
+                          df['fRange'].shift(-2, axis=0)
+                      ) > .67)
                 )
         , 1, 0), 0), 0)
 
@@ -693,28 +782,71 @@ class buCandles():
         df['cd_butou'] = np.where(  # Candlestick #1
                 (   # First < -.25% decrease. > -1.5% decrease
                     (df['changePercent'].between(
-                        -.015, -.0025
+                        -.05, -.0025
                     ))
+                &   # Open above close
+                    (df['fOpen'] > df['fClose'])
                 &   # Bottom tail > top tail
                     ((df['fClose'] - df['fLow']) >
                      (df['fHigh'] - df['fOpen']))
+                &   # First low should be > than 2nd low
+                    ((df['fLow'] > df['fLow'].shift(-1, axis=0)))
+                &   # First low should be higher than 2nd open
+                    (df['fLow'] > df['fOpen'].shift(-1, axis=0))
+                &   # Check if the 1st and 3rd have the same symbol
+                    (df['sym'] == (df['sym'].shift(-2, axis=0)))
             ),
             np.where(  # Candlestick #2
                 (   # Second > .5% increase
                     (df['changePercent'].shift(-1, axis=0) > .005)
-                &   # 2nd open < 1st close
-                    (df['fOpen'].shift(-1, axis=0) <
-                     df['fClose'])
+                &   # 2nd high greater than first high
+                    (df['fHigh'].shift(-1, axis=0) >
+                     df['fHigh'])
+                &   # Second close > 2nd open
+                    (df['fClose'].shift(-1, axis=0) >
+                     df['fOpen'].shift(-1, axis=0))
                 &   # 2nd close > 1st open
                     (df['fClose'].shift(-1, axis=0) >
                      df['fOpen'])
+                &   # 2nd open < 1st close
+                    (df['fOpen'].shift(-1, axis=0) <
+                     df['fClose'])
+                &   # 3rd top tail less than 20% of candle body
+                    ((df['fHigh'].shift(-1, axis=0) -
+                      df['fClose'].shift(-1, axis=0)) <
+                     (.2 * (df['fHigh'].shift(-1, axis=0) -
+                      df['fLow'].shift(-1, axis=0))))
+                &   # 3rd bottom tail less than 20% of candle body
+                    ((df['fOpen'].shift(-1, axis=0) -
+                      df['fLow'].shift(-1, axis=0)) <
+                     (.2 * (df['fHigh'].shift(-1, axis=0) -
+                      df['fLow'].shift(-1, axis=0))))
             ),
            np.where(  # Candlestick #3
                 (   # Third > .33% increase
                     (df['changePercent'].shift(-2, axis=0) > .0033)
+                &   # Third close > third open
+                    (df['fClose'].shift(-2, axis=0) >
+                     df['fOpen'].shift(-2, axis=0))
                 &   # 3rd close > 2nd close
                     (df['fClose'].shift(-2, axis=0) >
                      df['fClose'].shift(-1, axis=0))
+                &   # 3rd open < 2nd close
+                    (df['fOpen'].shift(-2, axis=0) <
+                     df['fClose'].shift(-1, axis=0))
+                &   # 3rd low > 2nd low
+                    (df['fLow'].shift(-2, axis=0) >
+                     df['fLow'].shift(-1, axis=0))
+                &   # 3rd top tail less than 33% of candle body
+                    ((df['fHigh'].shift(-2, axis=0) -
+                      df['fClose'].shift(-2, axis=0)) <
+                     (.33 * (df['fHigh'].shift(-2, axis=0) -
+                      df['fLow'].shift(-2, axis=0))))
+                &   # 3rd bottom tail less than 33% of candle body
+                    ((df['fOpen'].shift(-2, axis=0) -
+                      df['fLow'].shift(-2, axis=0)) <
+                     (.33 * (df['fHigh'].shift(-2, axis=0) -
+                      df['fLow'].shift(-2, axis=0))))
                 )
         , 1, 0), 0), 0)
 
@@ -736,11 +868,13 @@ class buCandles():
                 &   # Bottom tail > top tail
                     ((df['fClose'] - df['fLow']) >
                      (df['fHigh'] - df['fOpen']))
+                &   # Check if the 1st and 3rd have the same symbol
+                    (df['sym'] == (df['sym'].shift(-2, axis=0)))
             ),
             np.where(  # Candlestick #2
                 (   # Second > .25% increase
                     (df['changePercent'].shift(-1, axis=0) > .0025)
-                &   # 2nd open > 1st close, 2nd open < 1st close
+                &   # 2nd open > 1st close, 2nd open < 1st open
                     (df['fOpen'].shift(-1, axis=0).between(
                         df['fClose'], df['fOpen']
                     ))
@@ -759,18 +893,34 @@ class buCandles():
                      (df['fHigh'].shift(-1, axis=0) -
                       df['fOpen'].shift(-1, axis=0))
                     )
+                &   # 2nd tail should be less than the first open
+                    (df['fHigh'].shift(-1, axis=0) < df['fOpen'])
 
             ),
            np.where(  # Candlestick #3
                 (   # Third > .5% increase
                     (df['changePercent'].shift(-2, axis=0) > .005)
+                &   # Close > open
+                    (df['fClose'].shift(-2, axis=0) > df['fOpen'].shift(-2, axis=0))
                 &   # Open > 2nd open
                     (df['fOpen'].shift(-2, axis=0) >
                      df['fOpen'].shift(-1, axis=0))
-                )
                 &   # Close > 1st open
                     (df['fClose'].shift(-2, axis=0) >
                      df['fOpen'])
+                &   # 3rd top tail less than 20% of the candle body
+                    ((df['fHigh'].shift(-2, axis=0) -
+                      df['fClose'].shift(-2, axis=0)) <
+                     ((df['fHigh'].shift(-2, axis=0) -
+                      df['fLow'].shift(-2, axis=0)) * .20)
+                    )
+                &   # 3rd bottom tail less than 20% of the candle body
+                    ((df['fOpen'].shift(-2, axis=0) -
+                      df['fLow'].shift(-2, axis=0)) <
+                     ((df['fHigh'].shift(-2, axis=0) -
+                      df['fLow'].shift(-2, axis=0)) * .20)
+                    )
+                )
 
         , 1, 0), 0), 0)
 

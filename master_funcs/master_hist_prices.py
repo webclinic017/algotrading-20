@@ -25,21 +25,28 @@ except ModuleNotFoundError:
 class SplitGetHistPrices():
     """Master class to split cs/otc stocks and get data."""
 
-    def __init__(self, testing=False, remote=True, normal=False, otc=False, apca=False):
-        self.determine_params(self, testing, normal, otc, apca)
+    # Normal is the non-otc data available through IEX cloud
+    # OTC is over the counter
+    # Apca is to get all historical stock data available through alpaca API
+    # Struct is structured products, warrants
+
+    def __init__(self, testing=False, remote=True, normal=False, otc=False, apca=False, warrants=False):
+        self.determine_params(self, testing, normal, otc, apca, warrants)
         bins_unique = self.create_df_bins(self)
+        result = False
 
         if apca:
-            self.apca_get_data(self, testing)
+            result = self.apca_get_data(self, testing)
         elif remote and not apca:
-            calls = self.remote_get_data(self, bins_unique, testing)
-            if calls and apca:
-                self.call_combined(self)
+            result = self.remote_get_data(self, bins_unique, testing)
         else:
-            calls = self.local_get_data(self, bins_unique, testing)
+            result = self.local_get_data(self, bins_unique, testing)
+
+        if result:
+            self.call_combined(self, normal, otc, apca)
 
     @classmethod
-    def determine_params(cls, self, testing, normal, otc, apca):
+    def determine_params(cls, self, testing, normal, otc, apca, warrants):
         """Determine fpath and other params."""
         base_fpath = f"{baseDir().path}/tickers"
         fpath = ''
@@ -56,6 +63,11 @@ class SplitGetHistPrices():
             fpath = f"{base_fpath}/apca_ref.gz"
             df = pd.read_json(fpath, compression='gzip')
             self.df = df[df['status'] == 'active'].copy(deep=True)
+        elif warrants:
+            fpath = f"{base_fpath}/all_symbols.gz"
+            df = pd.read_json(fpath, compression='gzip')
+            wt_df = df[df['type'].isin(['wt', 'ut', 'rt'])]
+            self.df = wt_df.copy(deep=True)
 
     @classmethod
     def create_df_bins(cls, self):
@@ -77,6 +89,8 @@ class SplitGetHistPrices():
             rate_limit(ApcaHist, testing=True, **kwargs)
         else:
             rate_limit(ApcaHist, testing=False, **kwargs)
+
+        return True
 
     @classmethod
     def remote_get_data(cls, self, bins_unique, testing):
@@ -114,10 +128,13 @@ class SplitGetHistPrices():
         return True
 
     @classmethod
-    def call_combined(cls, self):
+    def call_combined(cls, self, normal, otc, apca):
         """Combine all apca data."""
         try:
             from app.tasks import execute_func
-            execute_func.delay('combine_apca_stock_eod')
+            if normal or otc:
+                execute_func.delay('combine_daily_stock_eod')
+            elif apca:
+                execute_func.delay('combine_apca_stock_eod')
         except ModuleNotFoundError:
             pass
