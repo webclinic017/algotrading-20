@@ -16,15 +16,39 @@ from data_collect.iex_class import urlData
 
 import importlib
 import sys
-
+from socks import SOCKS5AuthError
 # %% codecell
 ##########################################
+from api import serverAPI
+
+# serverAPI('redo', val='make_yoptions_file_struct')
+# %% codecell
+serverAPI('redo', val='master_yfinance_options_collect')
 
 # Make hist prices file struct
 # fpath = Path(baseDir().path, 'derivatives', 'end_of_day')
 # make_hist_prices_dir(fpath)
 # %% codecell
+url = 'https://algotrading.ventures/api/v1/data/yfinance/derivs/all'
+get = requests.get(url)
 
+df = pd.DataFrame(get.json())
+
+ref_path = Path(baseDir().path, 'ref_data', 'syms_with_options.parquet')
+ref_df = pd.read_parquet(ref_path)
+
+ref_df.head(10)
+
+df.head()
+
+
+df['expDate'].head()
+
+df.groupby(by=['expDate']).count()
+
+df.shape
+
+# %% codecell
 symbol = 'OCGN'
 
 from dotenv import load_dotenv

@@ -24,7 +24,9 @@ def execute_yahoo_options(df):
         except SOCKS5AuthError:
             yahoo_options(row['symbol'], proxy=row['proxy'])
         except Exception as e:
-            help_print_arg(str(e))
+            # help_print_arg(str(e))
+            help_print_arg(index)
+            break
 
 
 def yahoo_options(sym, proxy=False, n=False):
@@ -51,8 +53,12 @@ def yahoo_options(sym, proxy=False, n=False):
                 options = ticker.option_chain(exp)
             df_calls = options.calls
             df_calls['side'] = 'C'
+            df_calls['expDate'] = exp
+            df_calls['symbol'] = sym
             df_puts = options.puts
             df_puts['side'] = 'P'
+            df_puts['expDate'] = exp
+            df_puts['symbol'] = sym
             df_list.append(df_calls)
             df_list.append(df_puts)
         except Exception as e:
