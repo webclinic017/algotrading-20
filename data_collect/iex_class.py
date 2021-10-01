@@ -136,12 +136,15 @@ class urlData():
         # Set empty dataframe variable
         df = ''
         try:
-            df = pd.read_json(BytesIO(get.content))
+            df = pd.DataFrame(get.json())
         except ValueError:
             try:
-                df = pd.json_normalize(StringIO(get.content.decode('utf-8')))
+                df = pd.read_json(BytesIO(get.content))
             except JSONDecodeError or AttributeError:
-                df = pd.read_csv(BytesIO(get.content), escapechar='\n', delimiter=',')
+                try:
+                    df = pd.json_normalize(StringIO(get.content.decode('utf-8')))
+                except:
+                    df = pd.read_csv(BytesIO(get.content), escapechar='\n', delimiter=',')
         return df
 # %% codecell
 ######################################################
@@ -314,3 +317,30 @@ class companyStats():
 
 # %% codecell
 ######################################################
+
+
+def get_options_symbols(get_fresh=False):
+    """Get symbols with derivatives from IEX."""
+    fpath = Path(baseDir().path, 'ref_data', 'syms_with_options.parquet')
+    stop = True
+
+    if fpath.is_file():
+        return pd.read_parquet(fpath)
+    else:
+        get_fresh = True
+        stop = False
+
+    if get_fresh:
+        load_dotenv()
+        base_url = os.environ.get("base_url")
+        url_suf = '/ref-data/options/symbols'
+        payload = {'token': os.environ.get("iex_publish_api")}
+        get = requests.get(f"{base_url}{url_suf}", params=payload)
+
+        sym_df = pd.DataFrame(get.json().items())
+        sym_df.columns = ['symbol', 'expDates']
+
+        sym_df.to_parquet(fpath)
+
+        if not stop:
+            return sym_df

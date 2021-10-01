@@ -3,6 +3,11 @@
 #################################
 import time
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+import os
+
+import pandas as pd
+import requests
 
 try:
     from scripts.dev.multiuse.help_class import help_print_arg
@@ -11,6 +16,38 @@ except ModuleNotFoundError:
 
 # %% codecell
 #################################
+
+
+def get_sock5_nord_proxies(full_df=False):
+    """Get a list of sock5 nord proxies."""
+    nord_url = 'https://nordvpn.com/api/server'
+    get = requests.get(nord_url)
+
+    servers = pd.DataFrame(get.json())
+    # Extract features keys for column names
+    col_list = list(servers['features'].iloc[0].keys())
+    servers[col_list] = servers.features.apply(lambda row: pd.Series(row))
+    socks_df = servers[servers['socks']].copy()
+
+    # Local local environment variables
+    load_dotenv()
+    nord_user = os.environ.get("nord_user")
+    nord_pass = os.environ.get("nord_pass")
+
+    # Construct the 1st part of the url
+    purl = f"socks5://{nord_user}:{nord_pass}@"
+    # Iterate over df to build proxy dict for each row
+    socks_df['socksp'] = socks_df.apply(lambda row:
+                                        {'http': f"{purl}{row.domain}:1080",
+                                         'https': f"{purl}{row.domain}:1080"},
+                                        axis=1)
+    result = False
+    if full_df:
+        result = socks_df
+    else:
+        result = socks_df['socksp'].to_numpy()
+
+    return result
 
 
 def rate_limit(func_to_execute, master_limit=0, duration=60, counter_limit=199, testing=False, **kwargs):
@@ -40,7 +77,7 @@ def rate_limit(func_to_execute, master_limit=0, duration=60, counter_limit=199, 
 
         return counter, next_min
 
-    while not finished:
+    if not finished:
         next_min = datetime.now() + timedelta(seconds=duration)
         if sym_list:
             for sym in sym_list:
@@ -63,8 +100,7 @@ def rate_limit(func_to_execute, master_limit=0, duration=60, counter_limit=199, 
                     break
         else:
             if finished:
-                break
-
+                return
             else:
                 if sym:
                     func_to_execute(sym)

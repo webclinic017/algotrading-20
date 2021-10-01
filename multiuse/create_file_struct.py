@@ -2,6 +2,7 @@
 # %% codecell
 ###############################################
 import os
+from pathlib import Path
 from datetime import date
 import string
 import glob
@@ -38,6 +39,13 @@ def create_company_index_dirs():
 
 # %% codecell
 ###############################################
+
+
+def make_yfinance_dirs():
+    """Make options historical directory."""
+    path = Path(baseDir().path, 'derivatives/end_of_day')
+    makedirs_with_permissions(path)
+    make_hist_prices_dir(path)
 
 
 def make_hist_prices_dir(base_path):
