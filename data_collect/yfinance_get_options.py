@@ -23,13 +23,13 @@ def execute_yahoo_options(df):
             yahoo_options(row['symbol'], proxy=row['proxy'])
         except SOCKS5AuthError:
             help_print_arg(index)
-            path = Path(baseDir().path, 'derivatives/end_of_day/unfinished', f"df_bin{row['bin']}.parquet")
+            path = Path(baseDir().path, 'derivatives/end_of_day/unfinished', f"df_bin{row['bins']}.parquet")
             df.iloc[index:].to_parquet(path)
             break
         except Exception as e:
             help_print_arg(str(e))
             yahoo_options(row['symbol'], proxy=row['proxy'])
-            
+
 
 def yahoo_options(sym, proxy=False, n=False):
     """Get options chain data from yahoo finance."""
