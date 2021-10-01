@@ -26,6 +26,8 @@ def execute_yahoo_options(df):
         except Exception as e:
             # help_print_arg(str(e))
             help_print_arg(index)
+            path = Path(baseDir().path, 'derivatives/end_of_day/unfinished', f"df_bin{row['bin']}.parquet")
+            df.iloc[index:].to_parquet(path)
             break
 
 
