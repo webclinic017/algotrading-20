@@ -52,7 +52,7 @@ def yahoo_options(sym, proxy=False, n=False):
             df_list.append(df_puts)
         except Exception as e:
             # error_list.append(sym)
-            help_print_arg(e)
+            help_print_arg(str(e))
             break
 
     try:
