@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 import yfinance as yf
-
+from socks import SOCKS5AuthError
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg
@@ -19,7 +19,12 @@ def execute_yahoo_options(df):
     # Df is in json format because it's being passed from a celery task
     df = pd.read_json(df)
     for index, row in df.iterrows():
-        yahoo_options(row['symbol'], proxy=row['proxy'])
+        try:
+            yahoo_options(row['symbol'], proxy=row['proxy'])
+        except SOCKS5AuthError:
+            yahoo_options(row['symbol'], proxy=row['proxy'])
+        except Exception as e:
+            help_print_arg(str(e))
 
 
 def yahoo_options(sym, proxy=False, n=False):
