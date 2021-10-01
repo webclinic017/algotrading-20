@@ -49,7 +49,7 @@ def df_create_bins(df, bin_size=1000):
     if isinstance(df.index, object):
         df.reset_index(drop=True, inplace=True)
 
-    qcut_bin_n = df.shape[0] // 1000
+    qcut_bin_n = df.shape[0] // bin_size
     bin_labels = list(range(1, qcut_bin_n + 1))
 
     # Create column with bin numbers
