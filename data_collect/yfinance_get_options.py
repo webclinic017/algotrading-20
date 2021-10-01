@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 def execute_yahoo_options(df):
     """Execute for loop. Run from tasks execute_function."""
     # Df is in json format because it's being passed from a celery task
-    df = pd.DataFrame(df)
+    df = pd.read_json(df)
     for index, row in df.iterrows():
         yahoo_options(row['symbol'], proxy=row['proxy'])
 
