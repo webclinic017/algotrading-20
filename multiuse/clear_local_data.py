@@ -5,6 +5,7 @@
 ####################################################################
 import os
 import glob
+from pathlib import Path
 
 try:
     from scripts.dev.multiuse.help_class import baseDir
@@ -27,6 +28,14 @@ def remove_StockEOD():
     for fpath in glob.glob(f"{baseDir().path}/StockEOD/*/**/***"):
         os.remove(fpath)
         print(fpath)
+
+def clear_yoptions_dirs():
+    """Removing files in yoptions due to incompatibility."""
+    path = Path(baseDir().path, 'derivatives/end_of_day/2021')
+    path_list = list(path.glob('**/*.parquet'))
+
+    for fpath in path_list:
+        os.remove(fpath)
 # %% codecell
 ####################################################################
 

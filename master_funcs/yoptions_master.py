@@ -1,6 +1,7 @@
 """Starter for executing yfinance options sequence."""
 # %% codecell
-
+import os
+from pathlib import Path
 import pandas as pd
 
 try:
@@ -15,6 +16,25 @@ except ModuleNotFoundError:
     from data_collect.iex_class import get_options_symbols
 
 # %% codecell
+
+
+def collect_rest_of_yoptions():
+    """After a period of time, collect rest of data."""
+    # Follow up to the first sequence of requests
+    path = Path(baseDir().path, 'derivatives/end_of_day/unfinished')
+    paths = list(path.glob('*.parquet'))
+
+    for fpath in paths:
+        df = pd.read_parquet(fpath)
+        if df.empty:
+            os.remove(fpath)
+        else:
+            try:
+                from app.tasks import execute_func
+                kwargs = {'df': df.to_json()}
+                execute_func.delay('execute_yoptions', **kwargs)
+            except ModuleNotFoundError:
+                help_print_arg('Execute yahoo options not found')
 
 
 class SetUpYahooOptions():
