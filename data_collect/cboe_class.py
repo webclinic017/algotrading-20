@@ -272,9 +272,6 @@ class cboeData():
         # Check if today is a weekend
         if date.today().weekday() in (5, 6):
             weekend = True
-        elif (date.today().weekday() == 0 and
-                not getDate.time_cutoff(cutoff_hm=17.15)):
-            weekend = True
         # While current hh.mm < cuttoff
         if (nyc_hm < cutoff_hm) or (weekend):
             self.date = (date.today() - BusinessDay(n=1)).date()

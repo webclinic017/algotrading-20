@@ -41,9 +41,13 @@ def create_company_index_dirs():
 ###############################################
 
 
-def make_yfinance_dirs():
+def make_yfinance_dirs(temp=False):
     """Make options historical directory."""
-    path = Path(baseDir().path, 'derivatives/end_of_day')
+    path = ''
+    if not temp:
+        path = Path(baseDir().path, 'derivatives/end_of_day')
+    elif temp:
+        path = Path(baseDir().path, 'derivatives/end_of_day/temp')
     makedirs_with_permissions(path)
     make_hist_prices_dir(path)
 
