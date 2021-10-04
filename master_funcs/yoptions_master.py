@@ -37,22 +37,93 @@ def collect_rest_of_yoptions():
             except ModuleNotFoundError:
                 help_print_arg('Execute yahoo options not found')
 
+# %% codecell
+
+
+def yoptions_combine_temp_all():
+    """Combine temporary options with historical records."""
+    dt = getDate.query('iex_eod')
+    yr = dt.year
+    path_base = Path(baseDir().path, 'derivatives/end_of_day')
+    temps = list(Path(path_base, 'temp', str(yr)).glob('**/*.parquet'))
+
+    for path in temps:
+        try:
+            sym = str(path.resolve()).split('_')[-1].split('.')[0]
+            path_to_write = Path(path_base, str(yr), sym.lower()[0], f"_{sym}.parquet")
+
+            if path_to_write.is_file():
+                df_old = pd.read_parquet(path_to_write)
+                df_new = pd.read_parquet(path)
+                # Combine dataframes and write to local file
+                df_all = pd.concat([df_old, df_new])
+                df_all.to_parquet(path_to_write)
+                # Remove temp file
+                os.remove(path)
+            else:
+                df_new = pd.read_parquet(path)
+                df_new.to_parquet(path)
+        except Exception as e:
+            help_print_arg(str(e))
+
+    unfinished_paths = list(Path(path_base, 'unfinished').glob('*.parquet'))
+    if unfinished_paths:
+        for upath in unfinished_paths:
+            os.remove(upath)
+
+# %% codecell
+
+
+def yoptions_still_needed(recreate=False):
+    """Return a list of all syms:exp_dates that are missing."""
+    ref_path = Path(baseDir().path, 'ref_data', 'syms_with_options.parquet')
+    ref_df = pd.read_parquet(ref_path)
+
+    path_for_temp = Path(baseDir().path, 'derivatives/end_of_day/temp/2021')
+    paths_for_temp = list(path_for_temp.glob('**/*.parquet'))
+
+    df_list = []
+    for fpath in paths_for_temp:
+        df_list.append(pd.read_parquet(fpath))
+
+    df_all = pd.concat(df_list)
+    df_collected = (df_all.groupby(by=['symbol'])['expDate']
+                          .agg({lambda x: list(x)})
+                          .reset_index()
+                          .rename(columns={'<lambda>': 'expDatesStored'})
+                          .copy())
+
+    df_comb = pd.merge(ref_df, df_collected, how='left', on=['symbol'], indicator=True)
+    df_left = df_comb[df_comb['_merge'] == 'left_only'].copy()
+
+    # df_comb['expDatesNeeded'] = df_comb.apply(lambda row: list(set(row.expDates) - set(row.expDatesStored)), axis=1)
+
+    # if recreate:
+    #    df_comb = df_comb.drop(columns=['expDates', 'expDatesStored'])
+
+    return df_left
+
 
 class SetUpYahooOptions():
     """A class to run the yahoo options function, and store results."""
+    sym_df = False
 
-    def __init__(self):
+    def __init__(self, followup=False):
         proxies = get_sock5_nord_proxies()
-        sym_df = get_options_symbols()
 
-        df_comb = self.get_bins_and_combine(self, proxies, sym_df)
+        if followup:
+            self.sym_df = yoptions_still_needed()
+        else:
+            self.sym_df = get_options_symbols()
+
+        df_comb = self.get_bins_and_combine(self, proxies)
 
         self.initiate_for_loop(self, df_comb)
 
-    def get_bins_and_combine(cls, self, proxies, sym_df):
+    def get_bins_and_combine(cls, self, proxies):
         """Create bins, merge back to og df."""
-        bin_size = int(sym_df.shape[0] / (len(proxies) - 1))
-        df_syms = df_create_bins(sym_df, bin_size=bin_size)
+        bin_size = int(self.sym_df.shape[0] / (len(proxies) - 1))
+        df_syms = df_create_bins(self.sym_df, bin_size=bin_size)
         bins = df_syms['bins'].unique().to_numpy()
 
         bin_df = pd.DataFrame(columns=['bins', 'proxy'])
