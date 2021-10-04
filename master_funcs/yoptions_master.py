@@ -14,6 +14,7 @@ except ModuleNotFoundError:
     from multiuse.help_class import baseDir, getDate, help_print_arg
     from multiuse.help_class import df_create_bins
     from data_collect.iex_class import get_options_symbols
+    from data_collect.yfinance_get_options import execute_yahoo_options
 
 # %% codecell
 
@@ -73,4 +74,5 @@ class SetUpYahooOptions():
                 kwargs = {'df': arg.to_json()}
                 execute_func.delay('execute_yoptions', **kwargs)
             except ModuleNotFoundError:
+                execute_yahoo_options(arg.to_json())
                 help_print_arg('Execute yahoo options not found')

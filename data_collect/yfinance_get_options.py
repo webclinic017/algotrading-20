@@ -31,15 +31,21 @@ def execute_yahoo_options(df):
             yahoo_options(row['symbol'], proxy=row['proxy'])
 
 
-def yahoo_options(sym, proxy=False, n=False):
+def yahoo_options(sym, proxy=False, n=False, temp=True):
     """Get options chain data from yahoo finance."""
     dt = getDate.query('iex_eod')
-    yr = dt.year
-    fpath_base = Path(baseDir().path, 'derivatives/end_of_day', str(yr))
-    fpath = Path(fpath_base, sym.lower()[0], f"_{sym}.parquet")
+    yr, fpath = dt.year, ''
+    fpath_base = Path(baseDir().path, 'derivatives/end_of_day')
+
+    # If writing to the temporary directory for today's data
+    if not temp:
+        fpath = Path(fpath_base, str(yr), sym.lower()[0], f"_{sym}.parquet")
+    elif temp:
+        fpath = Path(fpath_base, 'temp', str(yr), sym.lower()[0], f"_{sym}.parquet")
 
     if fpath.is_file():
         df_old = pd.read_parquet(fpath)
+
 
     ticker = yf.Ticker(sym)
     exp_dates = ticker.options
