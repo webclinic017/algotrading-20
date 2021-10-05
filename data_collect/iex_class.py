@@ -251,6 +251,7 @@ class marketHolidays():
     def write_to_json(cls, self):
         """Write data to local json file."""
         self.days_df.to_json(self.fpath, compression='gzip')
+        
 # %% codecell
 ######################################################
 class companyStats():
