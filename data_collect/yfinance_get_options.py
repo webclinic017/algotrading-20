@@ -21,8 +21,9 @@ def execute_yahoo_options(df):
     for index, row in df.iterrows():
         try:
             yahoo_options(row['symbol'], proxy=row['proxy'])
-        except SOCKS5AuthError:
-            help_print_arg(index)
+        except (SOCKS5AuthError, TypeError) as te:
+            # help_print_arg(index)
+            help_print_arg(str(te))
             path = Path(baseDir().path, 'derivatives/end_of_day/unfinished', f"df_bin{row['bins']}.parquet")
             df.iloc[index:].to_parquet(path)
             break
@@ -47,8 +48,9 @@ def yahoo_options(sym, proxy=False, n=False, temp=True):
         df_old = pd.read_parquet(fpath)
 
 
-    ticker = yf.Ticker(sym)
+    ticker= yf.Ticker(sym)
     exp_dates = ticker.options
+
     if n:
         n += (len(exp_dates) + 1) * 2
     df_list = []
