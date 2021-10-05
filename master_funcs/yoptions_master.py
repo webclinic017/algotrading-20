@@ -106,9 +106,10 @@ def yoptions_still_needed(recreate=False):
 
 class SetUpYahooOptions():
     """A class to run the yahoo options function, and store results."""
-    sym_df = False
+    sym_df, testing = False, False
 
-    def __init__(self, followup=False):
+    def __init__(self, followup=False, testing=False):
+        self.testing = testing
         proxies = get_sock5_nord_proxies()
 
         if followup:
@@ -140,6 +141,8 @@ class SetUpYahooOptions():
         """Initiate for loop sequence."""
         args = [df_comb[df_comb['bins'] == n] for n in iter(self.bins)]
         for arg in args:
+            if self.testing:
+                help_print_arg(str(arg))
             try:
                 from app.tasks import execute_func
                 kwargs = {'df': arg.to_json()}
