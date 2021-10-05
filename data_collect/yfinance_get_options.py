@@ -70,7 +70,6 @@ def yahoo_options(sym, proxy=False, n=False, temp=True):
     except Exception as e:
         # error_list.append(sym)
         help_print_arg(str(e))
-        break
 
     try:
         df_all = pd.concat(df_list)
