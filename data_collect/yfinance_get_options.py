@@ -18,18 +18,31 @@ def execute_yahoo_options(df):
     """Execute for loop. Run from tasks execute_function."""
     # Df is in json format because it's being passed from a celery task
     df = pd.read_json(df)
+
+    # Add all index/row errors to dict for future use
+    error_dict = {}
+
     for index, row in df.iterrows():
         try:
             yahoo_options(row['symbol'], proxy=row['proxy'])
-        except (SOCKS5AuthError, TypeError) as te:
-            # help_print_arg(index)
-            help_print_arg(str(te))
+        except SOCKS5AuthError as sae:
+            # Print error
+            help_print_arg(str(sae))
+            # Create dataframe from error dict
+            df_errors = pd.DataFrame.from_dict(error_dict).T
+            df_unfin = pd.concat([df_errors, df.iloc[index:]]).copy()
+            # Define path to write file
             path = Path(baseDir().path, 'derivatives/end_of_day/unfinished', f"df_bin{row['bins']}.parquet")
-            df.iloc[index:].to_parquet(path)
+            df_unfin.to_parquet(path)
+            # End loop
             break
-        except Exception as e:
+        except TypeError as te:
+            error_dict[index] = row
             help_print_arg(str(e))
-            yahoo_options(row['symbol'], proxy=row['proxy'])
+        except Exception as e:
+            error_dict[index] = row
+            help_print_arg(str(e))
+            # yahoo_options(row['symbol'], proxy=row['proxy'])
 
 
 def yahoo_options(sym, proxy=False, n=False, temp=True):

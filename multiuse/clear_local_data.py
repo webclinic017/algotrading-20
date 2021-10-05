@@ -15,12 +15,16 @@ except ModuleNotFoundError:
 # %% codecell
 ####################################################################
 
+# %% codecell
+
 
 def remove_eod_quotes():
     """Remove all files in iex quotes directory."""
     for fpath in glob.glob(f"{baseDir().path}/iex_eod_quotes/*/**/***"):
-        os.remove(fpath)
+        # os.remove(fpath)
         print(fpath)
+
+# %% codecell
 
 
 def remove_StockEOD():
@@ -28,6 +32,8 @@ def remove_StockEOD():
     for fpath in glob.glob(f"{baseDir().path}/StockEOD/*/**/***"):
         os.remove(fpath)
         print(fpath)
+
+# %% codecell
 
 
 def clear_yoptions_dirs():
@@ -38,6 +44,8 @@ def clear_yoptions_dirs():
     for fpath in path_list:
         os.remove(fpath)
 
+# %% codecell
+
 
 def clear_yoptions_temp_unfin():
     """Clear temp and unfin yoptions directories."""
@@ -46,18 +54,21 @@ def clear_yoptions_temp_unfin():
     path = Path(baseDir().path, 'derivatives/end_of_day/temp', yr)
     temps = list(path.glob('**/*.parquet'))
 
-    for fpath in temps:
-        os.remove(fpath)
+    if temps:
+        for fpath in temps:
+            # os.remove(fpath)
+            print(fpath)
+            break
 
     unfin = Path(baseDir().path, 'derivatives/end_of_day/unfinished')
     unfins = list(unfin.glob('*.parquet'))
 
     if unfins:
         for fpath in unfins:
-            os.remove(fpath)
+            # os.remove(fpath)
+            print(fpath)
+            break
 
 
 # %% codecell
 ####################################################################
-
-remove_eod_quotes()
