@@ -47,34 +47,30 @@ def yahoo_options(sym, proxy=False, n=False, temp=True):
     if fpath.is_file():
         df_old = pd.read_parquet(fpath)
 
-
-    ticker= yf.Ticker(sym)
+    ticker = yf.Ticker(sym)
     exp_dates = ticker.options
 
     if n:
         n += (len(exp_dates) + 1) * 2
-    df_list = []
+    df_list, chain = [], False
 
-    for exp in exp_dates:
-        try:
-            if proxy:
-                options = ticker.option_chain(exp, proxy=proxy)
-            else:
-                options = ticker.option_chain(exp)
-            df_calls = options.calls
-            df_calls['side'] = 'C'
-            df_calls['expDate'] = exp
-            df_calls['symbol'] = sym
-            df_puts = options.puts
-            df_puts['side'] = 'P'
-            df_puts['expDate'] = exp
-            df_puts['symbol'] = sym
-            df_list.append(df_calls)
-            df_list.append(df_puts)
-        except Exception as e:
-            # error_list.append(sym)
-            help_print_arg(str(e))
-            break
+    if proxy:
+        chain = ticker.option_chain(proxy=proxy)
+    else:
+        chain = ticker.option_chain()
+
+    try:
+        df_calls = chain.calls
+        df_calls['symbol'] = sym
+        df_puts = chain.puts
+        df_puts['symbol'] = sym
+        df_list.append(df_calls)
+        df_list.append(df_puts)
+
+    except Exception as e:
+        # error_list.append(sym)
+        help_print_arg(str(e))
+        break
 
     try:
         df_all = pd.concat(df_list)
