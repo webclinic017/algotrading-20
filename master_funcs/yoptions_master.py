@@ -40,7 +40,7 @@ def collect_rest_of_yoptions():
 # %% codecell
 
 
-def yoptions_combine_temp_all():
+def yoptions_combine_temp_all(keep_temps=False):
     """Combine temporary options with historical records."""
     dt = getDate.query('iex_eod')
     yr = dt.year
@@ -59,7 +59,8 @@ def yoptions_combine_temp_all():
                 df_all = pd.concat([df_old, df_new])
                 df_all.to_parquet(path_to_write)
                 # Remove temp file
-                os.remove(path)
+                if not keep_temps:
+                    os.remove(path)
             else:
                 df_new = pd.read_parquet(path)
                 df_new.to_parquet(path)
