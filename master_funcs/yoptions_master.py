@@ -40,7 +40,7 @@ def collect_rest_of_yoptions():
 # %% codecell
 
 
-def yoptions_combine_temp_all(keep_temps=False):
+def yoptions_combine_temp_all(keep_temps=False, keep_unfin=False):
     """Combine temporary options with historical records."""
     dt = getDate.query('iex_eod')
     yr = dt.year
@@ -67,10 +67,11 @@ def yoptions_combine_temp_all(keep_temps=False):
         except Exception as e:
             help_print_arg(str(e))
 
-    unfinished_paths = list(Path(path_base, 'unfinished').glob('*.parquet'))
-    if unfinished_paths:
-        for upath in unfinished_paths:
-            os.remove(upath)
+    if not keep_unfin:
+        unfinished_paths = list(Path(path_base, 'unfinished').glob('*.parquet'))
+        if unfinished_paths:
+            for upath in unfinished_paths:
+                os.remove(upath)
 
 # %% codecell
 
