@@ -61,9 +61,9 @@ def yahoo_options(sym, proxy=False, n=False, temp=True):
         df_old = pd.read_parquet(fpath)
 
     ticker = yf.Ticker(sym)
-    exp_dates = ticker.options
 
     if n:
+        exp_dates = ticker.options
         n += (len(exp_dates) + 1) * 2
     df_list, chain = [], False
 
