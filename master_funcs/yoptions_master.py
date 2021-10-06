@@ -11,12 +11,14 @@ try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg
     from scripts.dev.multiuse.help_class import df_create_bins
     from scripts.dev.data_collect.iex_class import get_options_symbols
+    from scripts.dev.data_collect.yfinance_funcs import get_cboe_ref, yoptions_still_needed
 except ModuleNotFoundError:
     from multiuse.api_helpers import get_sock5_nord_proxies
     from multiuse.help_class import baseDir, getDate, help_print_arg
     from multiuse.help_class import df_create_bins
     from data_collect.iex_class import get_options_symbols
     from data_collect.yfinance_get_options import execute_yahoo_options
+    from data_collect.yfinance_funcs import get_cboe_ref, yoptions_still_needed
 
 # %% codecell
 
@@ -40,29 +42,6 @@ def collect_rest_of_yoptions():
                 help_print_arg('Execute yahoo options not found')
 
 # %% codecell
-
-
-def get_cboe_ref():
-    """Get cboe reference data for use on yfinance."""
-    df = None
-    path_suf = f"symref_{getDate.query('cboe')}.parquet"
-    path = Path(baseDir().path, 'derivatives/cboe_symref', path_suf)
-    if path.is_file():
-        df = pd.read_parquet(path)
-    else:
-        url_p1 = 'https://www.cboe.com/us/options/market_statistics/'
-        url_p2 = 'symbol_reference/?mkt=cone&listed=1&unit=1&closing=1'
-        url = f"{url_p1}{url_p2}"
-        get = requests.get(url)
-
-        df = pd.read_csv(BytesIO(get.content), low_memory=False)
-        df.to_parquet(path)
-
-    cols_to_drop = ['Cboe Symbol', 'Closing Only']
-    df = (df.rename(columns={'Underlying': 'symbol'})
-            .drop(columns=cols_to_drop))
-
-    return df
 
 # %% codecell
 
@@ -101,36 +80,6 @@ def yoptions_combine_temp_all(keep_temps=False, keep_unfin=False):
                 os.remove(upath)
 
 # %% codecell
-
-
-def yoptions_still_needed(recreate=False):
-    """Return a list of all syms:exp_dates that are missing."""
-    ref_path = Path(baseDir().path, 'ref_data', 'syms_with_options.parquet')
-    ref_df = pd.read_parquet(ref_path)
-
-    path_for_temp = Path(baseDir().path, 'derivatives/end_of_day/temp/2021')
-    paths_for_temp = list(path_for_temp.glob('**/*.parquet'))
-
-    df_list = []
-    for fpath in paths_for_temp:
-        df_list.append(pd.read_parquet(fpath))
-
-    df_all = pd.concat(df_list)
-    df_collected = (df_all.groupby(by=['symbol'])['expDate']
-                          .agg({lambda x: list(x)})
-                          .reset_index()
-                          .rename(columns={'<lambda>': 'expDatesStored'})
-                          .copy())
-
-    df_comb = pd.merge(ref_df, df_collected, how='left', on=['symbol'], indicator=True)
-    df_left = df_comb[df_comb['_merge'] == 'left_only'].copy()
-
-    # df_comb['expDatesNeeded'] = df_comb.apply(lambda row: list(set(row.expDates) - set(row.expDatesStored)), axis=1)
-
-    # if recreate:
-    #    df_comb = df_comb.drop(columns=['expDates', 'expDatesStored'])
-
-    return df_left
 
 
 class SetUpYahooOptions():

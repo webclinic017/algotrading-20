@@ -74,9 +74,7 @@ def yahoo_options(sym, proxy=False, n=False, temp=True):
 
     try:
         df_calls = chain.calls
-        df_calls['symbol'] = sym
         df_puts = chain.puts
-        df_puts['symbol'] = sym
         df_list.append(df_calls)
         df_list.append(df_puts)
 

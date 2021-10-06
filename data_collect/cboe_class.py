@@ -65,7 +65,7 @@ class cleanMmo():
         nopop_top_2000 = self._get_daily_difference(self, nopop_top_2000)
         self.exp_dict = self._create_time_frames(self)
         time_dict = self._filter_nopop_by_time_frame(self, nopop_top_2000)
-        self._write_to_json(self, nopop_top_2000, time_dict)
+        self._write_to_parquet(self, nopop_top_2000, time_dict)
 
         return nopop_top_2000
 
@@ -74,7 +74,7 @@ class cleanMmo():
         """Convert columns to categories."""
         cols_to_cat = ['Symbol', 'Underlying', 'exchange', 'OSI Symbol', 'side']
         self.df[cols_to_cat] = self.df[cols_to_cat].astype('category')
-        self.df.drop(columns=['Symbol', 'OSI Symbol'], inplace=True)
+        self.df.drop(columns=['Symbol'], inplace=True)
         self.df.rename(columns=({'Missed Liquidity': 'miss_liq',
                                  'Exhausted Liquidity': 'exh_liq',
                                  'Routed Liquidity': 'rout_liq',
@@ -103,7 +103,7 @@ class cleanMmo():
     @classmethod
     def _conver_cols_nopop(cls, self):
         """Convert columns from not popular data frame."""
-        self.df = dataTypes(self.df).df
+        self.df = dataTypes(self.df, parquet=True).df
 
     @classmethod
     def _create_exp_col(cls, self):
@@ -121,7 +121,11 @@ class cleanMmo():
         """Get the difference between data today and data yesterday."""
         top_fpaths = glob.glob(f"{baseDir().path}/derivatives/cboe/*")
         top_fpaths = sorted(top_fpaths)[:-1]
-        last_df = pd.read_json(top_fpaths[-2], compression='gzip')
+        last_df = False
+        try:
+            last_df = pd.read_json(top_fpaths[-2], compression='gzip')
+        except UnicodeDecodeError:
+            last_df = pd.read_parquet(top_fpaths[-2])
 
         on_list = (['Cboe ADV', 'Underlying', 'expDate', 'liq_opp',
                     'side', 'totVol', 'vol/avg', 'vol_opp'])
@@ -139,8 +143,7 @@ class cleanMmo():
     def _create_vol_sum(cls, self):
         """Create groupby object for symbol, exp date, side."""
         self.df['liq_opp'].fillna(0, inplace=True)
-        cols_to_drop = (['miss_liq', 'exh_liq', 'rout_liq',
-                         'yr', 'mo', 'day'])  # 'strike'
+        cols_to_drop = (['yr', 'mo', 'day'])  # 'strike'
         exist_columns = self.df.columns
         cols_to_include = exist_columns[~exist_columns.isin(cols_to_drop)]
         nopop_vol_sums = self.df[cols_to_include].copy(deep=True)
@@ -194,20 +197,21 @@ class cleanMmo():
         return time_dict
 
     @classmethod
-    def _write_to_json(cls, self, nopop_top_2000, time_dict):
+    def _write_to_parquet(cls, self, nopop_top_2000, time_dict):
         """Write to local json file."""
         base_path = f"{baseDir().path}/derivatives/cboe"
-        nopop_fname = f"{base_path}/nopop_2000_{self.date}.gz"
+        nopop_fname = f"{base_path}/nopop_2000_{self.date}.parquet"
 
         if os.path.isfile(nopop_fname):
             pass
         else:
             nopop_top_2000 = nopop_top_2000.T.drop_duplicates().T
-            nopop_top_2000.to_json(nopop_fname, compression='gzip')
+            # nopop_top_2000.to_json(nopop_fname, compression='gzip')
+            nopop_top_2000.to_parquet(nopop_fname)
 
         # Short-medium-long term data frames to json
         for t in time_dict.keys():
-            time_fname = f"{base_path}/syms_to_explore/{t}_{self.date}.gz"
+            time_fname = f"{base_path}/syms_to_explore/{t}_{self.date}.parquet"
             self._if_file_exists(self, time_fname, time_dict, t)
 
     @classmethod
@@ -218,8 +222,9 @@ class cleanMmo():
         else:
             time_dict[t] = time_dict[t].T.drop_duplicates().T
             # Minimize size of data
-            time_dict[t] = dataTypes(time_dict[t]).df
-            time_dict[t].to_json(fname, compression='gzip')
+            time_dict[t] = dataTypes(time_dict[t], parquet=True).df
+            # time_dict[t].to_json(fname, compression='gzip')
+            time_dict[t].to_parquet(fname)
 
 
 
@@ -252,16 +257,19 @@ class cboeData():
     def mmo(cls, self):
         """Market maker opportunity."""
 
-        self.fname = f"{self.base_dir}/mmo/{self.date}.gz"
-        self.raw_fname = f"{self.base_dir}/mmo/raw/{self.date}.gz"
+        self.fname = f"{self.base_dir}/mmo/{self.date}.parquet"
+        self.raw_fname = f"{self.base_dir}/mmo/raw/{self.date}.parquet"
 
         if os.path.isfile(self.fname):
-            self.comb_df = pd.read_json(self.fname)
+            try:
+                self.comb_df = pd.read_json(self.fname)
+            except UnicodeDecodeError:
+                self.comb_df = pd.read_parquet(self.fname)
         else:
             self.mmo_df = self.get_mmo_data(self)
             self.sym_df = self.read_symref(self)
             self.comb_df = self.merge_dfs(self)
-            self.write_to_json(self)
+            self.write_to_parquet(self)
 
     @classmethod
     def date_to_use(cls, self):
@@ -328,11 +336,13 @@ class cboeData():
     @classmethod
     def read_symref(cls, self):
         """Symbol reference data."""
-        self.sym_fname = f"{self.base_dir}/cboe_symref/symref_{self.date}.gz"
-
+        self.sym_fname = f"{self.base_dir}/cboe_symref/symref_{self.date}.parquet"
+        sym_df = False
         if os.path.isfile(self.sym_fname):
             try:
                 sym_df = pd.read_json(self.sym_fname)
+            except UnicodeDecodeError:
+                sym_df = pd.read_parquet(self.sym_fname)
             except zlib.error:
                 sym_df = self.get_symref(self)
         else:
@@ -389,15 +399,7 @@ class cboeData():
         df['day'] = df['expirationDate'].str[4:6]
 
         df.rename(columns={'Cboe Symbol': 'Symbol'}, inplace=True)
-
-        """
-        cols_to_category = ['Symbol', 'Underlying', 'exchange']
-        df[cols_to_category] = df[cols_to_category].astype('category')
-        cols_to_uint8 = ['yr', 'mo', 'day']
-        df[cols_to_uint8] = df[cols_to_uint8].astype(np.uint8)
-        df['strike'] = df['strike'].astype(np.float32)
-        """
-        df = dataTypes(df).df
+        df = dataTypes(df, parquet=True).df
 
         return df
 
@@ -413,31 +415,20 @@ class cboeData():
             df['rptDate'] = getDate.query('cboe')
 
             # Change data types to reduce file size
-            df = dataTypes(df).df
-            """
-            cols_to_float16 = ['strike', 'Liquidity Opportunity']
-            cols_to_uint8 = ['yr', 'mo', 'day']
-            cols_to_uint16 = (['Missed Liquidity', 'Exhausted Liquidity',
-                              'Routed Liquidity', 'Volume Opportunity',
-                               'Cboe ADV'])
-            cols_to_uint32 = ['expirationDate']
-            df[cols_to_float16] = df[cols_to_float16].astype(np.float32)
-            df[cols_to_uint8] = df[cols_to_uint8].astype(np.uint8)
-            df[cols_to_uint16] = df[cols_to_uint16].astype(np.uint16)
-            df[cols_to_uint32] = df[cols_to_uint32].astype(np.uint32)
-            """
+            df = dataTypes(df, parquet=True).df
             # df = dataTypes(df).df
         except TypeError:
             df = pd.DataFrame()
         return df
 
     @classmethod
-    def write_to_json(cls, self):
+    def write_to_parquet(cls, self):
         """Write symref and mmo data to local json file."""
         # self.sym_df.to_json(self.sym_fname, compression='gzip')
         self.sym_df.to_parquet(self.sym_fname)
         # Write directly to the mmo directory
-        self.comb_df.to_json(self.fname, compression='gzip')
+        # self.comb_df.to_json(self.fname, compression='gzip')
+        self.comb_df.to_parquet(self.fname)
 
 
 # %% codecell
@@ -471,7 +462,11 @@ class cboeLocalRecDiff():
 
         top_df = pd.DataFrame()
         for fs in top_fpaths:
-            new_df = pd.DataFrame(pd.read_json(top_fpaths[fs], compression='gzip'))
+            new_df = False
+            try:
+                new_df = pd.DataFrame(pd.read_json(top_fpaths[fs], compression='gzip'))
+            except UnicodeDecodeError:
+                new_df = pd.DataFrame(pd.read_parquet(top_fpaths[fs]))
             top_df = pd.concat([top_df, new_df])
 
         return top_df
@@ -535,7 +530,8 @@ class cboeLocalRecDiff():
                 df.reset_index(inplace=True, drop=True)
                 df['dataDate'] = fs[-13:-3]
                 top_df = pd.concat([top_df, df]).copy(deep=True)
-                df.to_json(self.local_flist[fsn], compression='gzip')
+                # df.to_json(self.local_flist[fsn], compression='gzip')
+                df.to_parquet(self.local_flist[fsn])
             except IndexError:
                 pass
 
