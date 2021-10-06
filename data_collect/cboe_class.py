@@ -434,7 +434,8 @@ class cboeData():
     @classmethod
     def write_to_json(cls, self):
         """Write symref and mmo data to local json file."""
-        self.sym_df.to_json(self.sym_fname, compression='gzip')
+        # self.sym_df.to_json(self.sym_fname, compression='gzip')
+        self.sym_df.to_parquet(self.sym_fname)
         # Write directly to the mmo directory
         self.comb_df.to_json(self.fname, compression='gzip')
 
