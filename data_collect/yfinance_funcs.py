@@ -97,3 +97,36 @@ def clean_yfinance_options(df_temp=False):
     return df_comb
 
 # %% codecell
+
+
+def yoptions_still_needed(recreate=False):
+    """Return a list of all syms:exp_dates that are missing."""
+    ref_path = Path(baseDir().path, 'ref_data', 'syms_with_options.parquet')
+    ref_df = pd.read_parquet(ref_path)
+
+    path_for_temp = Path(baseDir().path, 'derivatives/end_of_day/temp/2021')
+    paths_for_temp = list(path_for_temp.glob('**/*.parquet'))
+
+    df_list = []
+    for fpath in paths_for_temp:
+        df_list.append(pd.read_parquet(fpath))
+
+    df_all = pd.concat(df_list)
+    df_collected = (df_all.groupby(by=['symbol'])['expDate']
+                          .agg({lambda x: list(x)})
+                          .reset_index()
+                          .rename(columns={'<lambda>': 'expDatesStored'})
+                          .copy())
+
+    df_comb = pd.merge(ref_df, df_collected, how='left', on=['symbol'], indicator=True)
+    df_left = df_comb[df_comb['_merge'] == 'left_only'].copy()
+
+    # df_comb['expDatesNeeded'] = df_comb.apply(lambda row: list(set(row.expDates) - set(row.expDatesStored)), axis=1)
+
+    # if recreate:
+    #    df_comb = df_comb.drop(columns=['expDates', 'expDatesStored'])
+
+    return df_left
+
+
+# %% codecell
