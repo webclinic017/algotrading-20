@@ -38,7 +38,7 @@ def execute_yahoo_options(df):
             break
         except TypeError as te:
             error_dict[index] = row
-            help_print_arg(str(e))
+            help_print_arg(str(te))
         except Exception as e:
             error_dict[index] = row
             help_print_arg(str(e))
