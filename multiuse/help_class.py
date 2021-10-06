@@ -294,12 +294,12 @@ class getDate():
 
 class dataTypes():
     """Helper class for implementing data type conversions."""
-    explicit, df = False, False
+    explicit, parquet, df = False, False, False
     not_float_cols, not_float_cols_nans = [], []
 
-    def __init__(self, df, resolve_floats=False, explicit=False):
+    def __init__(self, df, resolve_floats=False, explicit=False, parquet=False):
         if isinstance(df, pd.DataFrame):
-            self.dtypes, self.explicit = df.dtypes, explicit
+            self.dtypes, self.explicit, self.parquet = df.dtypes, explicit, parquet
             self.df = df.copy(deep=True)
 
             if resolve_floats:
@@ -407,7 +407,10 @@ class dataTypes():
             _min = self.df[col].min()
             _max = self.df[col].max()
             if _min > np.finfo('float16').min and _max < np.finfo('float16').max:
-                self.df[col] = self.df[col].astype(np.float16)
+                if self.parquet:
+                    self.df[col] = self.df[col].astype(np.float32)
+                else:
+                    self.df[col] = self.df[col].astype(np.float16)
             elif _min > np.finfo('float32').min and _max < np.finfo('float32').max:
                 self.df[col] = self.df[col].astype(np.float32)
             else:
