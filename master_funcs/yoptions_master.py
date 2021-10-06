@@ -2,7 +2,9 @@
 # %% codecell
 import os
 from pathlib import Path
+from io import BytesIO
 import pandas as pd
+import requests
 
 try:
     from scripts.dev.multiuse.api_helpers import get_sock5_nord_proxies
@@ -36,6 +38,31 @@ def collect_rest_of_yoptions():
                 execute_func.delay('execute_yoptions', **kwargs)
             except ModuleNotFoundError:
                 help_print_arg('Execute yahoo options not found')
+
+# %% codecell
+
+
+def get_cboe_ref():
+    """Get cboe reference data for use on yfinance."""
+    df = None
+    path_suf = f"symref_{getDate.query('cboe')}.parquet"
+    path = Path(baseDir().path, 'derivatives/cboe_symref', path_suf)
+    if path.is_file():
+        df = pd.read_parquet(path)
+    else:
+        url_p1 = 'https://www.cboe.com/us/options/market_statistics/'
+        url_p2 = 'symbol_reference/?mkt=cone&listed=1&unit=1&closing=1'
+        url = f"{url_p1}{url_p2}"
+        get = requests.get(url)
+
+        df = pd.read_csv(BytesIO(get.content), low_memory=False)
+        df.to_parquet(path)
+
+    cols_to_drop = ['Cboe Symbol', 'Closing Only']
+    df = (df.rename(columns={'Underlying': 'symbol'})
+            .drop(columns=cols_to_drop))
+
+    return df
 
 # %% codecell
 
@@ -117,7 +144,7 @@ class SetUpYahooOptions():
         if followup:
             self.sym_df = yoptions_still_needed()
         else:
-            self.sym_df = get_options_symbols()
+            self.sym_df = get_cboe_ref()
 
         df_comb = self.get_bins_and_combine(self, proxies)
 
