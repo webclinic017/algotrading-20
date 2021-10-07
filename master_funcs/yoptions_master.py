@@ -93,7 +93,7 @@ class SetUpYahooOptions():
         if followup:
             self.sym_df = yoptions_still_needed()
         else:
-            self.sym_df = get_cboe_ref()
+            self.sym_df = get_cboe_ref(ymaster=True)
 
         df_comb = self.get_bins_and_combine(self, proxies)
 

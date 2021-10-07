@@ -40,7 +40,7 @@ def return_yoptions_temp_all():
 # %% codecell
 
 
-def get_cboe_ref():
+def get_cboe_ref(ymaster=False):
     """Get cboe reference data for use on yfinance."""
     df = None
     path_suf = f"symref_{getDate.query('cboe')}.parquet"
@@ -59,6 +59,9 @@ def get_cboe_ref():
     cols_to_drop = ['Cboe Symbol', 'Closing Only']
     df = (df.rename(columns={'Underlying': 'symbol'})
             .drop(columns=cols_to_drop))
+
+    if ymaster:
+        df = pd.DataFrame(df['symbol'].unique(), columns=['symbol']).copy()
 
     return df
 
@@ -81,6 +84,7 @@ def clean_yfinance_options(df_temp=False):
         cboe_ref['contractSymbol'] = cboe_ref['OSI Symbol'].str.replace(' ', '')
         df_comb = pd.merge(df_temp, cboe_ref, on=['contractSymbol']).copy()
 
+        df_comb.drop_duplicates(subset=['contractSymbol'], inplace=True)
         # Add column for puts and calls
         df_comb['side'] = df_comb['OSI Symbol'].str[-9]
         # Add expiration dates
