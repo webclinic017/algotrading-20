@@ -14,6 +14,26 @@ except ModuleNotFoundError:
 # %% codecell
 
 
+def yoptions_combine_last():
+    """Combine all options with max date."""
+    fpath = Path(baseDir().path, 'derivatives/end_of_day/2021')
+    globs = list(fpath.glob('**/*.parquet'))
+
+    df_list = []
+    [df_list.append(pd.read_parquet(path)) for path in globs]
+    df_all = pd.concat(df_list)
+
+    # %% codecell
+    df_today = df_all[df_all['date'] == df_all['date'].max()].copy()
+    df_today.drop_duplicates(subset=['contractSymbol'], inplace=True)
+
+    path_suf = f"_{getDate.query('cboe')}.parquet"
+    path = Path(baseDir().path, 'derivatives/end_of_day/combined', path_suf)
+
+    df_today = dataTypes(df_today, parquet=True).df
+    df_today.to_parquet(path)
+
+
 def return_yoptions_temp_all():
     """Return dataframe of all yoptions temp (today's data)."""
     df_all = None
