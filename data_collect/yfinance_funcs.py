@@ -34,6 +34,25 @@ def yoptions_combine_last():
     df_today.to_parquet(path)
 
 
+def yoptions_combine_all():
+    """Combine all options with."""
+    fpath = Path(baseDir().path, 'derivatives/end_of_day/2021')
+    globs = list(fpath.glob('**/*.parquet'))
+
+    df_list = []
+    [df_list.append(pd.read_parquet(path)) for path in globs]
+    df_all = pd.concat(df_list)
+
+    # %% codecell
+    df_all.drop_duplicates(subset=['contractSymbol', 'date'], inplace=True)
+
+    path_suf = f"_{getDate.query('cboe')}.parquet"
+    path = Path(baseDir().path, 'derivatives/end_of_day/combined_all', path_suf)
+
+    df_all = dataTypes(df_all, parquet=True).df
+    df_all.to_parquet(path)
+
+
 def return_yoptions_temp_all():
     """Return dataframe of all yoptions temp (today's data)."""
     df_all = None
@@ -88,16 +107,17 @@ def get_cboe_ref(ymaster=False):
 # %% codecell
 
 
-def clean_yfinance_options(df_temp=False):
+def clean_yfinance_options(df_temp=False, refresh=False):
     """Align with cboe ref data. Clean. Convert columns."""
     df_comb = False
     path_suf = f"_{getDate.query('cboe')}.parquet"
     path = Path(baseDir().path, 'derivatives/end_of_day/daily_dump', path_suf)
 
-    if path.is_file():
+    if path.is_file() and not refresh:
         df_comb = pd.read_parquet(path)
+        return df_comb
     else:
-        if not df_temp:
+        if not isinstance(df_temp, pd.DataFrame):
             df_temp = return_yoptions_temp_all()
 
         cboe_ref = get_cboe_ref()
@@ -114,6 +134,15 @@ def clean_yfinance_options(df_temp=False):
         df_comb['date'] = pd.to_datetime(df_comb['date'], unit='ms')
         df_comb['lastTradeDate'] = pd.to_datetime(df_comb['lastTradeDate'], unit='ms')
 
+        df_comb['openInterest'] = df_comb['openInterest'].where(df_comb['openInterest'] != 0, 1)
+        df_comb['vol/oi'] = df_comb['volume'].div(df_comb['openInterest']).round(0)
+        df_comb['mid'] = (df_comb['ask'].add(df_comb['bid'])).div(2).round(2)
+        df_comb['bid'] = df_comb['bid'].round(1)
+        df_comb['premium'] = (df_comb['mid'].mul(df_comb['volume']) * 100).round(0)
+
+        if 'strike_x' in df_comb.columns:
+            df_comb['strike'] = df_comb['strike_x']
+
         df_comb = dataTypes(df_comb, parquet=True).df
 
         df_comb.to_parquet(path)
@@ -121,6 +150,19 @@ def clean_yfinance_options(df_temp=False):
     return df_comb
 
 # %% codecell
+
+
+def get_yoptions_unfin():
+    """Get all unfinished yoptions."""
+    fpath = Path(baseDir().path, 'derivatives/end_of_day/unfinished')
+    globs = list(fpath.glob('*.parquet'))
+
+    df_list = []
+    [df_list.append(pd.read_parquet(path)) for path in globs]
+    df_all = pd.concat(df_list)
+    df_syms = pd.DataFrame(df_all['symbol'].unique(), columns=['symbol'])
+    
+    return df_syms
 
 
 def yoptions_still_needed(recreate=False):
