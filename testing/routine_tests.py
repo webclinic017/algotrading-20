@@ -123,11 +123,23 @@ class FpathsTest():
 
         })
 
+        cboe_parquet_dict = ({
+            'cboe_raw': f"{cboe_base_path}/mmo/_{dt}.parquet",
+            'cboe_nopop_2000': f"{cboe_base_path}/cboe/nopop_2000_{dt}.parquet",
+            'cboe_long_time': f"{cboe_syms_path}/long_{dt}.parquet",
+            'cboe_medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
+            'cboe_short_time': f"{cboe_syms_path}/short_{dt}.parquet"
+
+        })
+
         for key in cboe_path_dict.keys():
             if os.path.isfile(cboe_path_dict[key]):
                 self.sys_dict[key] = True
+            elif os.path.isfile(cboe_parquet_dict[key]):
+                self.sys_dict[key] = True
             else:
                 self.sys_dict[key] = False
+
 
     @classmethod
     def check_stocktwits(cls, self):
