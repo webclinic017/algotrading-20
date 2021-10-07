@@ -11,14 +11,14 @@ try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg
     from scripts.dev.multiuse.help_class import df_create_bins
     from scripts.dev.data_collect.iex_class import get_options_symbols
-    from scripts.dev.data_collect.yfinance_funcs import get_cboe_ref, yoptions_still_needed
+    from scripts.dev.data_collect.yfinance_funcs import get_cboe_ref, yoptions_still_needed, get_yoptions_unfin
 except ModuleNotFoundError:
     from multiuse.api_helpers import get_sock5_nord_proxies
     from multiuse.help_class import baseDir, getDate, help_print_arg
     from multiuse.help_class import df_create_bins
     from data_collect.iex_class import get_options_symbols
     from data_collect.yfinance_get_options import execute_yahoo_options
-    from data_collect.yfinance_funcs import get_cboe_ref, yoptions_still_needed
+    from data_collect.yfinance_funcs import get_cboe_ref, yoptions_still_needed, get_yoptions_unfin
 
 # %% codecell
 
@@ -91,7 +91,8 @@ class SetUpYahooOptions():
         proxies = get_sock5_nord_proxies()
 
         if followup:
-            self.sym_df = yoptions_still_needed()
+            # self.sym_df = yoptions_still_needed()
+            self.sym_df = get_yoptions_unfin()
         else:
             self.sym_df = get_cboe_ref(ymaster=True)
 
