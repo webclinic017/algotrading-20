@@ -47,7 +47,7 @@ def clear_yoptions_dirs():
 # %% codecell
 
 
-def clear_yoptions_temp_unfin():
+def clear_yoptions_temp_unfin(testing=False):
     """Clear temp and unfin yoptions directories."""
     dt = getDate.query('iex_eod')
     yr = str(dt.year)
@@ -56,18 +56,22 @@ def clear_yoptions_temp_unfin():
 
     if temps:
         for fpath in temps:
-            # os.remove(fpath)
-            print(fpath)
-            break
+            if testing:
+                print(fpath)
+                break
+            else:
+                os.remove(fpath)
 
     unfin = Path(baseDir().path, 'derivatives/end_of_day/unfinished')
     unfins = list(unfin.glob('*.parquet'))
 
     if unfins:
         for fpath in unfins:
-            # os.remove(fpath)
-            print(fpath)
-            break
+            if testing:
+                print(fpath)
+                break
+            else:
+                os.remove(fpath)
 
 
 # %% codecell

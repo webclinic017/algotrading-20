@@ -95,6 +95,7 @@ def yahoo_options(sym, proxy=False, n=False, temp=True):
         if fpath.is_file():
             df_old = pd.read_parquet(fpath)
             df_all = pd.concat([df_old, df_all])
+            df_all.drop_duplicates(subset=['contractSymbol', 'date'], inplace=True)
             df_all.to_parquet(fpath)
         else:
             df_all.to_parquet(fpath)
