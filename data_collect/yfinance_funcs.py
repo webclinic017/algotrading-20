@@ -2,7 +2,7 @@
 # %% codecell
 from pathlib import Path
 from io import BytesIO
-
+from tqdm import tqdm
 import requests
 import pandas as pd
 
@@ -14,8 +14,9 @@ except ModuleNotFoundError:
 # %% codecell
 
 
-def yoptions_combine_last():
+def yoptions_combine_last(all=False):
     """Combine all options with max date."""
+    # Default is last. Change all to True for all_combined
     fpath = Path(baseDir().path, 'derivatives/end_of_day/2021')
     globs = list(fpath.glob('**/*.parquet'))
 
@@ -23,34 +24,43 @@ def yoptions_combine_last():
     [df_list.append(pd.read_parquet(path)) for path in globs]
     df_all = pd.concat(df_list)
 
-    # %% codecell
-    df_today = df_all[df_all['date'] == df_all['date'].max()].copy()
-    df_today.drop_duplicates(subset=['contractSymbol'], inplace=True)
-
     path_suf = f"_{getDate.query('cboe')}.parquet"
-    path = Path(baseDir().path, 'derivatives/end_of_day/combined', path_suf)
 
-    df_today = dataTypes(df_today, parquet=True).df
-    df_today.to_parquet(path)
+    # Comine last aka today's data to combined folder
+    if not all:
+        df_today = df_all[df_all['date'] == df_all['date'].max()].copy()
+        df_today.drop_duplicates(subset=['contractSymbol'], inplace=True)
+
+        path = Path(baseDir().path, 'derivatives/end_of_day/combined', path_suf)
+
+        df_today = dataTypes(df_today, parquet=True).df
+        df_today.to_parquet(path)
+    elif all:  # Combine all data to combined_all directory
+        df_all.drop_duplicates(subset=['contractSymbol', 'date'], inplace=True)
+        path = Path(baseDir().path, 'derivatives/end_of_day/combined_all', path_suf)
+        df_all = dataTypes(df_all, parquet=True).df
+        df_all.to_parquet(path)
 
 
-def yoptions_combine_all():
-    """Combine all options with."""
-    fpath = Path(baseDir().path, 'derivatives/end_of_day/2021')
-    globs = list(fpath.glob('**/*.parquet'))
+# %% codecell
 
-    df_list = []
-    [df_list.append(pd.read_parquet(path)) for path in globs]
-    df_all = pd.concat(df_list)
 
-    # %% codecell
-    df_all.drop_duplicates(subset=['contractSymbol', 'date'], inplace=True)
+def yoptions_drop_hist_dupes():
+    """Cycle through yoptions hist and drop duplicates."""
+    dt = getDate.query('cboe')
+    yr = dt.year
+    path = Path(baseDir().path, 'derivatives/end_of_day/', str(yr))
+    fpaths = list(path.glob('**/*.parquet'))
 
-    path_suf = f"_{getDate.query('cboe')}.parquet"
-    path = Path(baseDir().path, 'derivatives/end_of_day/combined_all', path_suf)
+    for fpath in tqdm(fpaths):
+        try:
+            df = pd.read_parquet(fpath)
+            df.drop_duplicates(subset=['contractSymbol', 'date'], inplace=True)
+            dataTypes(df, parquet=True).df.to_parquet(fpath)
+        except Exception as e:
+            help_print_arg(e)
 
-    df_all = dataTypes(df_all, parquet=True).df
-    df_all.to_parquet(path)
+# %% codecell
 
 
 def return_yoptions_temp_all():
@@ -136,8 +146,8 @@ def clean_yfinance_options(df_temp=False, refresh=False):
 
         df_comb['openInterest'] = df_comb['openInterest'].where(df_comb['openInterest'] != 0, 1)
         df_comb['vol/oi'] = df_comb['volume'].div(df_comb['openInterest']).round(0)
-        df_comb['mid'] = (df_comb['ask'].add(df_comb['bid'])).div(2).round(2)
-        df_comb['bid'] = df_comb['bid'].round(1)
+        df_comb['mid'] = (df_comb['ask'].add(df_comb['bid'])).div(2).round(3)
+        df_comb['bid'] = df_comb['bid'].round(3)
         df_comb['premium'] = (df_comb['mid'].mul(df_comb['volume']) * 100).round(0)
 
         if 'strike_x' in df_comb.columns:
@@ -161,7 +171,7 @@ def get_yoptions_unfin():
     [df_list.append(pd.read_parquet(path)) for path in globs]
     df_all = pd.concat(df_list)
     df_syms = pd.DataFrame(df_all['symbol'].unique(), columns=['symbol'])
-    
+
     return df_syms
 
 
