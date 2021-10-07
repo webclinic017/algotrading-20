@@ -341,12 +341,16 @@ class cboeData():
         if os.path.isfile(self.sym_fname):
             try:
                 sym_df = pd.read_json(self.sym_fname)
-            except UnicodeDecodeError:
+            except (UnicodeDecodeError, ValueError) as e:
                 sym_df = pd.read_parquet(self.sym_fname)
             except zlib.error:
                 sym_df = self.get_symref(self)
         else:
             sym_df = self.get_symref(self)
+
+
+        if 'symbol' not in sym_df.columns:
+            sym_df = self.symref_format(self, sym_df)
 
         return sym_df
 
@@ -399,7 +403,7 @@ class cboeData():
         df['day'] = df['expirationDate'].str[4:6]
 
         df.rename(columns={'Cboe Symbol': 'Symbol'}, inplace=True)
-        df = dataTypes(df, parquet=True).df
+        df = dataTypes(df, parquet=True).df.copy()
 
         return df
 
@@ -408,7 +412,7 @@ class cboeData():
         """Merge mmo and symref dataframes."""
         try:
             df = (pd.merge(self.mmo_df, self.sym_df,
-                           on=['Symbol', 'exchange', 'Underlying'],
+                           on=['Symbol', 'Underlying'],
                            how='inner'))
             df.reset_index(inplace=True, drop=True)
             # df['rptDate'] = date.today()
