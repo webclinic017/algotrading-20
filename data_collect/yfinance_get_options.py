@@ -21,6 +21,7 @@ def execute_yahoo_options(df):
 
     # Add all index/row errors to dict for future use
     error_dict = {}
+    bin_num = df['bins'].iloc[0]
 
     for index, row in df.iterrows():
         try:
@@ -42,7 +43,10 @@ def execute_yahoo_options(df):
         except Exception as e:
             error_dict[index] = row
             help_print_arg(str(e))
-            # yahoo_options(row['symbol'], proxy=row['proxy'])
+
+    df_errors = pd.DataFrame.from_dict(error_dict).T
+    path = Path(baseDir().path, 'derivatives/end_of_day/unfinished', f"df_bin{bin_num}.parquet")
+    df_unfin.to_parquet(path)
 
 
 def yahoo_options(sym, proxy=False, n=False, temp=True):

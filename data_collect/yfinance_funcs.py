@@ -56,9 +56,9 @@ def get_cboe_ref(ymaster=False):
         df = pd.read_csv(BytesIO(get.content), low_memory=False)
         df.to_parquet(path)
 
-    cols_to_drop = ['Cboe Symbol', 'Closing Only']
-    df = (df.rename(columns={'Underlying': 'symbol'})
-            .drop(columns=cols_to_drop))
+    # cols_to_drop = ['Cboe Symbol', 'Closing Only']
+    df = df.rename(columns={'Underlying': 'symbol'})
+    # .drop(columns=cols_to_drop))
 
     if ymaster:
         df = pd.DataFrame(df['symbol'].unique(), columns=['symbol']).copy()
@@ -108,8 +108,13 @@ def yoptions_still_needed(recreate=False):
     ref_path = Path(baseDir().path, 'ref_data', 'syms_with_options.parquet')
     ref_df = pd.read_parquet(ref_path)
 
-    path_for_temp = Path(baseDir().path, 'derivatives/end_of_day/temp/2021')
-    paths_for_temp = list(path_for_temp.glob('**/*.parquet'))
+    if 'Algo' in baseDir().path:
+        try:
+            from api import serverAPI
+
+    else:
+        path_for_temp = Path(baseDir().path, 'derivatives/end_of_day/temp/2021')
+        paths_for_temp = list(path_for_temp.glob('**/*.parquet'))
 
     df_list = []
     for fpath in paths_for_temp:
