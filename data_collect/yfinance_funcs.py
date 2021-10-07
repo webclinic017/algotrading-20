@@ -134,15 +134,15 @@ def clean_yfinance_options(df_temp=False, refresh=False):
         cboe_ref['contractSymbol'] = cboe_ref['OSI Symbol'].str.replace(' ', '')
         df_comb = pd.merge(df_temp, cboe_ref, on=['contractSymbol']).copy()
 
-        df_comb.drop_duplicates(subset=['contractSymbol'], inplace=True)
+        df_comb['date'] = pd.to_datetime(df_comb['date'], unit='ms')
+        df_comb['lastTradeDate'] = pd.to_datetime(df_comb['lastTradeDate'], unit='ms')
+        df_comb['lastTradeDay'] = df_comb['lastTradeDate'].dt.date
+        df_comb.drop_duplicates(subset=['contractSymbol', 'lastTradeDay'], inplace=True)
         # Add column for puts and calls
         df_comb['side'] = df_comb['OSI Symbol'].str[-9]
         # Add expiration dates
         df_comb['expDate'] = df_comb['OSI Symbol'].str[-16:-9].str.replace(' ', '')
         df_comb['expDate'] = pd.to_datetime(df_comb['expDate'], format='%y%m%d')
-
-        df_comb['date'] = pd.to_datetime(df_comb['date'], unit='ms')
-        df_comb['lastTradeDate'] = pd.to_datetime(df_comb['lastTradeDate'], unit='ms')
 
         df_comb['openInterest'] = df_comb['openInterest'].where(df_comb['openInterest'] != 0, 1)
         df_comb['vol/oi'] = df_comb['volume'].div(df_comb['openInterest']).round(0)
