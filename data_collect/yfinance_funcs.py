@@ -108,13 +108,9 @@ def yoptions_still_needed(recreate=False):
     ref_path = Path(baseDir().path, 'ref_data', 'syms_with_options.parquet')
     ref_df = pd.read_parquet(ref_path)
 
-    if 'Algo' in baseDir().path:
-        try:
-            from api import serverAPI
 
-    else:
-        path_for_temp = Path(baseDir().path, 'derivatives/end_of_day/temp/2021')
-        paths_for_temp = list(path_for_temp.glob('**/*.parquet'))
+    path_for_temp = Path(baseDir().path, 'derivatives/end_of_day/temp/2021')
+    paths_for_temp = list(path_for_temp.glob('**/*.parquet'))
 
     df_list = []
     for fpath in paths_for_temp:
