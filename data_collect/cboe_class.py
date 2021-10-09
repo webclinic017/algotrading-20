@@ -264,7 +264,7 @@ class cboeData():
         if os.path.isfile(self.fname):
             try:
                 self.comb_df = pd.read_json(self.fname)
-            except UnicodeDecodeError:
+            except (UnicodeDecodeError, ValueError) as e:
                 self.comb_df = pd.read_parquet(self.fname)
         else:
             self.mmo_df = self.get_mmo_data(self)
