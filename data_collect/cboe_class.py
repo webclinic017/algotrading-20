@@ -7,6 +7,7 @@ import json
 from io import BytesIO
 import glob
 import zlib
+from gzip import BadGzipFile
 
 import pandas as pd
 from pandas.tseries.offsets import BusinessDay
@@ -124,7 +125,7 @@ class cleanMmo():
         last_df = False
         try:
             last_df = pd.read_json(top_fpaths[-2], compression='gzip')
-        except UnicodeDecodeError:
+        except (UnicodeDecodeError, BadGzipFile) as e:
             last_df = pd.read_parquet(top_fpaths[-2])
 
         on_list = (['Cboe ADV', 'Underlying', 'expDate', 'liq_opp',
