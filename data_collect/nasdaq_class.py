@@ -38,15 +38,15 @@ class nasdaqShort():
 
     @classmethod
     def get_data(cls, self):
-        """Check for local json file."""
-        self.fpath = f"{self.fbase}/nasdaq_{self.rpt_date}.gz"
+        """Check for local parquet file."""
+        self.fpath = f"{self.fbase}/nasdaq_{self.rpt_date}.parquet"
         local_df = False
 
         if os.path.isfile(self.fpath):
-            local_df = pd.read_json(self.fpath)
+            local_df = pd.read_parquet(self.fpath)
         else:
             local_df = self._get_request(self)
-            self._write_to_json(self, local_df)
+            self._write_to_parq(self, local_df)
 
         return local_df
 
@@ -71,14 +71,14 @@ class nasdaqShort():
                     skipinitialspace=False
                     )
         # Convert object columns to category columns
-        sh_df = dataTypes(sh_df).df
+        sh_df = dataTypes(sh_df, parquet=True).df
 
         return sh_df
 
     @classmethod
-    def _write_to_json(cls, self, local_df):
-        """Write to local json file."""
-        local_df.to_json(self.fpath, compression='gzip')
+    def _write_to_parq(cls, self, local_df):
+        """Write to local parquet file."""
+        local_df.to_parquet(self.fpath)
 
 
 
