@@ -87,7 +87,7 @@ class SetUpYahooOptions():
     sym_df, testing = False, False
 
     def __init__(self, followup=False, testing=False):
-        self.testing = testing
+        self.testing, self.proceed = testing, True
         proxies = get_sock5_nord_proxies()
 
         if followup:
@@ -95,10 +95,13 @@ class SetUpYahooOptions():
             self.sym_df = get_yoptions_unfin()
         else:
             self.sym_df = get_cboe_ref(ymaster=True)
+            # Check if no further data needed
+            if self.sym_df.empty:
+                self.proceed = False
 
-        df_comb = self.get_bins_and_combine(self, proxies)
-
-        self.initiate_for_loop(self, df_comb)
+        if self.proceed:  # Default True
+            df_comb = self.get_bins_and_combine(self, proxies)
+            self.initiate_for_loop(self, df_comb)
 
     def get_bins_and_combine(cls, self, proxies):
         """Create bins, merge back to og df."""
