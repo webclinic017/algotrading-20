@@ -40,12 +40,16 @@ def execute_yahoo_options(df):
             error_dict[index] = row
             help_print_arg(str(e))
 
-    # Create dataframe from error dict
-    df_errors = pd.DataFrame.from_dict(error_dict).T
-    df_unfin = pd.concat([df_errors, df.iloc[index:]]).copy()
-    # Define path to write file
-    path = Path(baseDir().path, 'derivatives/end_of_day/unfinished', f"df_bin{row['bins']}.parquet")
-    df_unfin.to_parquet(path)
+    try:
+        # Create dataframe from error dict
+        df_errors = pd.DataFrame.from_dict(error_dict).T
+        df_unfin = pd.concat([df_errors, df.iloc[index:]]).copy()
+        # Define path to write file
+        path = Path(baseDir().path, 'derivatives/end_of_day/unfinished', f"df_bin{row['bins']}.parquet")
+        df_unfin.to_parquet(path)
+    except UnboundLocalError:
+        pass
+
 
 
 def yahoo_options(sym, proxy=False, n=False, temp=True):
