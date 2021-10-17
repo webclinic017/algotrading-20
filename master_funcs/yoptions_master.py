@@ -8,17 +8,19 @@ import requests
 
 try:
     from scripts.dev.multiuse.api_helpers import get_sock5_nord_proxies
-    from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg
-    from scripts.dev.multiuse.help_class import df_create_bins
+    from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg, df_create_bins
+    from scripts.dev.multiuse.symbol_ref_funcs import get_all_symbol_ref
     from scripts.dev.data_collect.iex_class import get_options_symbols
     from scripts.dev.data_collect.yfinance_funcs import get_cboe_ref, yoptions_still_needed, get_yoptions_unfin
+    from scripts.dev.data_collect.yfinance_info_funcs import execute_yahoo_func
 except ModuleNotFoundError:
     from multiuse.api_helpers import get_sock5_nord_proxies
-    from multiuse.help_class import baseDir, getDate, help_print_arg
-    from multiuse.help_class import df_create_bins
+    from multiuse.help_class import baseDir, getDate, help_print_arg, df_create_bins
+    from multiuse.symbol_ref_funcs import get_all_symbol_ref
     from data_collect.iex_class import get_options_symbols
     from data_collect.yfinance_get_options import execute_yahoo_options
     from data_collect.yfinance_funcs import get_cboe_ref, yoptions_still_needed, get_yoptions_unfin
+    from data_collect.yfinance_info_funcs import execute_yahoo_func
 
 # %% codecell
 
@@ -86,23 +88,29 @@ class SetUpYahooOptions():
     """A class to run the yahoo options function, and store results."""
     sym_df, testing = False, False
 
-    def __init__(self, followup=False, testing=False):
-        self.testing, self.proceed = testing, True
+    def __init__(self, followup=False, testing=False, options=True, other=False):
+        self.testing, self.options, self.other = testing, options, other
+        self.proceed = True
         proxies = get_sock5_nord_proxies()
 
-        if followup:
+        if followup and self.options:
             # self.sym_df = yoptions_still_needed()
             self.sym_df = get_yoptions_unfin()
-        else:
+        elif not followup and self.options:
             self.sym_df = get_cboe_ref(ymaster=True)
             # Check if no further data needed
             if self.sym_df.empty:
                 self.proceed = False
+        elif not followup and other == 'yinfo':
+            self.sym_df = get_all_symbol_ref()
+        else:
+            help_print_arg('No SetUpYahooOptions __init__ condition satisfied')
 
         if self.proceed:  # Default True
             df_comb = self.get_bins_and_combine(self, proxies)
             self.initiate_for_loop(self, df_comb)
 
+    @classmethod
     def get_bins_and_combine(cls, self, proxies):
         """Create bins, merge back to og df."""
         bin_size = int(self.sym_df.shape[0] / (len(proxies) - 1))
@@ -118,17 +126,27 @@ class SetUpYahooOptions():
 
         return df_comb
 
-        # args = [df_comb[df_comb['bins'] == n] for n in iter(self.bins)]
+    @classmethod
     def initiate_for_loop(cls, self, df_comb):
         """Initiate for loop sequence."""
         args = [df_comb[df_comb['bins'] == n] for n in iter(self.bins)]
         for arg in args:
             if self.testing:
                 help_print_arg(str(arg))
-            try:
-                from app.tasks import execute_func
-                kwargs = {'df': arg.to_json()}
-                execute_func.delay('execute_yoptions', **kwargs)
-            except ModuleNotFoundError:
-                execute_yahoo_options(arg.to_json())
-                help_print_arg('Execute yahoo options not found')
+
+            if self.options:
+                try:
+                    from app.tasks import execute_func
+                    kwargs = {'df': arg.to_json()}
+                    execute_func.delay('execute_yoptions', **kwargs)
+                except ModuleNotFoundError:
+                    execute_yahoo_options(arg.to_json())
+                    help_print_arg('Execute yahoo options not found')
+            elif self.other:
+                try:
+                    from app.tasks import execute_func
+                    kwargs = {'df': arg.to_json(), 'which': self.other}
+                    execute_func.delay('execute_yahoo_func', **kwargs)
+                except ModuleNotFoundError:
+                    execute_yahoo_func(arg.to_json(), which=self.other)
+                    help_print_arg(f'Execute yahoo {self.other} not found')

@@ -35,6 +35,7 @@ class FpathsTest():
         self.check_scans(self)
         self.check_cboe(self)
         self.check_stocktwits(self)
+        self.check_nasdaq(self)
 
     @classmethod
     def get_all_syms(cls, self):
@@ -158,3 +159,15 @@ class FpathsTest():
                 self.sys_dict[key] = True
             else:
                 self.sys_dict[key] = False
+
+    @classmethod
+    def check_nasdaq(cls, self):
+        """Check for nasdaq SSR list."""
+        dt = getDate.query('iex_eod').strftime('%Y%m%d')
+        fpath = f"{self.base_dir}/short/daily_breaker/nasdaq_{dt}.parquet"
+        self.ssr_list = fpath
+
+        if os.path.isfile(fpath):
+            self.sys_dict['nasdaq_ssr'] = True
+        else:
+            self.sys_dict['nasdaq_ssr'] = False
