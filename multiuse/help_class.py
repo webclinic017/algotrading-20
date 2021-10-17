@@ -365,7 +365,14 @@ class dataTypes():
     def _cols_to_cat(cls, self):
         """Convert object columns to categorical."""
         cols_to_cat = self.dtypes[self.dtypes == 'object'].index.to_list()
-        self.df[cols_to_cat] = self.df[cols_to_cat].astype('category')
+        try:
+            self.df[cols_to_cat] = self.df[cols_to_cat].astype('category')
+        except TypeError:
+            for col in cols_to_cat:
+                try:
+                    self.df[col] = self.df[col].astype('category')
+                except Exception as e:
+                    help_print_arg(f"Object column {col} with error: {str(e)}")
 
     @classmethod
     def pos_or_neg_ints(cls, self):
