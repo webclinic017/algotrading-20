@@ -275,6 +275,8 @@ class cboeData():
     @classmethod
     def date_to_use(cls, self):
         """Get the right date to use."""
+
+        """
         nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))
         nyc_hm = nyc_datetime.hour + (nyc_datetime.minute/60)
         cutoff_hm, weekend = 16.30, False
@@ -286,6 +288,9 @@ class cboeData():
             self.date = (date.today() - BusinessDay(n=1)).date()
         else:
             self.date = (date.today() - BusinessDay(n=0)).date()
+        return self.date
+        """
+        self.date = getDate.query('cboe')
         return self.date
 
     @classmethod

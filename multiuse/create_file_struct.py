@@ -52,6 +52,20 @@ def make_yfinance_dirs(temp=False):
     make_hist_prices_dir(path)
 
 
+def create_ysymbol_info_dirs():
+    """Create local fpath directory for ysymbol info."""
+    base_dir = Path(baseDir().path, 'tickers/info')
+    if not base_dir.exists():
+        makedirs_with_permissions(base_dir)
+        make_hist_prices_dir(base_dir)
+        makedirs_with_permissions(Path(base_dir, 'combined'))
+        makedirs_with_permissions(Path(base_dir, 'unfinished'))
+        makedirs_with_permissions(Path(base_dir, 'temp'))
+
+
+# %% codecell
+
+
 def make_hist_prices_dir(base_path):
     """Make year and alphabet lowercase local folders."""
     # If base_path is not a directory
