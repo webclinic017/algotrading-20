@@ -9,10 +9,10 @@ import pandas as pd
 import requests
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes
+    from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg
     from app.tasks_test import print_arg_test
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, getDate, dataTypes
+    from multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg
 
 # %% codecell
 ############################################
@@ -27,14 +27,14 @@ class HistPricesV2():
     need_data = True
     dts_need = []
 
-    def __init__(self, sym, testing=False, last_month=False):
+    def __init__(self, sym, testing=False, last_month=False, previous=False):
         self.testing = testing
         self.check_existing(self, sym)
 
-        if last_month or self.need_data:
+        if last_month or previous or self.need_data:
             self.get_iex_params(self, sym)
 
-        if last_month:
+        if last_month or previous:
             self.get_last_range(self, sym)
         # If existing data is current, do nothing. Else get data
         elif self.need_data and not last_month:
@@ -42,9 +42,9 @@ class HistPricesV2():
                 self.get_ytd(self)
             else:  # If exact dates needed
                 self.get_exact_dates(self)
-
-            # Write dataframe to json file
-            # self.write_to_json(self)
+        else:
+            msg = 'HistPricesV2: None of the __init__ conditions satisfied'
+            help_print_arg(msg)
 
     @classmethod
     def check_existing(cls, self, sym):
@@ -66,14 +66,20 @@ class HistPricesV2():
         load_dotenv()
         true = True
         base_url = os.environ.get("base_url")
-        self.url = f"{base_url}/stock/{sym}/chart"
-        self.payload = ({'token': os.environ.get("iex_publish_api"),
-                         'includeToday': true, 'chartByDay': true})
+        if self.previous:
+            self.url = f"{base_url}/stock/{sym}/previous"
+            self.payload = {'token': os.environ.get("iex_publish_api")}
+        else:
+            self.url = f"{base_url}/stock/{sym}/chart"
+            self.payload = ({'token': os.environ.get("iex_publish_api"),
+                             'includeToday': true, 'chartByDay': true})
+        # Update range param for lat_month
+        if self.last_month:
+            self.payload['range'] = '1m'
 
     @classmethod
     def get_last_range(cls, self, sym):
         """Get last month of data."""
-        self.payload['range'] = '1m'
         get = requests.get(self.url, params=self.payload)
 
         if get.status_code == 200:
