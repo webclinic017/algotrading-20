@@ -30,11 +30,10 @@ class SplitGetHistPrices():
     # Apca is to get all historical stock data available through alpaca API
     # Struct is structured products, warrants
 
-    def __init__(self, testing=False, remote=True, normal=False, otc=False, apca=False, warrants=False, last_month=False, previous=False):
-        self.determine_params(self, testing, normal, otc, apca, warrants)
+    def __init__(self, testing=False, remote=True, normal=True, otc=False, apca=False, warrants=False, last_month=False, previous=False):
+        self.determine_params(self, testing, normal, otc, apca, warrants, last_month, previous)
         bins_unique = self.create_df_bins(self)
         result = False
-        self.last_month, self.previous = last_month, previous
 
         if apca:
             result = self.apca_get_data(self, testing)
@@ -47,7 +46,7 @@ class SplitGetHistPrices():
             self.call_combined(self, normal, otc, apca)
 
     @classmethod
-    def determine_params(cls, self, testing, normal, otc, apca, warrants):
+    def determine_params(cls, self, testing, normal, otc, apca, warrants, last_month, previous):
         """Determine fpath and other params."""
         base_fpath = f"{baseDir().path}/tickers"
         fpath = ''
@@ -69,6 +68,11 @@ class SplitGetHistPrices():
             df = pd.read_json(fpath, compression='gzip')
             wt_df = df[df['type'].isin(['wt', 'ut', 'rt'])]
             self.df = wt_df.copy(deep=True)
+
+        if last_month:
+            self.last_month = last_month
+        elif previous:
+            self.previous = previous
 
     @classmethod
     def create_df_bins(cls, self):
@@ -111,6 +115,8 @@ class SplitGetHistPrices():
             # Check if getting data for the last month
             if self.last_month:
                 kwargs['last_month'] = True
+            if self.previous:
+                kwargs['previous'] = True
             # Call tasks.execute_func to get data for each sym_list (bin int)
             execute_func.delay('hist_prices_sub', **kwargs)
 
@@ -132,7 +138,12 @@ class SplitGetHistPrices():
                     HistPricesV2(sym, last_month=True)
             elif self.previous:
                 for sym in sym_list:
-                    HistPricesV2(sym, previous=True)
+                    try:
+                        HistPricesV2(sym, previous=True)
+                    except NameError as ne:
+                        msg = f"Master Hist Prices Error: symbol - {sym} - {str(ne)}"
+                        help_print_arg(msg)
+                        break
             else:
                 for sym in sym_list:
                     HistPricesV2(sym)

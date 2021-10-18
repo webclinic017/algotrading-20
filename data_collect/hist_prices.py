@@ -32,14 +32,11 @@ class HistPricesV2():
         self.last_month, self.previous = last_month, previous
         # Check if no data path exists - default get ytd
         self.check_existing(self, sym)
-
-        if last_month or previous or self.need_data:
-            self.get_iex_params(self, sym)
+        self.get_iex_params(self, sym)
 
         if last_month or previous:
             self.get_last_range(self, sym)
-        # If existing data is current, do nothing. Else get data
-        elif self.need_data and not last_month:
+        elif self.need_data:
             if self.need_ytd:  # If ytd data needed
                 self.get_ytd(self)
             else:  # If exact dates needed
@@ -47,6 +44,7 @@ class HistPricesV2():
         else:
             msg = 'HistPricesV2: None of the __init__ conditions satisfied'
             help_print_arg(msg)
+            raise NameError
 
     @classmethod
     def check_existing(cls, self, sym):
@@ -96,6 +94,9 @@ class HistPricesV2():
                 mod_df = dataTypes(df).df
                 # Write dataframe to json file
                 mod_df.to_json(self.fpath, compression='gzip')
+        else:
+            msg = f"IexHistV2 for {sym} get request failed with status_code {get.status_code}"
+            help_print_arg(msg)
 
     @classmethod
     def get_dates_or_ytd(cls, self, fpath, dt):
