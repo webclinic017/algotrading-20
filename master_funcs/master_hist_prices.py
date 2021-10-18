@@ -30,10 +30,11 @@ class SplitGetHistPrices():
     # Apca is to get all historical stock data available through alpaca API
     # Struct is structured products, warrants
 
-    def __init__(self, testing=False, remote=True, normal=False, otc=False, apca=False, warrants=False):
+    def __init__(self, testing=False, remote=True, normal=False, otc=False, apca=False, warrants=False, last_month=False):
         self.determine_params(self, testing, normal, otc, apca, warrants)
         bins_unique = self.create_df_bins(self)
         result = False
+        self.last_month = last_month
 
         if apca:
             result = self.apca_get_data(self, testing)
@@ -107,6 +108,9 @@ class SplitGetHistPrices():
             sym_list = syms_part['symbol'].tolist()
             # Define **kwargs to unpack in execute_func, for each bin
             kwargs = {'sym_list': sym_list}
+            # Check if getting data for the last month
+            if self.last_month:
+                kwargs['last_month'] = True
             # Call tasks.execute_func to get data for each sym_list (bin int)
             execute_func.delay('hist_prices_sub', **kwargs)
 
@@ -121,9 +125,14 @@ class SplitGetHistPrices():
             if testing:
                 syms_part = syms_part.sample(n=5).copy(deep=True)
             sym_list = syms_part['symbol'].tolist()
+
             # Using list of symbols, call function to get data and store local
-            for sym in sym_list:
-                HistPricesV2(sym)
+            if self.last_month:
+                for sym in sym_list:
+                    HistPricesV2(sym, last_month=True)
+            else:
+                for sym in sym_list:
+                    HistPricesV2(sym)
 
         return True
 
