@@ -29,6 +29,7 @@ class SplitGetHistPrices():
     # OTC is over the counter
     # Apca is to get all historical stock data available through alpaca API
     # Struct is structured products, warrants
+    last_month, previous = False, False
 
     def __init__(self, testing=False, remote=True, normal=True, otc=False, apca=False, warrants=False, last_month=False, previous=False):
         self.determine_params(self, testing, normal, otc, apca, warrants, last_month, previous)
@@ -71,7 +72,7 @@ class SplitGetHistPrices():
 
         if last_month:
             self.last_month = last_month
-        elif previous:
+        if previous:
             self.previous = previous
 
     @classmethod
