@@ -81,7 +81,7 @@ class HistPricesV2():
             # self.df = dataTypes(df).df
             if os.path.isfile(self.fpath):
                 old_df = pd.read_json(self.fpath, compression='gzip')
-                df_all = pd.concat([old_df, df])
+                df_all = pd.concat([old_df, df]).reset_index(drop=True)
                 df_all = dataTypes(df_all).df
                 df_all.to_json(self.fpath, compression='gzip')
             else:
