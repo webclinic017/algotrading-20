@@ -29,6 +29,8 @@ class HistPricesV2():
 
     def __init__(self, sym, testing=False, last_month=False, previous=False):
         self.testing = testing
+        self.last_month, self.previous = last_month, previous
+        # Check if no data path exists - default get ytd
         self.check_existing(self, sym)
 
         if last_month or previous or self.need_data:
@@ -52,7 +54,7 @@ class HistPricesV2():
         dt = getDate.query('iex_eod')
         fpath = f"{self.base_path}/{dt.year}/{sym.lower()[0]}/_{sym}.gz"
 
-        if os.path.isfile(fpath):
+        if os.path.isfile(fpath) and not self.previous and not self.last_month:
             self.get_dates_or_ytd(self, fpath, dt)
         else:  # If file does not exists, get ytd
             self.is_file = False
