@@ -81,19 +81,27 @@ class HistPricesV2():
     def get_last_range(cls, self, sym):
         """Get last month of data."""
         get = requests.get(self.url, params=self.payload)
+        self.get = get
 
         if get.status_code == 200:
-            df = pd.DataFrame(get.json())
+            try:
+                df = pd.DataFrame(get.json())
+            except ValueError:
+                df = pd.DataFrame.from_dict(get.json(), orient='index').T
             # self.df = dataTypes(df).df
             if os.path.isfile(self.fpath):
                 old_df = pd.read_json(self.fpath, compression='gzip')
                 df_all = pd.concat([old_df, df]).reset_index(drop=True)
                 df_all = dataTypes(df_all).df
                 df_all.to_json(self.fpath, compression='gzip')
+                # Assign dataframe to class attribute
+                self.df = df_all
             else:
                 mod_df = dataTypes(df).df
                 # Write dataframe to json file
                 mod_df.to_json(self.fpath, compression='gzip')
+                # Assign dataframe to class attribute
+                self.df = mod_df
         else:
             msg = f"IexHistV2 for {sym} get request failed with status_code {get.status_code}"
             help_print_arg(msg)
