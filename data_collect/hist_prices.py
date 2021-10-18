@@ -27,13 +27,17 @@ class HistPricesV2():
     need_data = True
     dts_need = []
 
-    def __init__(self, sym, testing=False):
+    def __init__(self, sym, testing=False, last_month=False):
         self.testing = testing
         self.check_existing(self, sym)
-        # If existing data is current, do nothing. Else get data
-        if self.need_data:
+
+        if last_month or self.need_data:
             self.get_iex_params(self, sym)
 
+        if last_month:
+            self.get_last_range(self, sym)
+        # If existing data is current, do nothing. Else get data
+        elif self.need_data and not last_month:
             if self.need_ytd:  # If ytd data needed
                 self.get_ytd(self)
             else:  # If exact dates needed
@@ -65,6 +69,25 @@ class HistPricesV2():
         self.url = f"{base_url}/stock/{sym}/chart"
         self.payload = ({'token': os.environ.get("iex_publish_api"),
                          'includeToday': true, 'chartByDay': true})
+
+    @classmethod
+    def get_last_range(cls, self, sym):
+        """Get last month of data."""
+        self.payload['range'] = '1m'
+        get = requests.get(self.url, params=self.payload)
+
+        if get.status_code == 200:
+            df = pd.DataFrame(get.json())
+            # self.df = dataTypes(df).df
+            if os.path.isfile(self.fpath):
+                old_df = pd.read_json(self.fpath, compression='gzip')
+                df_all = pd.concat([old_df, df])
+                df_all = dataTypes(df_all).df
+                df_all.to_json(self.fpath, compression='gzip')
+            else:
+                mod_df = dataTypes(df).df
+                # Write dataframe to json file
+                mod_df.to_json(self.fpath, compression='gzip')
 
     @classmethod
     def get_dates_or_ytd(cls, self, fpath, dt):

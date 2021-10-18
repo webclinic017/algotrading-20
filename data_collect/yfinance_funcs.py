@@ -8,8 +8,10 @@ import pandas as pd
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg
+    from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg
+    from api import serverAPI
 
 # %% codecell
 
@@ -130,13 +132,15 @@ def clean_yfinance_options(df_temp=False, refresh=False):
         if not isinstance(df_temp, pd.DataFrame):
             df_temp = return_yoptions_temp_all()
 
-        cboe_ref = get_cboe_ref()
+        # cboe_ref = get_cboe_ref()
+        cboe_ref = serverAPI('cboe_symref').df
         cboe_ref['contractSymbol'] = cboe_ref['OSI Symbol'].str.replace(' ', '')
         df_comb = pd.merge(df_temp, cboe_ref, on=['contractSymbol']).copy()
 
         df_comb['date'] = pd.to_datetime(df_comb['date'], unit='ms')
         df_comb['lastTradeDate'] = pd.to_datetime(df_comb['lastTradeDate'], unit='ms')
         df_comb['lastTradeDay'] = df_comb['lastTradeDate'].dt.date
+
         df_comb.drop_duplicates(subset=['contractSymbol', 'lastTradeDay'], inplace=True)
         # Add column for puts and calls
         df_comb['side'] = df_comb['OSI Symbol'].str[-9]
@@ -149,6 +153,8 @@ def clean_yfinance_options(df_temp=False, refresh=False):
         df_comb['mid'] = (df_comb['ask'].add(df_comb['bid'])).div(2).round(3)
         df_comb['bid'] = df_comb['bid'].round(3)
         df_comb['premium'] = (df_comb['mid'].mul(df_comb['volume']) * 100).round(0)
+
+        df_comb.rename(columns={'Symbol': 'symbol'}, inplace=True)
 
         if 'strike_x' in df_comb.columns:
             df_comb['strike'] = df_comb['strike_x']

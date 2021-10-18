@@ -68,7 +68,7 @@ def execute_yahoo_func(df, which='yinfo', **kwargs):
 # %% codecell
 
 
-def ysymbols_info(sym, base_dir=False, proxy=False, testing=False):
+def ysymbols_info(sym, base_dir=False, session=False, testing=False):
     """Get meta information for all ysymbols."""
     df_old, info = False, False
 
@@ -84,9 +84,9 @@ def ysymbols_info(sym, base_dir=False, proxy=False, testing=False):
 
     ticker = yf.Ticker(sym)
 
-    if proxy:
+    if session:
         try:
-            info = ticker.info(proxy=proxy)
+            info = ticker.info(session=session)
         except TypeError as te:
             help_print_arg(f"TypeError (proxy) from ysymbols_info: {te}")
     else:
