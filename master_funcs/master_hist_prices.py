@@ -30,11 +30,11 @@ class SplitGetHistPrices():
     # Apca is to get all historical stock data available through alpaca API
     # Struct is structured products, warrants
 
-    def __init__(self, testing=False, remote=True, normal=False, otc=False, apca=False, warrants=False, last_month=False):
+    def __init__(self, testing=False, remote=True, normal=False, otc=False, apca=False, warrants=False, last_month=False, previous=False):
         self.determine_params(self, testing, normal, otc, apca, warrants)
         bins_unique = self.create_df_bins(self)
         result = False
-        self.last_month = last_month
+        self.last_month, self.previous = last_month, previous
 
         if apca:
             result = self.apca_get_data(self, testing)
@@ -130,6 +130,9 @@ class SplitGetHistPrices():
             if self.last_month:
                 for sym in sym_list:
                     HistPricesV2(sym, last_month=True)
+            elif self.previous:
+                for sym in sym_list:
+                    HistPricesV2(sym, previous=True)
             else:
                 for sym in sym_list:
                     HistPricesV2(sym)
