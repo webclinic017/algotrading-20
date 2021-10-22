@@ -108,8 +108,12 @@ class SplitGetHistPrices():
         # For each of the 1000 symbol bins, get data
         for bin in bins_unique:
             syms_part = self.df[self.df['bins'] == bin]
+
+            # If testing function, only use 5 symbols
             if testing:
                 syms_part = syms_part.sample(n=5).copy(deep=True)
+
+            # Make a list of all symbols to iterate through
             sym_list = syms_part['symbol'].tolist()
             # Define **kwargs to unpack in execute_func, for each bin
             kwargs = {'sym_list': sym_list}
@@ -121,6 +125,9 @@ class SplitGetHistPrices():
             # Call tasks.execute_func to get data for each sym_list (bin int)
             execute_func.delay('hist_prices_sub', **kwargs)
 
+        # 10 minutes in the future, combine all daily stock eod
+        # All previous symbols are assumed to have data at that point
+        execute_func.apply_async('combine_daily_stock_eod', countdown=600)
         return True
 
     @classmethod
