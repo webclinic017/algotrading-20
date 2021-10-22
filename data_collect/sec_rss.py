@@ -5,10 +5,10 @@ import requests
 import pandas as pd
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, getDate
+    from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg
     from scripts.dev.multiuse.create_file_struct import make_yearly_dir
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, getDate
+    from multiuse.help_class import baseDir, getDate, help_print_arg
     from multiuse.create_file_struct import make_yearly_dir
 # %% codecell
 
