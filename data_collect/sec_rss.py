@@ -47,6 +47,8 @@ class SecRssFeed():
         get = requests.get(self.url, headers=self.headers)
         if get.status_code >= 400:
             get = requests.get(self.url, headers=self.headers)
+            if get.status_code >= 400:
+                help_print_arg('SEC RSS Feed: 2nd get request failed')
 
         self.df = pd.read_xml(get.content, xpath='.//item')
 
