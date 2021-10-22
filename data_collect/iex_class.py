@@ -140,6 +140,8 @@ class urlData():
         except ValueError:
             try:
                 df = pd.read_json(BytesIO(get.content))
+            except ValueError:
+                df = pd.DataFrame.from_dict(get.json(), orient='index').T
             except JSONDecodeError or AttributeError:
                 try:
                     df = pd.json_normalize(StringIO(get.content.decode('utf-8')))
@@ -251,7 +253,7 @@ class marketHolidays():
     def write_to_json(cls, self):
         """Write data to local json file."""
         self.days_df.to_json(self.fpath, compression='gzip')
-        
+
 # %% codecell
 ######################################################
 class companyStats():
