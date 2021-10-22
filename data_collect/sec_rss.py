@@ -33,9 +33,10 @@ class SecRssFeed():
     def get_params(cls, self):
         """Prepare header dict."""
         url = "https://www.sec.gov/Archives/edgar/xbrlrss.all.xml"
-        headers = ({'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:93.0) Gecko/20100101 Firefox/93.0',
+        headers = ({'User-Agent': 'Rogue Technology Ventures edward@rogue.golf',
                     'Referer': 'https://www.sec.gov/structureddata/rss-feeds-submitted-filings',
-                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Host': 'www.sec.gov',
+                    'Accept-Encoding': 'gzip, deflate',
                     'Cache-Control': 'no-cache',
                     'Accept-Language': 'en-GB,en;q=0.5'})
         self.url = url
