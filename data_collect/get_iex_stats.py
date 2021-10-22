@@ -10,8 +10,9 @@ try:
 except ModuleNotFoundError:
     from data_collect.iex_class import urlData
     from multiuse.help_class import baseDir, getDate, help_print_arg
-    
+
 # %% codecell
+
 
 def execute_iex_stats(df, testing=False):
     """Task_functions loop for individual bin."""

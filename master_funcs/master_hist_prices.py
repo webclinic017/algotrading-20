@@ -127,7 +127,7 @@ class SplitGetHistPrices():
 
         # 10 minutes in the future, combine all daily stock eod
         # All previous symbols are assumed to have data at that point
-        execute_func.apply_async('combine_daily_stock_eod', countdown=600)
+        execute_func.apply_async(args=['combine_daily_stock_eod'], countdown=600)
         return True
 
     @classmethod
