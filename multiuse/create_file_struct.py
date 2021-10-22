@@ -66,6 +66,17 @@ def create_ysymbol_info_dirs():
 # %% codecell
 
 
+def make_yearly_dir(base_path):
+    """Make yearly directory."""
+    # If base_path is not a directory
+    if not os.path.isdir(base_path):
+        makedirs_with_permissions(base_path)
+
+    yr = date.today().year
+    for year in list(range(yr, yr + 10)):
+        makedirs_with_permissions(f"{base_path}/{year}")
+
+
 def make_hist_prices_dir(base_path):
     """Make year and alphabet lowercase local folders."""
     # If base_path is not a directory

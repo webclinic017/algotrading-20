@@ -49,4 +49,8 @@ class MasterIexStats():
                 execute_iex_stats(arg.to_json())
                 help_print_arg('Execute yahoo options not found')
 
+        # 15 minutes in the future, combine all company stats info
+        # All previous symbols are assumed to have data at that point
+        execute_func.apply_async(args=['combine_stats'], countdown=900)
+
 # %% codecell
