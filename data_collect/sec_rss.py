@@ -4,8 +4,12 @@ from pathlib import Path
 import requests
 import pandas as pd
 
-from multiuse.help_class import baseDir, getDate
-from multiuse.create_file_struct import make_yearly_dir
+try:
+    from scripts.dev.multiuse.help_class import baseDir, getDate
+    from scripts.dev.multiuse.create_file_struct import make_yearly_dir
+except ModuleNotFoundError:
+    from multiuse.help_class import baseDir, getDate
+    from multiuse.create_file_struct import make_yearly_dir
 # %% codecell
 
 # base_path = Path(baseDir().path, 'sec/rss')
