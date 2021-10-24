@@ -201,32 +201,32 @@ class getDate():
     def query(site):
         """Call which_fname_date but shorter."""
         # query_date = getDate.which_fname_date()
-        weekend, query_date = False, ''
+        weekend, query_date = False, False
         if date.today().weekday() in (5, 6):
             weekend = True
 
         if site in ('cboe', 'occ'):
             if getDate.time_cutoff(cutoff_hm=16.15) or weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
-            else:
-                query_date = (date.today() - BusinessDay(n=0)).date()
+        elif site in ('sec_rss'):  # 6 am start
+            if getDate.time_cutoff(cutoff_hm=6.0) or weekend:
+                query_date = (date.today() - BusinessDay(n=1)).date()
         elif site in ('iex_close'):
             if weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
-            else:
-                query_date = (date.today() - BusinessDay(n=0)).date()
         elif site in ('iex_eod'):
             if getDate.time_cutoff(cutoff_hm=16.15) or weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
-            else:
-                query_date = (date.today() - BusinessDay(n=0)).date()
         elif site in ('sec_master'):
             if getDate.time_cutoff(cutoff_hm=22.35) or weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
-            else:
-                query_date = (date.today() - BusinessDay(n=0)).date()
         elif site in ('last_syms'):
             pass
+
+        # If none of the prev time/weekend conditions apply
+        if not query_date:
+            query_date = (date.today() - BusinessDay(n=0)).date()
+
         return query_date
 
     @staticmethod
