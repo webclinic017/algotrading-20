@@ -156,7 +156,10 @@ class AnalyzeSecRss():
     @classmethod
     def filter_my_stocks(cls, self):
         """Filter dataframe for my stocks."""
-        inv_list = ['OCGN', 'BBIG', 'CEI', 'TDAC', 'AEMD']
+        path = Path(baseDir().path, 'tickers', 'my_syms.parquet')
+        my_df = pd.read_parquet(path)
+        # Convert local dataframe to syms to look for
+        inv_list = my_df['symbol'].tolist()
         df_inv = self.df[self.df['symbol'].isin(inv_list)].copy()
 
         if (df_inv.shape[0] == 0) and self.testing:
