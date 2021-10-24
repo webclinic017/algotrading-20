@@ -28,13 +28,13 @@ def get_all_symbol_ref():
         otc_syms_path = Path(base_path, 'otc_syms.gz')
         com_df = pd.read_json(com_syms_path, compression='gzip')
         otc_df = pd.read_json(otc_syms_path, compression='gzip')
-        df_all = pd.concat([com_df, otc_df])
+        df_all = pd.concat([com_df, otc_df]).reset_index(drop=True)
     else:
         try:
             from api import serverAPI
             com_syms = serverAPI('all_symbols').df
             otc_syms = serverAPI('otc_syms').df
-            df_all = pd.concat([com_syms, otc_syms])
+            df_all = pd.concat([com_syms, otc_syms]).reset_index(drop=True)
         except ModuleNotFoundError:
             help_print_arg('Tried import server api in get_all_symbols func')
 
