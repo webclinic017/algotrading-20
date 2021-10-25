@@ -28,6 +28,10 @@ def get_all_symbol_ref():
         otc_syms_path = Path(base_path, 'otc_syms.gz')
         com_df = pd.read_json(com_syms_path, compression='gzip')
         otc_df = pd.read_json(otc_syms_path, compression='gzip')
+        otc_df.dropna(subset=['cik'], inplace=True)
+        otc_df['cik'] = (otc_df['cik'].astype('int64').astype('str').str
+                                      .zfill(10).astype('category')
+                                      .reset_index(drop=True))
         df_all = pd.concat([com_df, otc_df]).reset_index(drop=True)
     else:
         try:
