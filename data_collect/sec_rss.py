@@ -149,6 +149,9 @@ class AnalyzeSecRss():
         if ('form' and 'cik') not in self.sec_df.columns:
             col_dict = {'description': 'form', 'CIK': 'cik'}
             self.sec_df.rename(columns=col_dict, inplace=True)
+
+        # self.sec_df['cik'] = self.sec_df['cik'].astype('float64')
+        # cs_adr['cik'] = cs_adr['cik'].astype('float64')
         # Merge reference data with sec_df
         df = pd.merge(self.sec_df, cs_adr, on=['cik'], how='left', validate='m:1')
         self.df = df.copy()
