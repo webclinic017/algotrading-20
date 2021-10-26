@@ -421,7 +421,7 @@ class cboeData():
         """Merge mmo and symref dataframes."""
         try:
             df = (pd.merge(self.mmo_df, self.sym_df,
-                           on=['Symbol', 'Underlying'],
+                           on=['Symbol', 'Underlying', 'exchange'],
                            how='inner'))
             df.reset_index(inplace=True, drop=True)
             # df['rptDate'] = date.today()
