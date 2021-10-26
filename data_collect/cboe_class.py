@@ -402,7 +402,10 @@ class cboeData():
         df['side'] = df['sym_suf'].str[6]
         df['strike'] = (df['sym_suf'].str[7:12] + '.' + df['sym_suf'].str[13])
         df['expirationDate'] = df['sym_suf'].str[0:6]
-        df.drop(columns=['Closing Only', 'Matching Unit', 'sym_suf'], inplace=True)
+        try:
+            df.drop(columns=['Closing Only', 'Matching Unit', 'sym_suf'], inplace=True)
+        except KeyError as ke:
+            pass
 
         df['yr'] = df['expirationDate'].str[0:2]
         df['mo'] = df['expirationDate'].str[2:4]
