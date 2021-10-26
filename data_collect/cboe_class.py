@@ -419,10 +419,16 @@ class cboeData():
     @classmethod
     def merge_dfs(cls, self):
         """Merge mmo and symref dataframes."""
+        merge_list = ['Symbol', 'Underlying']
+        if ('exchange' in self.mmo_df.columns and
+            'exchange' in self.sym_df.columns):
+            merge_list.append('exchange')
+
         try:
             df = (pd.merge(self.mmo_df, self.sym_df,
-                           on=['Symbol', 'Underlying', 'exchange'],
+                           on=merge_list,
                            how='inner'))
+
             df.reset_index(inplace=True, drop=True)
             # df['rptDate'] = date.today()
             df['rptDate'] = getDate.query('cboe')
