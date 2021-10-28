@@ -96,6 +96,7 @@ class SecRssFeed():
         if path.exists():
             df_old = pd.read_parquet(path)
             df_all = pd.concat([df_old, self.df]).reset_index(drop=True)
+            df_all.drop_duplicates(inplace=True)
             df_all.to_parquet(path)
         else:
             self.df.to_parquet(path)
@@ -109,14 +110,22 @@ class AnalyzeSecRss():
 
     def __init__(self, latest=True, sec_df=None, testing=False):
         self.testing, self.sec_df = testing, sec_df
+
         if isinstance(sec_df, pd.DataFrame):
-            latest=False
-
-        # If we need to retrieve the sec dataframe
-        if latest and not isinstance(sec_df, pd.DataFrame):
+            latest = False
+            if 'symbol' in sec_df.columns:
+                self.df = sec_df
+                if testing:
+                    help_print_arg('Symbol in sec_df.columns')
+            else:
+                self.get_merge_ref_data(self)
+        else:  # If sec_df is not a dataframe (False)
             self.retrieve_df(self, latest)
+            self.get_merge_ref_data(self)
+            if testing:
+                help_print_arg('Retrieving df')
+                help_print_arg('get_merge_ref_data')
 
-        self.get_merge_ref_data(self)
         self.filter_my_stocks(self)
         self.send_text_messages(self)
 
@@ -146,7 +155,7 @@ class AnalyzeSecRss():
                                            .drop_duplicates(subset=['cik'])
                                            .reset_index(drop=True))
 
-        if ('form' and 'cik') not in self.sec_df.columns:
+        if ('form' or 'cik') not in self.sec_df.columns:
             col_dict = {'description': 'form', 'CIK': 'cik'}
             self.sec_df.rename(columns=col_dict, inplace=True)
 
@@ -163,6 +172,11 @@ class AnalyzeSecRss():
         my_df = pd.read_parquet(path)
         # Convert local dataframe to syms to look for
         inv_list = my_df['symbol'].tolist()
+
+        if ('form' or 'cik') not in self.df.columns:
+            col_dict = {'description': 'form', 'CIK': 'cik'}
+            self.df.rename(columns=col_dict, inplace=True)
+
         df_inv = self.df[self.df['symbol'].isin(inv_list)].copy()
 
         if (df_inv.shape[0] == 0) and self.testing:
