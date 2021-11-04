@@ -8,23 +8,25 @@ Short data comes out every day past 4:30 pm
 
 # %% codecell
 ############################################
+from pathlib import Path
+from io import BytesIO
+import os
+import datetime
+
 import requests
 import pandas as pd
 import numpy as np
 
-from io import BytesIO
-import os
-
-import datetime
-
 try:
-    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, help_print_error, help_print_arg
+    from scripst.dev.multiuse.create_file_struct import makedirs_with_permissions
+    # from scripts.dev.data_collect.nasdaq_class import nasdaqShort
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, dataTypes
-
-
+    from multiuse.help_class import baseDir, dataTypes, getDate, help_print_error, help_print_arg
+    from multiuse.create_file_struct import makedirs_with_permissions
 # %% codecell
 ############################################
+
 
 class nasdaqShort():
     """Get daily circut breaker short data."""
@@ -80,21 +82,130 @@ class nasdaqShort():
         """Write to local parquet file."""
         local_df.to_parquet(self.fpath)
 
+# %% codecell
 
 
+class NasdaqHalt():
+    """Get a list of halted symbols every minute."""
 
+    """
+    Class variables:
+        self.df : dataframe from either today, most recent, or all
+        self.base_path : base directory to write files
+        self.path : most recent path
+    """
 
+    """
+    Cols definitions: https://www.nasdaqtrader.com/Trader.aspx?id=TradeHaltCodes
+    Halt Codes:
+        T1 : News pending
+        T2 : News released
+        T5 : Trading paused - 10% move in 5 minute period
+        T6 : Extraordinary market activity
+        T8 : ETF halt
+        T12 : Halt for additional info
 
+        H4: Non-compliance with listing requirements
+        H9: Not current in required filings
+        H10: Sec trading suspension
+        H11: Regulatory concern
 
+        O1: Operations halt
+        IPO1: IPO issue not yet trading
+        M1: Corporate action
+        M2: Quotation not available
+        LUDP: Volatility trading pause
+        LUDS: Volatility trading pause - straddle condition
 
+        MWC1 - Market wide circuit breaker - level 1
+        M2C2 - Market wide circuit breaker - level 2
+        MWC3 - Market wide circuit breaker - level 3
+        MWC0 - Market wide circuit breaker halt from previous day
 
+        T3 - News and resumption times
+        T7 - Quotations resumed, but trading still paused
+        R4 - Qualification issues reviewed, trading to resume
+        R9 - Filing requirement satisfied, trading to resume
+        C3 - Issuer news not forthcoming, trading to resume
 
+        R1 - New issue available
+        R2 - Issue available
+        IPOQ - IPO security released for quotation
+        IPOE - IPO security - positioning window extended
+        M - Volatility trading pause
+    """
 
+    def __init__(self, read=False, all=False):
+        self.get_path(self)
 
+        if read is False:
+            self._get_data(self)
+            self._process_data(self)
+        elif read is True:
+            self._read_data(self, all=all)
 
+    @classmethod
+    def get_path(cls, self):
+        """Get fpath."""
+        dt = getDate.query('sec_rss')
+        base_path = Path(baseDir().path, 'short/halts')
 
+        if not base_path.exists():
+            makedirs_with_permissions(base_path)
 
+        self.base_path = base_path
+        self.path = Path(base_path, f"_{dt}.parquet")
 
+    @classmethod
+    def _get_data(cls, self):
+        """Get nasdaq halt data."""
+        url = "http://www.nasdaqtrader.com/rss.aspx?feed=tradehalts"
+        get = requests.get(url)
+        # If for some reason the request failed
+        if get.status_code >= 400:
+            e = 'Requests Error'
+            parent = str(type(self).__name__)
+            help_print_error(e, parent=parent, resp=get)
+        self.get = get
+
+    @classmethod
+    def _process_data(cls, self):
+        """Convert from xml, clean, and process."""
+        df = pd.read_xml(self.get.content, xpath='.//item')
+
+        col_list = []
+        for col in df.columns:
+            if '}' in str(col):
+                # print(col.split('}')[1])
+                col_list.append(col.split('}')[1])
+            else:
+                col_list.append(col)
+
+        df.columns = col_list
+        df.drop(columns=['description', 'PauseThresholdPrice'], inplace=True)
+
+        self.df = df
+
+        if self.path.exists():
+            df_prev = pd.read_parquet(self.path)
+            subset = ['HaltTime', 'IssueSymbol']
+            df_all = (pd.concat([df_prev, df])
+                        .reset_index(drop=True)
+                        .drop_duplicates(subset=subset))
+            df_all.to_parquet(self.path)
+        else:
+            df.to_parquet(self.path)
+
+    @classmethod
+    def _read_data(cls, self, all=False):
+        """Read local dataframe for today, or most recent, or all."""
+        if all:
+            df_list = []
+            for fpath in list(self.base_path.glob('*.parquet')):
+                df_list.append(pd.read_parquet(df_list))
+            df_all = pd.concat(df_list).reset_index(drop=True)
+            self.df = df_all
+        else:
+            self.df = pd.read_parquet(self.path)
 
 # %% codecell
-############################################

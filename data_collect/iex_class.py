@@ -5,6 +5,7 @@ Implement IEX data requests
 ######################################################
 import os
 import os.path
+from time import sleep
 
 import json
 from json import JSONDecodeError
@@ -24,9 +25,9 @@ import datetime
 from datetime import date, timedelta, time
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, getDate
+    from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, getDate
+    from multiuse.help_class import baseDir, getDate, help_print_arg
 
 # %% codecell
 ######################################################
@@ -119,35 +120,72 @@ class urlData():
     """Get data and convert to pd.DataFrame."""
     # url_suf = url suffix. Should be string with
     # 1st character as a forward slash
+    """
+    Stored dataframe: self.df
+    Store get request: self.get
+    """
 
     def __init__(self, url_suf):
         #print('Data accessible by xxx.df')
-        self.df = self._get_data(self, url_suf)
+        self._get_data(self, url_suf)
 
     @classmethod
     def _get_data(cls, self, url_suf):
         """Get data from IEX, return dataframe."""
-        load_dotenv()
-        base_url = os.environ.get("base_url")
-        payload = {'token': os.environ.get("iex_publish_api")}
-        get = requests.get(f"{base_url}{url_suf}", params=payload)
-        self.get = get.content
+        load_dotenv()  # Load environ variables
+        url = f"{os.environ.get('base_url')}{url_suf}"
+        payload = {'token': os.environ.get('iex_publish_api')}
+        # Get data
+        get = requests.get(url, params=payload)
+        self.get = get
 
-        # Set empty dataframe variable
-        df = ''
+        if get.status_code < 400:
+            self._decode_data(self, get)
+        elif get.status_code == 429: # Assumed to be IEX "Too many requests"
+            sleep(1)  # Sleep for 1 second
+            get = requests.get(url, params=payload)
+            self.get = get
+
+            if get.status_code < 400:
+                self._decode_data(self, get)
+        else:
+            self._error_printing(self, get)
+
+    @classmethod
+    def _decode_data(cls, self, get):
+        """Decode data and assign to class attribute df."""
+        df = None
+
         try:
             df = pd.DataFrame(get.json())
+        except JSONDecodeError:
+            df = pd.read_json(BytesIO(get.content))
         except ValueError:
-            try:
-                df = pd.read_json(BytesIO(get.content))
-            except ValueError:
-                df = pd.DataFrame.from_dict(get.json(), orient='index').T
-            except JSONDecodeError or AttributeError:
-                try:
-                    df = pd.json_normalize(StringIO(get.content.decode('utf-8')))
-                except:
-                    df = pd.read_csv(BytesIO(get.content), escapechar='\n', delimiter=',')
-        return df
+            df = pd.DataFrame.from_dict(get.json(), orient='index').T
+        except AttributeError:
+            df = pd.read_csv(BytesIO(get.content), escapechar='\n', delimiter=',')
+
+        # df = pd.json_normalize(StringIO(get.content.decode('utf-8')))
+        # Assign df to class attribute
+        self.df = df
+
+    @classmethod
+    def _error_printing(cls, self, get):
+        """Print errors if get request fails."""
+        msg_1 = f"urlData request failed with code {get.status_code} and url {get.url}"
+        help_print_arg(msg_1)
+        # Print out get.text for more helpful error handling
+        if len(get.text) > 500:
+            msg_2 = f"get msg {get.text[0:500]}"
+            help_print_arg(msg_2)
+        else:
+            msg_2 = f"get msg {get.text}"
+            help_print_arg(msg_2)
+
+
+
+
+
 # %% codecell
 ######################################################
 """
