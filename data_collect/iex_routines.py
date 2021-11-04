@@ -5,6 +5,8 @@ Daily IEX data requests to run.
 ##############################################
 import os
 import os.path
+from pathlib import Path
+from time import sleep
 
 # import json
 from json import JSONDecodeError
@@ -25,12 +27,12 @@ import datetime
 from datetime import date, timedelta, time
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, local_dates
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, local_dates, help_print_arg
     from scripts.dev.data_collect.iex_class import readData, urlData
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, dataTypes, getDate, local_dates
+    from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, help_print_arg
     importlib.reload(sys.modules['multiuse.help_class'])
-    from multiuse.help_class import baseDir, dataTypes, getDate, local_dates
+    from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, help_print_arg
 
     from data_collect.iex_class import readData, urlData
     importlib.reload(sys.modules['data_collect.iex_class'])
@@ -79,8 +81,8 @@ class dailySymbols():
         syms_diff = (pd.concat([current_syms['symbol'], old_syms['symbol']])
                        .drop_duplicates(keep=False))
         # New symbols from last time checking symbols (yesterday)
-        new_syms = (current_syms[(current_syms['symbol'].isin(syms_diff)) &
-                                 (current_syms['isEnabled'])])
+        new_syms = (current_syms[(current_syms['symbol'].isin(syms_diff))
+                                 & (current_syms['isEnabled'])])
         # Ignore cryptocurrency pairs
         new_syms = new_syms[~new_syms['symbol'].str[-4:].isin(['USDT'])]
 
@@ -93,10 +95,9 @@ class dailySymbols():
         syms_fname = f"{baseDir().path}/tickers/all_symbols.gz"
         self.write_to_json(self, iex_sup, syms_fname)
 
-        iex_sup.drop(columns=
-                     ['exchangeSuffix', 'exchangeName',
-                      'name', 'iexId', 'region',
-                      'currency', 'isEnabled', 'cik', 'lei', 'figi'],
+        iex_sup.drop(columns=['exchangeSuffix', 'exchangeName',
+                              'name', 'iexId', 'region',
+                              'currency', 'isEnabled', 'cik', 'lei', 'figi'],
                      axis=1, inplace=True)
         # Convert data types
         iex_sup = dataTypes(iex_sup).df
@@ -184,7 +185,6 @@ class iexClose():
             # except SSLError:
             #    pass
 
-
     @classmethod
     def _get_update_local(cls, self, sym, year):
         """Get quote data, update fpath, upate gzip, write to gzip."""
@@ -224,14 +224,14 @@ class iexClose():
         all_df = pd.concat(self.data_list)
         all_df.reset_index(drop=True, inplace=True)
         # Get date for data to use for fpath
-        latest_dt = pd.to_datetime(all_df['latestUpdate'], unit='ms').dt.date[0]
+        latest_dt = pd.to_datetime(
+            all_df['latestUpdate'], unit='ms').dt.date[0]
         # Construct fpath
         fpath = f"{self.fpath_base}/combined/_{latest_dt}.gz"
         # Minimize file size
         df = dataTypes(all_df).df
         # Write to local file
         df.to_json(fpath, compression='gzip')
-
 
     """
     @classmethod
@@ -280,11 +280,13 @@ def write_combined():
 
     all_df = pd.concat(concat_list)
     this_df = all_df.copy(deep=True)
-    this_df['date'] = pd.to_datetime(this_df['latestUpdate'], unit='ms').dt.date
+    this_df['date'] = pd.to_datetime(
+        this_df['latestUpdate'], unit='ms').dt.date
     cutoff = datetime.date(2021, 4, 7)
     this_df = this_df[this_df['date'] >= cutoff].copy(deep=True)
 
-    this_df.sort_values(by=['symbol', 'latestUpdate'], inplace=True, ascending=False)
+    this_df.sort_values(by=['symbol', 'latestUpdate'],
+                        inplace=True, ascending=False)
     this_df.drop_duplicates(subset=['symbol', 'date'], inplace=True)
 
     dt_counts = this_df['date'].value_counts().index
@@ -410,7 +412,8 @@ class histPrices():
             df_dl = [x for x in df_dl if x]
             if len(df_dl) > 0:
                 # Combine previous dataframes with new data
-                df_all = pd.concat([pd.read_json(path, compression='gzip'), df_dl])
+                df_all = pd.concat(
+                    [pd.read_json(path, compression='gzip'), df_dl])
             else:
                 df_all = pd.read_json(path, compression='gzip')
             df_all.reset_index(inplace=True, drop=True)

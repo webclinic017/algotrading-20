@@ -44,6 +44,37 @@ def help_print_arg(arg):
         pass
 
 
+def help_print_error(e, parent=False, other=False, resp=False, ud=False):
+    """Output helpful information from error."""
+
+    """
+    e      : Error : Exception as e
+    parent : Parent function : string
+    other  : Other useful params : string
+    resp   : Url response : Response object
+    ud     : urlData class : Class with .get
+    """
+
+    # 1st message
+    if parent and other:
+        help_print_arg(f"{parent} function error for {other}")
+    elif parent and not other:
+        help_print_arg(f"{parent} function error")
+
+    # 2nd message
+    help_print_arg(f" with error type: {type(e)} and error: {str(e)}")
+
+    # 3rd message
+    if resp:
+        msg_1 = f"Url: {resp.url} get.status_code: {resp.status_code} "
+        msg_2 = f"message: {resp.text}"
+        help_print_arg(f"{msg_1}{msg_2}")
+    elif ud:
+        msg_1 = f"Url: {ud.get.url} get.status_code: {ud.get.status_code} "
+        msg_2 = f"message: {ud.get.text}"
+        help_print_arg(f"{msg_1}{msg_2}")
+
+
 def df_create_bins(df, bin_size=1000):
     """Create bins sizes of default 1000 each. Add to df."""
     if isinstance(df.index, object):
