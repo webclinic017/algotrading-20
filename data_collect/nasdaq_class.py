@@ -19,13 +19,12 @@ import numpy as np
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, help_print_error, help_print_arg
-    from scripst.dev.multiuse.create_file_struct import makedirs_with_permissions
-    # from scripts.dev.data_collect.nasdaq_class import nasdaqShort
+    from scripts.dev.multiuse.create_file_struct import makedirs_with_permissions
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, dataTypes, getDate, help_print_error, help_print_arg
     from multiuse.create_file_struct import makedirs_with_permissions
+
 # %% codecell
-############################################
 
 
 class nasdaqShort():
