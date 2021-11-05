@@ -81,6 +81,9 @@ class HistPricesV2():
     def get_last_range(cls, self, sym):
         """Get last month of data."""
         get = requests.get(self.url, params=self.payload)
+        # If at first you don't succeed, try, try again.
+        if get.status_code != 200:
+            get = requests.get(self.url, params=self.payload)
         self.get = get
 
         if get.status_code == 200:
