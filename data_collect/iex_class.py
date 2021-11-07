@@ -25,9 +25,9 @@ import datetime
 from datetime import date, timedelta, time
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg
+    from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg, write_to_parquet
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, getDate, help_print_arg
+    from multiuse.help_class import baseDir, getDate, help_print_arg, write_to_parquet
 
 # %% codecell
 ######################################################
@@ -39,54 +39,55 @@ class readData():
     @staticmethod
     def get_all_symbols():
         """Get and write to local file all symbols."""
-        syms_fpath = f"{baseDir().path}/tickers/all_symbols.gz"
+        syms_fpath = f"{baseDir().path}/tickers/all_symbols.parquet"
         symbols = urlData("/ref-data/symbols").df
-        symbols.to_json(syms_fpath, compression='gzip')
+        write_to_parquet(symbols, syms_fpath)
         return symbols
 
     @staticmethod
     def all_iex_symbols():
         """Read all IEX symbols."""
         symbols_base = f"{baseDir().path}/tickers"
-        all_symbols_fname = f"{symbols_base}/all_symbols.gz"
-        ticker_df = pd.read_json(all_symbols_fname, compression='gzip')
+        all_symbols_fname = f"{symbols_base}/all_symbols.parquet"
+        ticker_df = pd.read_parquet(all_symbols_fname)
         return ticker_df
 
     @staticmethod
     def etf_list():
         """Read local etf list."""
-        etf_fname = f"{baseDir().path}/tickers/etf_list.gz"
+        etf_fname = f"{baseDir().path}/tickers/etf_list.parquet"
         if os.path.isfile(etf_fname):
-            etf_df = pd.read_json(etf_fname, compression='gzip')
+            etf_df = pd.read_parquet(etf_fname)
         else:
             symbols = urlData("/ref-data/symbols").df.copy(deep=True)
             etf_df = pd.DataFrame(symbols[symbols['type'] == 'et']['symbol'])
             etf_df.reset_index(inplace=True, drop=True)
-            etf_df.to_json(etf_fname, compression='gzip')
+            write_to_parquet(etf_df, etf_fname)
         return etf_df
 
     @staticmethod
     def _get_etf_list(etf_fname):
         """Get etf list data from IEX and write to json."""
 
-
     @staticmethod
     def last_bus_day_syms():
         """Read all symbols from the last business day."""
         last_date = getDate().query('last_syms')
-        syms_fname = f"{baseDir().path}/tickers/new_symbols/{last_date}.gz"
+        syms_fname = f"{baseDir().path}/tickers/new_symbols/{last_date}.parquet"
 
         if not os.path.isfile(syms_fname):
             print('Not data available. Defaulting to mid Feb symbols.')
-            syms_fname = f"{baseDir().path}/tickers/all_symbols.gz"
-        # Read local json file
+            syms_fname = f"{baseDir().path}/tickers/all_symbols.parquet"
+        # Read local parquet file
         try:
-            old_syms = pd.read_json(syms_fname, compression='gzip')
+            old_syms = pd.read_parquet(syms_fname)
         except ValueError:
             old_syms = pd.DataFrame()
         return old_syms
+
 # %% codecell
-######################################################
+
+
 class expDates():
     """Get option expiration dates."""
 
@@ -114,8 +115,10 @@ class expDates():
         exp = json.load(StringIO(exp_bytes.content.decode('utf-8')))
 
         return exp
+
 # %% codecell
-######################################################
+
+
 class urlData():
     """Get data and convert to pd.DataFrame."""
     # url_suf = url suffix. Should be string with
@@ -204,7 +207,8 @@ etf_df = pd.read_json(etf_list_fname, compression='gzip')
 
 """
 # %% codecell
-######################################################
+
+
 class marketHolidays():
     """Helper class for finding last trading date/market holidays."""
     # which can be 'trade' or 'holiday'
@@ -219,7 +223,7 @@ class marketHolidays():
             self.params = self.determine_params(which)
             self.full_url = self.construct_url(self.params)
             self.days_df = self.get_market_trading_dates(self)
-            self.write_to_json(self)
+            self.write_to_parquet(self)
 
     @classmethod
     def determine_fpath(cls, self, which):
@@ -227,9 +231,9 @@ class marketHolidays():
         fpath = ''
 
         if which == 'trade':
-            fpath = f"{self.base_dir}/{date.today()}_{'trade'}.gz"
+            fpath = f"{self.base_dir}/{date.today()}_{'trade'}.parquet"
         elif which == 'holiday':
-            fpath = f"{self.base_dir}/{date.today().year}_{'holiday'}.gz"
+            fpath = f"{self.base_dir}/{date.today().year}_{'holiday'}.parquet"
         else:
             print("Which needs to equal either 'trade' or 'holiday' ")
 
@@ -239,12 +243,11 @@ class marketHolidays():
     def check_if_exists(cls, self):
         """Check if requested file exists locally."""
         if os.path.isfile(self.fpath):
-            local_df = pd.read_json(self.fpath, compression='gzip')
+            local_df = pd.read_parquet(self.fpath)
         else:
             local_df = False
 
         return local_df
-
 
     @classmethod
     def determine_params(cls, which):
@@ -288,12 +291,14 @@ class marketHolidays():
         return df
 
     @classmethod
-    def write_to_json(cls, self):
-        """Write data to local json file."""
-        self.days_df.to_json(self.fpath, compression='gzip')
+    def write_to_parquet(cls, self):
+        """Write data to local parquet file."""
+        write_to_parquet(self.days_df, self.fpath)
+
 
 # %% codecell
-######################################################
+
+
 class companyStats():
     """Static methods for various company data."""
 
@@ -335,10 +340,10 @@ class companyStats():
             data_yest = f"{full_path}_{date.today() - timedelta(days=1)}"
 
             if os.path.isfile(data_today):
-                df = pd.read_json(data_today, compression='gzip')
+                df = pd.read_parquet(data_today)
                 all_df = pd.concat([all_df, df])
             elif os.path.isfile(data_yest):
-                df = pd.read_json(data_yest, compression='gzip')
+                df = pd.read_parquet(data_yest)
                 all_df = pd.concat([all_df, df])
             else:
                 df = self._get_data(self, sym, which)
@@ -352,8 +357,8 @@ class companyStats():
         """Base function for getting company stats data."""
         url = f"/stock/{sym}/{self.stats_dict[which]['url_suffix']}"
         df = urlData(url).df
-        path = Path(f"{self.fpath}/{sym[0].lower()}/_{sym}_{date.today()}.gz")
-        df.to_json(path, compression='gzip')
+        path = Path(f"{self.fpath}/{sym[0].lower()}/_{sym}_{date.today()}.parquet")
+        write_to_parquet(df, path)
         return df
 
 # %% codecell
@@ -381,7 +386,7 @@ def get_options_symbols(get_fresh=False):
         sym_df = pd.DataFrame(get.json().items())
         sym_df.columns = ['symbol', 'expDates']
 
-        sym_df.to_parquet(fpath)
+        write_to_parquet(sym_df, fpath)
 
         if not stop:
             return sym_df

@@ -9,10 +9,10 @@ import pandas as pd
 # %% codecell
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, help_print_error
+    from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, help_print_error, write_to_parquet
     from scripts.dev.data_collect.iex_routines import urlData
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, help_print_error
+    from multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, help_print_error, write_to_parquet
     from data_collect.iex_routines import urlData
 
 
@@ -43,7 +43,7 @@ class IntSyms():
             int_exch_url = '/ref-data/exchanges'
             int_exch_syms = urlData(int_exch_url).df
             # Write to local parquet file
-            int_exch_syms.to_parquet(path)
+            write_to_parquet(int_exch_syms, path)
             self.exch_df = int_exch_syms
 
     @classmethod
@@ -74,7 +74,7 @@ class IntSyms():
         fpath_suf = 'all_international_symbols.parquet'
         path = Path(baseDir().path, 'ref_data/symbol_ref', fpath_suf)
 
-        self.all_int_syms.to_parquet(path)
+        write_to_parquet(self.all_int_syms, path)
 
 
 # %% codecell
@@ -153,7 +153,7 @@ class IexRefData():
         else:
             path = self.path_dict[self.which]
 
-        df.to_parquet(path)
+        write_to_parquet(df, path)
 
 
 # %% codecell

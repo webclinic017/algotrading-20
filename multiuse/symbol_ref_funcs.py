@@ -24,10 +24,10 @@ def get_all_symbol_ref():
     if env == "production":
         base_path = Path(baseDir().path, 'tickers')
 
-        com_syms_path = Path(base_path, 'all_symbols.gz')
-        otc_syms_path = Path(base_path, 'otc_syms.gz')
-        com_df = pd.read_json(com_syms_path, compression='gzip')
-        otc_df = pd.read_json(otc_syms_path, compression='gzip')
+        com_syms_path = Path(base_path, 'all_symbols.parquet')
+        otc_syms_path = Path(base_path, 'otc_syms.parquet')
+        com_df = pd.read_parquet(com_syms_path)
+        otc_df = pd.read_parquet(otc_syms_path)
         otc_df.dropna(subset=['cik'], inplace=True)
         otc_df['cik'] = (otc_df['cik'].astype('int64').astype('str').str
                                       .zfill(10).astype('category')

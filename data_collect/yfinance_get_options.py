@@ -7,9 +7,9 @@ import yfinance as yf
 from socks import SOCKS5AuthError
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg
+    from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg, write_to_parquet
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, getDate, help_print_arg
+    from multiuse.help_class import baseDir, getDate, help_print_arg, write_to_parquet
 
 # %% codecell
 

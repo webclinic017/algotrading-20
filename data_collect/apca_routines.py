@@ -8,9 +8,9 @@ import requests
 import pandas as pd
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, help_print_arg
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, help_print_arg, write_to_parquet
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, dataTypes, getDate, help_print_arg
+    from multiuse.help_class import baseDir, dataTypes, getDate, help_print_arg, write_to_parquet
 
 # %% codecell
 ########################################
@@ -46,13 +46,13 @@ class ApcaSymbols():
         headers, base_url = apca_params(markets=True)
         self.create_fpath(self)
         self.get_data(self, base_url, headers)
-        self.write_to_json(self)
+        self.write_to_parquet(self)
 
     @classmethod
     def create_fpath(cls, self):
-        """Create local fpath to write json file."""
+        """Create local fpath to write parquet file."""
         base_dir = baseDir().path
-        fpath = f"{base_dir}/tickers/apca_ref.gz"
+        fpath = f"{base_dir}/tickers/apca_ref.parquet"
         self.fpath = fpath
 
     @classmethod
@@ -68,9 +68,9 @@ class ApcaSymbols():
             help_print_arg(get_ref.content)
 
     @classmethod
-    def write_to_json(cls, self):
-        """Write dataframe to local json file."""
-        self.df.to_json(self.fpath, compression='gzip')
+    def write_to_parquet(cls, self):
+        """Write dataframe to local parquet file."""
+        write_to_parquet(self.df, self.fpath)
 
 
 # %% codecell
@@ -90,9 +90,9 @@ class ApcaHist():
         self.get_data(self, headers, url, params)
         # If file exists, concat, otherwise just clean
         self.clean_concat_data(self)
-        # Write to local json file
+        # Write to local parquet file
         if isinstance(self.df, pd.DataFrame):
-            self.write_to_json(self)
+            self.write_to_parquet(self)
         else:
             help_print_arg(f"Data Collection for symbol {sym} failed")
 
@@ -111,7 +111,7 @@ class ApcaHist():
         """Construct local fpath to store data."""
         dt = getDate.query('iex_eod')
         fpath_base = f"{baseDir().path}/apca/apca_hist/{dt.year}"
-        fpath = f"{fpath_base}/{sym.lower()[0]}/_{sym}.gz"
+        fpath = f"{fpath_base}/{sym.lower()[0]}/_{sym}.parquet"
 
         self.fpath = fpath
 
@@ -166,15 +166,15 @@ class ApcaHist():
         """Clean, concat data and prepare for compression."""
         df_old, df = None, None
         if os.path.isfile(self.fpath):
-            df_old = pd.read_json(self.fpath, compression='gzip')
+            df_old = pd.read_parquet(self.fpath)
             df = pd.concat([df_old, self.df])
             # Minimize data size
             self.df = dataTypes(df).df.copy(deep=True)
 
     @classmethod
-    def write_to_json(cls, self):
-        """Write dataframe to local json file."""
+    def write_to_parquet(cls, self):
+        """Write dataframe to local parquet file."""
         self.df.drop_duplicates(subset='date', inplace=True)
         self.df.reset_index(drop=True, inplace=True)
 
-        self.df.to_json(self.fpath, compression='gzip')
+        write_to_parquet(self.df, self.fpath)

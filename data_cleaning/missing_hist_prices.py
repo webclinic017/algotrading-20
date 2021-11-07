@@ -15,12 +15,12 @@ import numpy as np
 
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg
+    from scripts.dev.multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
     from scripst.dev.multiuse.create_file_struct import makedirs_with_permissions
     from scripts.dev.api import serverAPI
     # from scripts.dev.data_collect.nasdaq_class import nasdaqShort
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg
+    from multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
     from multiuse.create_file_struct import makedirs_with_permissions
     from api import serverAPI
 
@@ -129,7 +129,7 @@ class MissingHistDates():
         path_less_20 = Path(bpath, 'less_than_20', dsuf)
         path_all = Path(bpath, 'all', dsuf)
         # Write to parquet files
-        self.df_less_than_20.to_parquet(path_less_20)
-        self.all_missing.to_parquet(path_all)
+        write_to_parquet(self.df_less_than_20, path_less_20)
+        write_to_parquet(self.all_missing, path_all)
 
 # %% codecell

@@ -18,11 +18,11 @@ import numpy as np
 from bs4 import BeautifulSoup
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, getDate
+    from scripts.dev.multiuse.help_class import baseDir, getDate, write_to_parquet
     from scripts.dev.multiuse.sec_helpers import make_sec_cik_ref
     from scripts.dev.multiuse.bs4_funcs import bs4_child_values
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, getDate
+    from multiuse.help_class import baseDir, getDate, write_to_parquet
     from multiuse.sec_helpers import make_sec_cik_ref
     from multiuse.bs4_funcs import bs4_child_values
 
@@ -122,7 +122,7 @@ def form_8k(get):
 
 
 class secCompanyIdx():
-    """Get master json list from sec edgar."""
+    """Get master parquet list from sec edgar."""
 
     # Store as local dataframe. Accepts either symbol or cik #
     base_dir = baseDir().path
@@ -135,8 +135,8 @@ class secCompanyIdx():
     @classmethod
     def construct_params(cls, self, sym, cik):
         """Construct url and local fpath."""
-        all_syms_fpath = f"{self.base_dir}/tickers/all_symbols.gz"
-        all_symbols = pd.read_json(all_syms_fpath, compression='gzip')
+        all_syms_fpath = f"{self.base_dir}/tickers/all_symbols.parquet"
+        all_symbols = pd.read_parquet(all_syms_fpath)
         # Drop cik values that are NaNs or infinite
         all_symbols.dropna(axis=0, subset=['cik'], inplace=True)
         all_symbols['cik'] = all_symbols['cik'].astype(np.uint32)
@@ -149,7 +149,7 @@ class secCompanyIdx():
                    & (all_symbols['type'] == 'cs')])
 
         # Construct local fpath
-        self.fpath = f"{self.base_dir}/sec/company_index/{str(cik)[-1]}/_{cik}.gz"
+        self.fpath = f"{self.base_dir}/sec/company_index/{str(cik)[-1]}/_{cik}.parquet"
         # Sec base url
         sec_burl = 'https://data.sec.gov/submissions/CIK'
         self.url = f"{sec_burl}{str(cik).zfill(10)}.json"
@@ -158,7 +158,7 @@ class secCompanyIdx():
 
     @classmethod
     def retrieve_data(cls, self):
-        """Get data from SEC EDGAR and convert to json."""
+        """Get data from SEC EDGAR and convert to parquet."""
         sec_get = requests.get(self.url)
         if sec_get.status_code != 200:
             time.sleep(1)  # Sleep for 1 second and retry
@@ -169,12 +169,12 @@ class secCompanyIdx():
     def write_or_update(cls, self):
         """Write new file or update from previous."""
         if os.path.isfile(self.fpath):
-            sec_prev_df = pd.read_json(self.fpath, compression='gzip')
+            sec_prev_df = pd.read_parquet(self.fpath)
             sec_df = pd.concat([sec_prev_df, self.sec_df])
             sec_df.drop_duplicates(subset=['accesssionNumber'], inplace=True)
             self.sec_df = sec_df.reset_index(drop=True).copy(deep=True)
 
-        self.sec_df.to_json(self.fpath, compression='gzip')
+        write_to_parquet(self.sec_df, self.fpath)
         self.df = self.sec_df.copy(deep=True)
 
 # %% codecell
@@ -198,7 +198,7 @@ class secMasterIdx():
             self.retrieve_data(self)
             try:
                 self.process_data(self)
-                self.write_to_json(self)
+                self.write_to_parquet(self)
             except KeyError:
                 print(self.url)
             except EmptyDataError:
@@ -218,11 +218,11 @@ class secMasterIdx():
         yr = date.today().year
         if isinstance(hist_date, datetime.date):
             hist_date = hist_date.strftime('%Y%m%d')
-        self.fpath = f"{self.baster}/{yr}/_{hist_date}.gz"
-        self.fpath_raw = f"{self.baster}/{yr}/raw/_{hist_date}.gz"
+        self.fpath = f"{self.baster}/{yr}/_{hist_date}.parquet"
+        self.fpath_raw = f"{self.baster}/{yr}/raw/_{hist_date}.parquet"
         # If local master file exists for that date
         if os.path.isfile(self.fpath):
-            self.df = pd.read_json(self.fpath, compression='gzip')
+            self.df = pd.read_parquet(self.fpath)
         else:
             self.get_hist_date = hist_date
             self._construct_params(self)
@@ -247,8 +247,8 @@ class secMasterIdx():
             dt_fmt = dt.strftime('%Y%m%d')
         # Url suffix using the formatted date
         mast_suf = f"master.{dt_fmt}.idx"
-        self.fpath = f"{self.baster}/{yr}/_{dt_fmt}.gz"
-        self.fpath_raw = f"{self.baster}/{yr}/raw/_{dt_fmt}.gz"
+        self.fpath = f"{self.baster}/{yr}/_{dt_fmt}.parquet"
+        self.fpath_raw = f"{self.baster}/{yr}/raw/_{dt_fmt}.parquet"
         self.url = f"{self.sec_burl}/{yr}/{f_quart}/{mast_suf}"
 
     @classmethod
@@ -272,9 +272,9 @@ class secMasterIdx():
         self.df = df.copy(deep=True)
 
     @classmethod
-    def write_to_json(cls, self):
-        """Write dataframe to json."""
-        self.df.to_json(self.fpath, compression='gzip')
+    def write_to_parquet(cls, self):
+        """Write dataframe to parquet."""
+        write_to_parquet(self.df, self.fpath)
 
 # %% codecell
 ##########################################################
@@ -297,7 +297,7 @@ class secInsiderTrans():
         if not isinstance(self.df, pd.DataFrame):
             self.retrieve_data(self)
             self.process_data(self)
-            self.write_to_json(self)
+            self.write_to_parquet(self)
 
     @classmethod
     def determine_params(cls, self, sym, cik, refresh):
@@ -305,17 +305,17 @@ class secInsiderTrans():
         if sym and not cik:  # Get CIK
             self.cik, self.sym = get_cik('TDAC').astype(np.uint32), sym
         elif cik and not sym:  # Get underlying symbll from ref data
-            syms_fpath = f"{self.base_dir}/tickers/all_symbols.gz"
-            all_syms = pd.read_json(syms_fpath, compression='gzip')
+            syms_fpath = f"{self.base_dir}/tickers/all_symbols.parquet"
+            all_syms = pd.read_parquet(syms_fpath)
             sym_row = (all_syms[(all_syms['cik'] == cik)
                                 & (all_syms['type'] == 'cs')].iloc[0])
             self.cik, self.sym = cik.astype(np.uint32), sym_row['symbol']
 
         # Check for existing file
-        self.fpath = f"{self.base_insider}/{str(self.cik)[-1]}/_{self.cik}.gz"
+        self.fpath = f"{self.base_insider}/{str(self.cik)[-1]}/_{self.cik}.parquet"
 
         if os.path.isfile(self.fpath) and not refresh:
-            self.df = pd.read_json(self.fpath, compression='gzip')
+            self.df = pd.read_parquet(self.fpath)
         else:  # If not file, construct url with CIK filled to 10 digits
             self.url = f"{self.sec_burl}{str(self.cik).zfill(10)}"
 
@@ -343,6 +343,6 @@ class secInsiderTrans():
         self.df = pd.DataFrame(data_list, columns=col_list)
 
     @classmethod
-    def write_to_json(cls, self):
-        """Write dataframe to json."""
-        self.df.to_json(self.fpath, compression='gzip')
+    def write_to_parquet(cls, self):
+        """Write dataframe to parquet."""
+        write_to_parquet(self.df, self.fpath)

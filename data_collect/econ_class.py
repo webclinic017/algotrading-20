@@ -27,13 +27,13 @@ from yahoofinancials import YahooFinancials
 
 try:
     from scripts.dev.data_collect.options import DerivativeExpirations, DerivativesHelper
-    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, write_to_parquet
     from scripts.dev.file_storage import fileOps, blockPrinting
 
 except ModuleNotFoundError:
     from data_collect.options import DerivativesHelper, DerivativesStats
     from file_storage import fileOps, blockPrinting
-    from multiuse.help_class import baseDir, dataTypes, getDate
+    from multiuse.help_class import baseDir, dataTypes, getDate, write_to_parquet
 
     importlib.reload(sys.modules['data_collect.options'])
     importlib.reload(sys.modules['file_storage'])
@@ -62,16 +62,16 @@ class yahooTbills():
     def __init__(self):
         self.get_path(self)
         self.df = self.get_data(self)
-        self.write_to_json(self)
+        self.write_to_parquet(self)
 
     def get_path(cls, self):
         """Get local fpath."""
-        self.fpath = f"{baseDir().path}/economic_data/treasuries.gz"
+        self.fpath = f"{baseDir().path}/economic_data/treasuries.parquet"
         # Create an empty data frame with column names
         df = pd.DataFrame(columns=self.tickers)
         # Check if local data frame already exists
         if os.path.isfile(self.fpath):
-            df = pd.read_json(self.fpath, compression='gzip')
+            df = pd.read_parquet(self.fpath)
         # Return data frame
         self.df = df
 
@@ -98,9 +98,10 @@ class yahooTbills():
 
         return df
 
-    def write_to_json(cls, self):
+    def write_to_parquet(cls, self):
         """Write data to local json file."""
-        self.df.to_json(self.fpath, compression='gzip')
+        write_to_parquet(self.df, self.fpath)
+
 
 # %% codecell
 ############################################################
@@ -128,10 +129,10 @@ def read_tdata():
     # Load base_directory (derivatives data)
     base_dir = f"{Path(os.getcwd()).parents[0]}/data/economic_data"
     choices = glob.glob(f"{base_dir}/*")
-    fname = f"{base_dir}/risk_free_daily.json"
+    fname = f"{base_dir}/risk_free_daily.parquet"
 
     if fname in choices:  # If file is saved locally
-        tdata_df = pd.read_json(fname)
+        tdata_df = pd.read_parquet(fname)
 
         # Most recent date in local data
         try:
@@ -155,7 +156,7 @@ def read_tdata():
             # Reset index and drop
             tdata_df.reset_index(drop=True, inplace=True)
             # Write to local json file
-            tdata_df.to_json(fname)
+            write_to_parquet(tdata_df, fname)
 
     else:  # If no data is saved locally, get the ytd data
         # Define the payload and range
@@ -164,6 +165,6 @@ def read_tdata():
         print('local data does not exist')
         tdata_df = get_tdata(payload, base_url)
         # Write to local json file
-        tdata_df.to_json(fname)
+        write_to_parquet(tdata_df, fname)
 
     return tdata_df

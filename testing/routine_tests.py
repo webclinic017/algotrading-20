@@ -40,8 +40,8 @@ class FpathsTest():
     @classmethod
     def get_all_syms(cls, self):
         """Get the all_syms dataframe."""
-        syms_fpath = f"{self.base_dir}/tickers/all_symbols.gz"
-        all_syms = pd.read_json(syms_fpath, compression='gzip')
+        syms_fpath = f"{self.base_dir}/tickers/all_symbols.parquet"
+        all_syms = pd.read_parquet(syms_fpath)
         sym_list = all_syms['symbol'].tolist()
 
         self.all_syms, self.sym_list = all_syms, sym_list
@@ -51,7 +51,7 @@ class FpathsTest():
         """Check for iex_close and iex_combined."""
         dt = getDate.query('iex_eod')
         # IEX Close
-        iex_close_fpath = f"{self.base_dir}/iex_eod_quotes/combined/_{dt}.gz"
+        iex_close_fpath = f"{self.base_dir}/iex_eod_quotes/combined/_{dt}.parquet"
 
         if os.path.isfile(iex_close_fpath):
             self.sys_dict['iex_close_combined'] = True
@@ -75,12 +75,12 @@ class FpathsTest():
         dt = getDate.query('iex_eod')
 
         wt_path_dict = ({
-            'cheapest': f"{wt_path_base}/cheapest/_{dt}.gz",
-            'newest': f"{wt_path_base}/newest/_{dt}.gz",
-            'top_perf': f"{wt_path_base}/top_perf/_{dt}.gz",
-            'worst_perf': f"{wt_path_base}/worst_perf/_{dt}.gz",
-            'all': f"{wt_path_base}/all/_{dt}.gz",
-            'all_hist': f"{wt_path_base}/all_hist/_{dt}.gz"
+            'cheapest': f"{wt_path_base}/cheapest/_{dt}.parquet",
+            'newest': f"{wt_path_base}/newest/_{dt}.parquet",
+            'top_perf': f"{wt_path_base}/top_perf/_{dt}.parquet",
+            'worst_perf': f"{wt_path_base}/worst_perf/_{dt}.parquet",
+            'all': f"{wt_path_base}/all/_{dt}.parquet",
+            'all_hist': f"{wt_path_base}/all_hist/_{dt}.parquet"
         })
 
         for key in wt_path_dict.keys():
@@ -97,7 +97,7 @@ class FpathsTest():
 
         scans_path_dict = ({
             'vol': {
-                'avg': f"{scans_path_base}/top_vol/_{dt}.gz"
+                'avg': f"{scans_path_base}/top_vol/_{dt}.parquet"
             }
         })
 
@@ -116,11 +116,11 @@ class FpathsTest():
         cboe_syms_path = f"{cboe_base_path}/cboe/syms_to_explore"
 
         cboe_path_dict = ({
-            'cboe_raw': f"{cboe_base_path}/mmo/_{dt}.gz",
-            'cboe_nopop_2000': f"{cboe_base_path}/cboe/nopop_2000_{dt}.gz",
-            'cboe_long_time': f"{cboe_syms_path}/long_{dt}.gz",
-            'cboe_medium_time': f"{cboe_syms_path}/medium_{dt}.gz",
-            'cboe_short_time': f"{cboe_syms_path}/short_{dt}.gz"
+            'cboe_raw': f"{cboe_base_path}/mmo/_{dt}.parquet",
+            'cboe_nopop_2000': f"{cboe_base_path}/cboe/nopop_2000_{dt}.parquet",
+            'cboe_long_time': f"{cboe_syms_path}/long_{dt}.parquet",
+            'cboe_medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
+            'cboe_short_time': f"{cboe_syms_path}/short_{dt}.parquet"
 
         })
 
@@ -149,8 +149,8 @@ class FpathsTest():
         st_base = f"{self.base_dir}/stocktwits"
 
         st_path_dict = ({
-            'st_trending': f"{st_base}/trending/{dt}.gz",
-            'st_my_watchlist': f"{st_base}/me/_watch_{dt}.gz"
+            'st_trending': f"{st_base}/trending/{dt}.parquet",
+            'st_my_watchlist': f"{st_base}/me/_watch_{dt}.parquet"
 
         })
 

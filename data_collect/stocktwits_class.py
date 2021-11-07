@@ -24,9 +24,9 @@ import pandas as pd
 
 
 try:
-    from scripts.dev.multiuse.help_class import dataTypes, baseDir
+    from scripts.dev.multiuse.help_class import dataTypes, baseDir, help_print_arg, write_to_parquet
 except ModuleNotFoundError:
-    from multiuse.help_class import dataTypes, baseDir
+    from multiuse.help_class import dataTypes, baseDir, help_print_arg, write_to_parquet
 
 # %% codecell
 #############################################################
@@ -41,7 +41,6 @@ class stTrending():
         self.format_data(self)
         self.check_for_exist(self)
         self.df = self.concat_and_write(self)
-
 
     @classmethod
     def request_data(cls, self):
@@ -67,20 +66,20 @@ class stTrending():
     def check_for_exist(cls, self):
         """Check existing dataframe."""
         # Construct file path
-        self.st_fname = f"{self.st_base_path}/{date.today()}.gz"
+        self.st_fname = f"{self.st_base_path}/{date.today()}.parquet"
 
         if os.path.isfile(self.st_fname):
-            self.old_df = pd.read_json(self.st_fname, compression='gzip')
+            self.old_df = pd.read_parquet(self.st_fname)
         else:
             self.old_df = pd.DataFrame()
 
     @classmethod
     def concat_and_write(cls, self):
-        """Concat dataframes and write to json."""
+        """Concat dataframes and write to parquet."""
         new_df = pd.concat([self.old_df, self.rec_df])
         new_df.reset_index(inplace=True, drop=True)
-        # Write data to local json file
-        new_df.to_json(self.st_fname, compression='gzip')
+
+        write_to_parquet(new_df, self.st_fname)
 
         return new_df
 
@@ -112,8 +111,8 @@ class stwitsUserStream():
         for u in user_list:
             user_fpath = f"{self.base_dir}/{u}"
             # Define local fpaths for raw and cleaned messages
-            self.prev_fpath = f"{user_fpath}/raw_{self.this_year}.gz"
-            self.syms_fpath = f"{user_fpath}/syms_{self.this_year}.gz"
+            self.prev_fpath = f"{user_fpath}/raw_{self.this_year}.parquet"
+            self.syms_fpath = f"{user_fpath}/syms_{self.this_year}.parquet"
 
             # Create local directory if it does not exist
             if not os.path.isdir(user_fpath):
@@ -138,8 +137,8 @@ class stwitsUserStream():
         if os.path.isfile(self.syms_fpath):
             syms_df = self._concat_drop(self.syms_fpath, syms_df)
 
-        self._write_to_json(self.prev_fpath, raw_df)
-        self._write_to_json(self.syms_fpath, syms_df)
+        self._write_to_parquet(self.prev_fpath, raw_df)
+        self._write_to_parquet(self.syms_fpath, syms_df)
 
     @classmethod
     def _clean_syms(cls, self, st_decode, messages):
@@ -165,7 +164,7 @@ class stwitsUserStream():
         """If prev file exists, concat, drop duplicates."""
         prev_df = pd.DataFrame()
         try:
-            prev_df = pd.read_json(fpath, compression='gzip')
+            prev_df = pd.read_parquet(fpath)
         except ValueError:
             pass
 
@@ -183,10 +182,10 @@ class stwitsUserStream():
         return df
 
     @classmethod
-    def _write_to_json(cls, fpath, df):
-        """Reset index and write dataframe to json."""
+    def _write_to_parquet(cls, fpath, df):
+        """Reset index and write dataframe to parquet."""
         df.reset_index(inplace=True, drop=True)
-        df.to_json(fpath, compression='gzip')
+        write_to_parquet(df, fpath)
 
 # %% codecell
 #############################################################
@@ -205,16 +204,14 @@ class stWatch():
     @classmethod
     def get_fpath(cls, self):
         """Construct local fpath."""
-        self.fpath = f"{baseDir().path}/stocktwits/me/_watch_{date.today()}.gz"
+        self.fpath = f"{baseDir().path}/stocktwits/me/_watch_{date.today()}.parquet"
 
     @classmethod
     def get_data(cls, self, refresh):
         """Read local data if it exists."""
         data = ''
         if os.path.isfile(self.fpath) and refresh:
-            # with gzip.open(self.fpath, 'rb') as f:
-            #     data = f.read()
-            data = json.load(gzip.open(self.fpath))
+            data = pd.read_parquet(self.fpath)
         else:
             data = self.request_data(self)
 
@@ -225,17 +222,22 @@ class stWatch():
         """Request fresh watchlist data from stocktwits."""
         st_url, payload = self.construct_params()
         # Request data
-        st_get = requests.get(st_url, params=payload).json()
+        st_get = requests.get(st_url, params=payload)
+        self.get = st_get
+        if st_get.status_code >= 400:
+            help_print_arg(f"stWatch get error: {st_get.text}")
+
+        st_json = st_get.json()
 
         # Create a list of tuples with relevant data
         rel_l = []  # Relevant list
-        for rec in st_get['watchlist']['symbols']:
+        for rec in st_json['watchlist']['symbols']:
             rel_l.append((rec['symbol'], rec['title'], rec['watchlist_count']))
 
         rel_df = pd.DataFrame(rel_l)
-        rel_df.to_json(self.fpath, compression='gzip')
+        write_to_parquet(rel_df, self.fpath)
 
-        data = json.load(gzip.open(self.fpath))
+        data = pd.read_parquet(self.fpath)
         # with gzip.open(self.fpath, 'wb') as f:
         #     f.write(bytearray(rel_l))
 

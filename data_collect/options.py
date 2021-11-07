@@ -16,10 +16,10 @@ import pytz
 import glob
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir
+    from scripts.dev.multiuse.help_class import baseDir, write_to_parquet
     from scripts.dev.file_storage import fileOps
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir
+    from multiuse.help_class import baseDir, write_to_parquet
     from file_storage import fileOps
 
 # %% codecell
@@ -123,25 +123,22 @@ class DerivativesHelper():
 
         # Load base_directory (derivatives data)
         dir_all_fridays = f"{baseDir().path}/derivatives"
-        fname = f"{dir_all_fridays}/all_fridays_20_years.json"
+        fname = f"{dir_all_fridays}/all_fridays_20_years.parquet"
 
-        with open(fname, 'w') as json_file:
-            json.dump(third_fridays_20y, json_file)
+        write_to_parquet(third_fridays_20y, fname)
 
     @staticmethod
     def get_all_third_fridays():
         """Get all third fridays stored locally."""
         # Load base_directory (derivatives data)
         dir_all_fridays = f"{baseDir().path}/derivatives"
-        fname = f"{dir_all_fridays}/all_fridays_20_years.json"
+        fname = f"{dir_all_fridays}/all_fridays_20_years.parquet"
 
         try:
-            with open(fname) as json_file:
-                third_fridays_20y = json.load(json_file)
+            third_fridays_20y = pd.read_parquet(fname)
         except FileNotFoundError:
             DerivativesHelper.store_all_third_fridays()
-            with open(fname) as json_file:
-                third_fridays_20y = json.load(json_file)
+            third_fridays_20y = pd.read_parquet(fname)
 
         return third_fridays_20y
 
@@ -175,14 +172,14 @@ class DerivativesHelper():
         recent_der_df = pd.DataFrame()
 
         for stock_path in choices:
-            recent_der_df = pd.concat([recent_der_df, pd.read_json(stock_path)])
+            recent_der_df = pd.concat([recent_der_df, pd.read_parquet(stock_path)])
 
         return recent_der_df
 
 
     @staticmethod
     def get_stock_data(look_closer):
-        """Read local json or use IEX to get data."""
+        """Read local parquet or use IEX to get data."""
         # Returns df of all stock data, and one for just recent close.
 
         # Get a list of all symbols for unusual options activity

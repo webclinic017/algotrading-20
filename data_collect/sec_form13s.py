@@ -11,9 +11,9 @@ import numpy as np
 
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir
+    from scripts.dev.multiuse.help_class import baseDir, write_to_parquet
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir
+    from multiuse.help_class import baseDir, write_to_parquet
 
 # %% codecell
 #################################################
@@ -37,7 +37,7 @@ class get13F():
             self.retrieve_data(self)
             self.process_data(self)
             self.add_cik(self)
-            self.write_to_json(self)
+            self.write_to_parquet(self)
 
     @classmethod
     def make_params(cls, self, row):
@@ -61,7 +61,7 @@ class get13F():
             fpath_quart = f"{fpath_base}/{f_cik[-1]}/_{f_cik}/{f_quart}"
         except IndexError:
             fpath_quart = f"{fpath_base}/{f_cik.astype('str')[-1]}/_{f_cik}/{f_quart}"
-        self.fpath_full = f"{fpath_quart}/_{f_file}.gz"
+        self.fpath_full = f"{fpath_quart}/_{f_file}.parquet"
 
         # Make full fpath directory
         if not os.path.isdir(fpath_quart):
@@ -69,7 +69,7 @@ class get13F():
             os.makedirs(fpath_quart, mode=0o777)
 
         if os.path.isfile(self.fpath_full):
-            self.df = pd.read_json(self.fpath_full, compression='gzip')
+            self.df = pd.read_parquet(self.fpath_full)
         else:
             self.url = f"{self.sec_url}/{row['File Name']}"
 
@@ -147,6 +147,6 @@ class get13F():
         self.df['CIK'] = self.cik
 
     @classmethod
-    def write_to_json(cls, self):
-        """Write dataframe to json."""
-        self.df.to_json(self.fpath_full, compression='gzip')
+    def write_to_parquet(cls, self):
+        """Write dataframe to parquet."""
+        write_to_parquet(self.df, self.fpath_full)
