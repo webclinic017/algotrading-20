@@ -9,10 +9,10 @@ import pandas as pd
 import requests
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg
+    from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, write_to_parquet
     from app.tasks_test import print_arg_test
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg
+    from multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, write_to_parquet
 
 # %% codecell
 ############################################
@@ -50,7 +50,7 @@ class HistPricesV2():
     def check_existing(cls, self, sym):
         """Determine parameters to use."""
         dt = getDate.query('iex_eod')
-        fpath = f"{self.base_path}/{dt.year}/{sym.lower()[0]}/_{sym}.gz"
+        fpath = f"{self.base_path}/{dt.year}/{sym.lower()[0]}/_{sym}.parquet"
 
         if os.path.isfile(fpath) and not self.previous and not self.last_month:
             self.get_dates_or_ytd(self, fpath, dt)
@@ -93,18 +93,16 @@ class HistPricesV2():
                 df = pd.DataFrame.from_dict(get.json(), orient='index').T
             # self.df = dataTypes(df).df
             if os.path.isfile(self.fpath):
-                old_df = pd.read_json(self.fpath, compression='gzip')
+                old_df = pd.read_parquet(self.fpath)
                 df_all = pd.concat([old_df, df]).reset_index(drop=True)
-                df_all = dataTypes(df_all).df
-                df_all.to_json(self.fpath, compression='gzip')
+                write_to_parquet(df_all, self.fpath)
                 # Assign dataframe to class attribute
                 self.df = df_all
             else:
-                mod_df = dataTypes(df).df
-                # Write dataframe to json file
-                mod_df.to_json(self.fpath, compression='gzip')
+                # Write dataframe to parquet file
+                write_to_parquet(df, self.fpath)
                 # Assign dataframe to class attribute
-                self.df = mod_df
+                self.df = df
         else:
             msg = f"IexHistV2 for {sym} get request failed with status_code {get.status_code}"
             help_print_arg(msg)
@@ -112,8 +110,8 @@ class HistPricesV2():
     @classmethod
     def get_dates_or_ytd(cls, self, fpath, dt):
         """Get the exact dates needed or determine full ytd need."""
-        # Read local json file
-        df = pd.read_json(fpath, compression='gzip')
+        # Read local parquet file
+        df = pd.read_parquet(fpath)
 
         # If for some reason the df is empty, or data has an error
         if df.empty:
@@ -151,11 +149,7 @@ class HistPricesV2():
         get = requests.get(self.url, params=self.payload)
         if get.status_code == 200:
             df = pd.DataFrame(get.json())
-            # self.df = dataTypes(df).df
-            mod_df = dataTypes(df).df
-            # Write dataframe to json file
-            mod_df.to_json(self.fpath, compression='gzip')
-            # self.write_to_json(self)
+            write_to_parquet(df, self.fpath)
         else:
             get_errors.append(f"Error with {self.url}. {get.content}")
         # Print out any errors that may have arisen.
@@ -191,17 +185,13 @@ class HistPricesV2():
             all_df.drop_duplicates(subset=['date'], inplace=True)
             all_df.reset_index(drop=True, inplace=True)
 
-            mod_df = dataTypes(all_df).df
-            # Write dataframe to json file
-            mod_df.to_json(self.fpath, compression='gzip')
-            # self.df = dataTypes(all_df).df.copy(deep=True)
-            # Write dataframe to json file
-            # self.write_to_json(self)
+            write_to_parquet(all_df, self.fpath)
+
 
     @classmethod
-    def write_to_json(cls, self):
+    def write_to_parquet(cls, self):
         """Write dataframe to local file."""
-        self.df.to_json(self.fpath, compression='gzip')
+        write_to_parquet(self.df, self.fpath)
 
     @classmethod
     def class_print(cls, arg):

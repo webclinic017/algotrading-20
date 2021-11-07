@@ -27,15 +27,10 @@ import datetime
 from datetime import date, timedelta, time
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, local_dates, help_print_arg
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, local_dates, help_print_arg, write_to_parquet
     from scripts.dev.data_collect.iex_class import readData, urlData
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, help_print_arg
-    importlib.reload(sys.modules['multiuse.help_class'])
-    from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, help_print_arg
-
-    from data_collect.iex_class import readData, urlData
-    importlib.reload(sys.modules['data_collect.iex_class'])
+    from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, help_print_arg, write_to_parquet
     from data_collect.iex_class import readData, urlData
 
 # Display max 50 columns
@@ -57,9 +52,9 @@ def otc_ref_data():
     # Minimize data types for otc symbols dataframe
     otc_syms_df = dataTypes(otc_syms).df
     # Create fpath to store otc_syms
-    fpath = f"{baseDir().path}/tickers/otc_syms.gz"
+    fpath = f"{baseDir().path}/tickers/otc_syms.parquet"
     # Write otc symbols to local gzip file
-    otc_syms_df.to_json(fpath, compression='gzip')
+    write_to_parquet(otc_syms_df, fpath)
 
 
 class dailySymbols():
@@ -92,8 +87,8 @@ class dailySymbols():
     def new_syms_ref_type(cls, self):
         """Get reference type data for new symbols."""
         iex_sup = urlData("/ref-data/symbols").df
-        syms_fname = f"{baseDir().path}/tickers/all_symbols.gz"
-        self.write_to_json(self, iex_sup, syms_fname)
+        syms_fname = f"{baseDir().path}/tickers/all_symbols.parquet"
+        self.write_to_parquet(self, iex_sup, syms_fname)
 
         iex_sup.drop(columns=['exchangeSuffix', 'exchangeName',
                               'name', 'iexId', 'region',
@@ -104,16 +99,16 @@ class dailySymbols():
         new_syms_tp = iex_sup[iex_sup['symbol'].isin(self.new_syms['symbol'])]
         new_syms_tp.reset_index(inplace=True, drop=True)
 
-        date_to_use = getDate().query('occ')
-        syms_fname = f"{baseDir().path}/tickers/new_symbols/{date_to_use}.gz"
-        self.write_to_json(self, new_syms_tp, syms_fname)
+        dt = getDate().query('occ')
+        syms_fname = f"{baseDir().path}/tickers/new_symbols/{dt}.parquet"
+        self.write_to_parquet(self, new_syms_tp, syms_fname)
 
         return new_syms_tp
 
     @classmethod
-    def write_to_json(cls, self, df, syms_fname):
-        """Write new symbols json file to local json file."""
-        df.to_json(syms_fname, compression='gzip')
+    def write_to_parquet(cls, self, df, syms_fname):
+        """Write new symbols parquet file to local parquet file."""
+        write_to_parquet(df, syms_fname)
 
 # %% codecell
 ##############################################
@@ -148,12 +143,12 @@ class iexClose():
         fpath_base = f"{baseDir().path}/tickers"
 
         if otc:
-            all_symbols_fpath = f"{fpath_base}/otc_syms.gz"
+            all_symbols_fpath = f"{fpath_base}/otc_syms.parquet"
         else:
-            all_symbols_fpath = f"{fpath_base}/all_symbols.gz"
+            all_symbols_fpath = f"{fpath_base}/all_symbols.parquet"
 
         try:
-            df_all_syms = pd.read_json(all_symbols_fpath)
+            df_all_syms = pd.read_parquet(all_symbols_fpath)
         except ValueError:
             df_all_syms = readData.get_all_symbols()
 
@@ -197,12 +192,11 @@ class iexClose():
         except JSONDecodeError:
             return
 
-        fpath = f"{self.fpath_base}/{year}/{sym.lower()[0]}/_{sym}.gz"
+        fpath = f"{self.fpath_base}/{year}/{sym.lower()[0]}/_{sym}.parquet"
 
         existing = ''
         try:
-            # existing = pd.DataFrame([pd.read_json(fpath, compression='gzip')])
-            existing = pd.read_json(fpath, compression='gzip')
+            existing = pd.read_parquet(fpath)
         except FileNotFoundError as fe:
             print(fe)
             existing = pd.DataFrame()
@@ -213,7 +207,7 @@ class iexClose():
         try:
             new_df = pd.concat([existing, new_data])
             new_df.reset_index(drop=True, inplace=True)
-            new_df.to_json(fpath, compression='gzip')
+            write_to_parquet(new_df, fpath)
         except ValueError as ve:
             print(ve)
             pass
@@ -227,11 +221,9 @@ class iexClose():
         latest_dt = pd.to_datetime(
             all_df['latestUpdate'], unit='ms').dt.date[0]
         # Construct fpath
-        fpath = f"{self.fpath_base}/combined/_{latest_dt}.gz"
-        # Minimize file size
-        df = dataTypes(all_df).df
-        # Write to local file
-        df.to_json(fpath, compression='gzip')
+        fpath = f"{self.fpath_base}/combined/_{latest_dt}.parquet"
+        # Minimize file size and write to parquet
+        write_to_parquet(all_df, fpath)
 
     """
     @classmethod
@@ -271,12 +263,12 @@ class iexClose():
 def write_combined():
     """Concat iex eod prices into one file."""
     base_dir = baseDir().path
-    fpath = f"{base_dir}/iex_eod_quotes/{date.today().year}/*/**.gz"
+    fpath = f"{base_dir}/iex_eod_quotes/{date.today().year}/*/**.parquet"
     choices = glob.glob(fpath)
 
     concat_list = []
     for choice in choices:
-        concat_list.append(pd.read_json(choice, compression='gzip'))
+        concat_list.append(pd.read_parquet(choice))
 
     all_df = pd.concat(concat_list)
     this_df = all_df.copy(deep=True)
@@ -294,8 +286,8 @@ def write_combined():
         mod_df = this_df[this_df['date'] == dt]
         mod_df.reset_index(inplace=True, drop=True)
         mod_df = dataTypes(mod_df).df
-        mod_fpath = f"{baseDir().path}/iex_eod_quotes/combined/_{dt}.gz"
-        mod_df.to_json(mod_fpath, compression='gzip')
+        mod_fpath = f"{baseDir().path}/iex_eod_quotes/combined/_{dt}.parquet"
+        write_to_parquet(mod_df, mod_fpath)
 
 
 # %% codecell
@@ -317,10 +309,10 @@ def get_sector_performance(drop_dup=False):
 
     # Read local data and concatenate
     base_dir = baseDir().path
-    fpath = f"{base_dir}/tickers/sectors/performance_{last_date}.gz"
+    fpath = f"{base_dir}/tickers/sectors/performance_{last_date}.parquet"
 
     if os.path.isfile(fpath):
-        old_df = pd.read_json(fpath, compression='gzip')
+        old_df = pd.read_parquet(fpath)
     else:
         old_df = pd.DataFrame()
 
@@ -330,7 +322,7 @@ def get_sector_performance(drop_dup=False):
         (iex_df.sort_values(by=['lastUpdated'])
                .drop_duplicates(subset=['name', 'hour'], inplace=True))
     all_df.reset_index(inplace=True, drop=True)
-    all_df.to_json(fpath)
+    write_to_parquet(all_df, fpath)
 
 # %% codecell
 ##############################################
@@ -413,12 +405,12 @@ class histPrices():
             if len(df_dl) > 0:
                 # Combine previous dataframes with new data
                 df_all = pd.concat(
-                    [pd.read_json(path, compression='gzip'), df_dl])
+                    [pd.read_parquet(path), df_dl])
             else:
-                df_all = pd.read_json(path, compression='gzip')
+                df_all = pd.read_parquet(path)
             df_all.reset_index(inplace=True, drop=True)
-            # Write to local json file
-            df_all.to_json(path, compression='gzip')
+            # Write to local parquet file
+            write_to_parquet(df_all, path)
         except TypeError:
             self.df_dl = df_dl
             print('Except TypeError. Check class.df_dl for var df_dl')
@@ -433,10 +425,10 @@ class histPrices():
 
         for sym in self.get_ytd_syms:
             try:
-                path = f"{base_path}/{sym.lower()[0]}/_{sym}.gz"
+                path = f"{base_path}/{sym.lower()[0]}/_{sym}.parquet"
                 # print(f"ytd-path:{path}")
                 df = self.get_hist(self, sym, self.date_range, dt)
-                df.to_json(path, compression='gzip')
+                write_to_parquet(df, path)
             except ValueError:
                 self.json_errors.append(sym)
             except JSONDecodeError:
@@ -472,8 +464,8 @@ class histPrices():
                 df_mod.drop(columns=['year'], inplace=True)
                 df_mod.reset_index(drop=True, inplace=True)
                 df_mod = dataTypes(df_mod).df
-                fpath = f"{self.base_dir}/StockEOD/{yr}/{sym.lower()[0]}/_{sym}.gz"
-                df_mod.to_json(fpath, compression='gzip')
+                fpath = f"{self.base_dir}/StockEOD/{yr}/{sym.lower()[0]}/_{sym}.parquet"
+                write_to_parquet(df_mod, fpath)
 
 
 # %% codecell
@@ -481,7 +473,7 @@ class histPrices():
 
 
 class IexOptionSymref():
-    """Get iex options symref data, write to json."""
+    """Get iex options symref data, write to parquet."""
     fpath = ''
 
     def __init__(self, sym):
@@ -489,14 +481,14 @@ class IexOptionSymref():
         df_raw = self.get_data(self, sym)
 
         self.concat_data(self, df_raw)
-        self.write_to_json(self)
+        self.write_to_parquet(self)
 
     @classmethod
     def construct_fpath(cls, self, sym):
         """Construct local fpath."""
         base_dir, yr = baseDir().path, date.today().year
         fpath_base = f"{base_dir}/derivatives/iex_symref/{yr}"
-        fpath = f"{fpath_base}/{sym.lower()[0]}/_{sym}.gz"
+        fpath = f"{fpath_base}/{sym.lower()[0]}/_{sym}.parquet"
         self.fpath = fpath
 
     @classmethod
@@ -516,7 +508,7 @@ class IexOptionSymref():
         """Concat data with previous file if it exists."""
 
         if os.path.isfile(self.fpath):
-            df_all = pd.concat([pd.read_json(self.fpath), df])
+            df_all = pd.concat([pd.read_parquet(self.fpath), df])
             df_all = (df_all.drop_duplicates(subset='symbol')
                             .reset_index(drop=True))
             df = dataTypes(df_all).df.copy(deep=True)
@@ -527,6 +519,6 @@ class IexOptionSymref():
         self.df = df
 
     @classmethod
-    def write_to_json(cls, self):
-        """Write data to local json file."""
-        self.df.to_json(self.fpath, compression='gzip')
+    def write_to_parquet(cls, self):
+        """Write data to local parquet file."""
+        write_to_parquet(self.df, self.fpath)

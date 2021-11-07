@@ -7,10 +7,10 @@ import requests
 import pandas as pd
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg
+    from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, write_to_parquet
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg
+    from multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, write_to_parquet
     from api import serverAPI
 
 # %% codecell
@@ -40,8 +40,7 @@ def yoptions_combine_last(all=False):
     elif all:  # Combine all data to combined_all directory
         df_all.drop_duplicates(subset=['contractSymbol', 'date'], inplace=True)
         path = Path(baseDir().path, 'derivatives/end_of_day/combined_all', path_suf)
-        df_all = dataTypes(df_all, parquet=True).df
-        df_all.to_parquet(path)
+        write_to_parquet(df_all, path)
 
 
 # %% codecell
@@ -159,9 +158,7 @@ def clean_yfinance_options(df_temp=False, refresh=False):
         if 'strike_x' in df_comb.columns:
             df_comb['strike'] = df_comb['strike_x']
 
-        df_comb = dataTypes(df_comb, parquet=True).df
-
-        df_comb.to_parquet(path)
+        write_to_parquet(df_comb, path)
 
     return df_comb
 

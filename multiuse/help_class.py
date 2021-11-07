@@ -44,6 +44,12 @@ def help_print_arg(arg):
         pass
 
 
+def write_to_parquet(df, fpath):
+    """Writing to parquet with error exceptions."""
+    df = dataTypes(df, parquet=True).df
+    df.to_parquet(fpath)
+
+
 def help_print_error(e, parent=False, other=False, resp=False, ud=False):
     """Output helpful information from error."""
 
@@ -251,6 +257,11 @@ class getDate():
         elif site in ('sec_master'):
             if getDate.time_cutoff(cutoff_hm=22.35) or weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
+        elif site in ('iex_previous'):
+            if getDate.time_cutoff(cutoff_hm=5.50) or weekend:
+                query_date = (date.today() - BusinessDay(n=2)).date()
+            else:
+                query_date = (date.today() - BusinessDay(n=1)).date()
         elif site in ('last_syms'):
             pass
 
@@ -288,9 +299,9 @@ class getDate():
         df, dt_year, fpath = None, None, ''
         if this_year:
             dt_year = getDate.query('iex_eod').year
-            fpath = f"{baseDir().path}/ref_data/bus_days_{dt_year}.gz"
+            fpath = f"{baseDir().path}/ref_data/bus_days_{dt_year}.parquet"
         else:
-            fpath = f"{baseDir().path}/ref_data/bus_days.gz"
+            fpath = f"{baseDir().path}/ref_data/bus_days.parquet"
 
         if testing:
             print(fpath)
@@ -311,11 +322,13 @@ class getDate():
 
             days.reset_index(drop=True, inplace=True)
             # Write to local json file
-            days.to_json(fpath, compression='gzip')
+            # days.to_json(fpath, compression='gzip')
+            days = dataTypes(days, parquet=True).df
+            days.to_parquet(fpath)
 
             df = days.copy(deep=True)
         else:
-            df = pd.read_json(fpath, compression='gzip')
+            df = pd.read_parquet(fpath)
 
         return df
 
@@ -490,7 +503,7 @@ def local_dates(which, sym_list):
     dl_ser_dt = pd.to_datetime(dl_ser)
     for st, path in zip(local_syms, local_stock_data):
         try:
-            syms_dict[st] = pd.read_json(path, compression='gzip')
+            syms_dict[st] = pd.read_parquet(path)
         except BadGzipFile:
             syms_dict[st] = pd.read_json(path)
         except:
@@ -531,18 +544,18 @@ class RecordHolidays():
         if not isinstance(self.df, pd.DataFrame):
             next_url, last_url, payload = self.construct_params(self)
             self.get_data(self, next_url, last_url, payload)
-            self.write_to_json(self)
+            self.write_to_parquet(self)
 
     @classmethod
     def construct_fpaths(cls, self):
         """Construct fpaths to use for data storage."""
-        self.fpath = f"{self.base_path}/ref_data/holidays.gz"
+        self.fpath = f"{self.base_path}/ref_data/holidays.parquet"
 
     @classmethod
     def check_existing(cls, self):
         """Check for existing dataframe."""
         if os.path.isfile(self.fpath):
-            self.df = pd.read_json(self.fpath, compression='gzip')
+            self.df = pd.read_parquet(self.fpath)
 
     @classmethod
     def construct_params(cls, self, type='holiday', last=50):
@@ -563,12 +576,13 @@ class RecordHolidays():
         last_df = pd.DataFrame(requests.get(last_url, params=payload).json())
 
         all_df = pd.concat([next_df, last_df]).reset_index(drop=True)
+        all_df = dataTypes(all_df, parquet=True).df
         self.df = all_df
 
     @classmethod
-    def write_to_json(cls, self):
+    def write_to_parquet(cls, self):
         """Write data to local compressed json."""
-        self.df.to_json(self.fpath)
+        self.df.to_parquet(self.fpath)
 
 # %% codecell
 ###############################################################################

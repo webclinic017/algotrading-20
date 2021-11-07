@@ -23,11 +23,11 @@ import pytz
 try:
     from scripts.dev.data_collect.options import DerivativesHelper
     from scripts.dev.data_collect.iex_class import readData
-    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, write_to_parquet
 except ModuleNotFoundError:
     from data_collect.options import DerivativesHelper
     from data_collect.iex_class import readData
-    from multiuse.help_class import baseDir, dataTypes, getDate
+    from multiuse.help_class import baseDir, dataTypes, getDate, write_to_parquet
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
@@ -207,8 +207,7 @@ class cleanMmo():
             pass
         else:
             nopop_top_2000 = nopop_top_2000.T.drop_duplicates().T
-            # nopop_top_2000.to_json(nopop_fname, compression='gzip')
-            nopop_top_2000.to_parquet(nopop_fname)
+            write_to_parquet(nopop_top_2000, nopop_fname)
 
         # Short-medium-long term data frames to json
         for t in time_dict.keys():
@@ -223,9 +222,7 @@ class cleanMmo():
         else:
             time_dict[t] = time_dict[t].T.drop_duplicates().T
             # Minimize size of data
-            time_dict[t] = dataTypes(time_dict[t], parquet=True).df
-            # time_dict[t].to_json(fname, compression='gzip')
-            time_dict[t].to_parquet(fname)
+            write_to_parquet(time_dict[t], fname)
 
 
 
@@ -442,12 +439,10 @@ class cboeData():
 
     @classmethod
     def write_to_parquet(cls, self):
-        """Write symref and mmo data to local json file."""
-        # self.sym_df.to_json(self.sym_fname, compression='gzip')
-        self.sym_df.to_parquet(self.sym_fname)
+        """Write symref and mmo data to local parquet file."""
+        write_to_parquet(self.sym_df, self.sym_fname)
         # Write directly to the mmo directory
-        # self.comb_df.to_json(self.fname, compression='gzip')
-        self.comb_df.to_parquet(self.fname)
+        write_to_parquet(self.comb_df, self.fname)
 
 
 # %% codecell
@@ -549,8 +544,7 @@ class cboeLocalRecDiff():
                 df.reset_index(inplace=True, drop=True)
                 df['dataDate'] = fs[-13:-3]
                 top_df = pd.concat([top_df, df]).copy(deep=True)
-                # df.to_json(self.local_flist[fsn], compression='gzip')
-                df.to_parquet(self.local_flist[fsn])
+                write_to_parquet(df, self.local_flist[fsn])
             except IndexError:
                 pass
 

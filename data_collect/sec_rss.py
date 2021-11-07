@@ -6,13 +6,13 @@ import requests
 import pandas as pd
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg
+    from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, write_to_parquet
     from scripts.dev.multiuse.symbol_ref_funcs import get_all_symbol_ref
     from scripts.dev.multiuse.create_file_struct import make_yearly_dir
     from scripts.dev.multiuse.comms import send_twilio_message
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg
+    from multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, write_to_parquet
     from multiuse.symbol_ref_funcs import get_all_symbol_ref
     from multiuse.create_file_struct import make_yearly_dir
     from multiuse.comms import send_twilio_message

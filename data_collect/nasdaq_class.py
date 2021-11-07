@@ -18,10 +18,10 @@ import pandas as pd
 import numpy as np
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, help_print_error, help_print_arg
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
     from scripts.dev.multiuse.create_file_struct import makedirs_with_permissions
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, dataTypes, getDate, help_print_error, help_print_arg
+    from multiuse.help_class import baseDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
     from multiuse.create_file_struct import makedirs_with_permissions
 
 # %% codecell
@@ -79,7 +79,7 @@ class nasdaqShort():
     @classmethod
     def _write_to_parq(cls, self, local_df):
         """Write to local parquet file."""
-        local_df.to_parquet(self.fpath)
+        write_to_parquet(local_df, self.fpath)
 
 # %% codecell
 
@@ -191,9 +191,9 @@ class NasdaqHalt():
             df_all = (pd.concat([df_prev, df])
                         .reset_index(drop=True)
                         .drop_duplicates(subset=subset))
-            df_all.to_parquet(self.path)
+            write_to_parquet(df_all, self.path)
         else:
-            df.to_parquet(self.path)
+            write_to_parquet(df, self.path)
 
     @classmethod
     def _read_data(cls, self, all=False):

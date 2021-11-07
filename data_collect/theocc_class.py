@@ -34,16 +34,13 @@ from charset_normalizer import detect
 from charset_normalizer import CharsetNormalizerMatches as CnM
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate
+    from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, write_to_parquet
     from scripts.dev.data_collect.options import DerivativeExpirations, DerivativesHelper
     from scripts.dev.data_collect.iex_class import readData, urlData, marketHolidays
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, dataTypes, getDate
+    from multiuse.help_class import baseDir, dataTypes, getDate, write_to_parquet
 
     from data_collect.options import DerivativeExpirations, DerivativesHelper
-    importlib.reload(sys.modules['data_collect.options'])
-    from data_collect.options import DerivativeExpirations, DerivativesHelper
-
     from data_collect.iex_class import marketHolidays
 
 
@@ -93,7 +90,7 @@ class occFlex():
             # self.occ_df = self.occ_nf
             self.occ_rc = self.fix_col_names(self)  # Renamed cols
             self.df = self.clean_data(self)
-            self.write_to_json(self)
+            self.write_to_parquet(self)
 
     @classmethod
     def right_report_date(cls, self):
@@ -108,7 +105,7 @@ class occFlex():
         """Form the right fname for local dir."""
         rpt_lower = self.report_type.lower()
 
-        fname_p1 = f"/{rpt_lower}/equity_{rpt_lower}_{self.report_date}.gz"
+        fname_p1 = f"/{rpt_lower}/equity_{rpt_lower}_{self.report_date}.parquet"
         fname = f"{self.dump_dir}{fname_p1}"
         # Return fname to self.fname
         return fname
@@ -117,7 +114,7 @@ class occFlex():
     def read_local_data(cls, self):
         """See if data is available in local directory."""
         if os.path.isfile(self.fname):
-            local_df = pd.read_json(self.fname)
+            local_df = pd.read_parquet(self.fname)
         else:
             local_df = False
 
@@ -215,10 +212,9 @@ class occFlex():
         return occ_ff
 
     @classmethod
-    def write_to_json(cls, self):
-        """Write dataframe to local json file."""
-        # Write to local json file
-        self.df.to_json(self.fname, compression='gzip')
+    def write_to_parquet(cls, self):
+        """Write dataframe to local parquet file."""
+        write_to_parquet(self.df, self.fname)
 
 
 # %% codecell
@@ -231,6 +227,7 @@ class tradeVolume():
     vol_df = ''
     # query can be 'con_volume' for contract volume
     # or 'trade_volume'
+
     def __init__(self, report_date, query, fresh):
         self.report_date = report_date
         self.fname = self.create_fname(self, query)
@@ -242,16 +239,15 @@ class tradeVolume():
             self.xml_data = self.get_trade_data(self)
             self.vol_df = self.process_data(self)
             self.convert_col_dtypes(self)
-            self.write_to_json(self)
-        #"""
+            self.write_to_parquet(self)
 
     @classmethod
     def create_fname(cls, self, query):
         """Determine local file path name."""
         if query == 'con_volume':
-            f_suf = f"/contrades_{self.report_date}.gz"
+            f_suf = f"/contrades_{self.report_date}.parquet"
         elif query == 'trade_volume':
-            f_suf = f"/tradevol_{self.report_date}.gz"
+            f_suf = f"/tradevol_{self.report_date}.parquet"
         else:
             print('Wrong params. Use either con_volume or trade_volume')
         # Combine base dir with f_suf for filepath name
@@ -283,7 +279,7 @@ class tradeVolume():
         """See if data is available in local directory."""
         # Load base_directory (derivatives data)
         if os.path.isfile(self.fname):
-            local_df = pd.read_json(self.fname)
+            local_df = pd.read_parquet(self.fname)
         else:
             local_df = False
 
@@ -332,9 +328,7 @@ class tradeVolume():
         # self.vol_df[cols_to_int] = self.vol_df[cols_to_int].astype(np.uint16)
         # self.vol_df = dataTypes(self.vol_df).df
 
-
     @classmethod
-    def write_to_json(cls, self):
-        """Write file to local json."""
-        # Write to local json
-        self.vol_df.to_json(self.fname, compression='gzip')
+    def write_to_parquet(cls, self):
+        """Write file to local parquet."""
+        write_to_parquet(self.vol_df, self.fname)

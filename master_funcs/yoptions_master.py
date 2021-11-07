@@ -8,14 +8,14 @@ import requests
 
 try:
     from scripts.dev.multiuse.api_helpers import get_sock5_nord_proxies
-    from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg, df_create_bins
+    from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg, df_create_bins, write_to_parquet
     from scripts.dev.multiuse.symbol_ref_funcs import get_all_symbol_ref
     from scripts.dev.data_collect.iex_class import get_options_symbols
     from scripts.dev.data_collect.yfinance_funcs import get_cboe_ref, yoptions_still_needed, get_yoptions_unfin
     from scripts.dev.data_collect.yfinance_info_funcs import execute_yahoo_func
 except ModuleNotFoundError:
     from multiuse.api_helpers import get_sock5_nord_proxies
-    from multiuse.help_class import baseDir, getDate, help_print_arg, df_create_bins
+    from multiuse.help_class import baseDir, getDate, help_print_arg, df_create_bins, write_to_parquet
     from multiuse.symbol_ref_funcs import get_all_symbol_ref
     from data_collect.iex_class import get_options_symbols
     from data_collect.yfinance_get_options import execute_yahoo_options
@@ -65,13 +65,13 @@ def yoptions_combine_temp_all(keep_temps=False, keep_unfin=False):
                 df_new = pd.read_parquet(path)
                 # Combine dataframes and write to local file
                 df_all = pd.concat([df_old, df_new])
-                df_all.to_parquet(path_to_write)
+                write_to_parquet(df_all, path_to_write)
                 # Remove temp file
                 if not keep_temps:
                     os.remove(path)
             else:
                 df_new = pd.read_parquet(path)
-                df_new.to_parquet(path)
+                write_to_parquet(df_new, path)
         except Exception as e:
             help_print_arg(str(e))
 

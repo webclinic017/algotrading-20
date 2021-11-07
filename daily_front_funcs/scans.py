@@ -7,9 +7,9 @@ import pandas as pd
 from pandas.tseries.offsets import BusinessDay
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, getDate
+    from scripts.dev.multiuse.help_class import baseDir, getDate, write_to_parquet
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, getDate
+    from multiuse.help_class import baseDir, getDate, write_to_parquet
 
 # %% codecell
 ########################################
@@ -25,7 +25,7 @@ class scansClass():
         self.determine_params(self, which, by)
         if not isinstance(self.df, pd.DataFrame):
             self.call_func(self, which, by)
-            self.write_to_json(self)
+            self.write_to_parquet(self)
 
     @classmethod
     def determine_params(cls, self, which, by):
@@ -82,6 +82,6 @@ class scansClass():
         self.df = vol_df
 
     @classmethod
-    def write_to_json(cls, self):
+    def write_to_parquet(cls, self):
         """Write dataframe to local compression json."""
-        self.df.to_json(self.path, compression='gzip')
+        write_to_parquet(self.df, self.path)

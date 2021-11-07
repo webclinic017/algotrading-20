@@ -9,9 +9,9 @@ import pandas as pd
 import numpy as np
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, getDate
+    from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, write_to_parquet
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, getDate
+    from multiuse.help_class import baseDir, getDate, dataTypes, write_to_parquet
 
 # %% codecell
 ##############################################
@@ -20,7 +20,7 @@ except ModuleNotFoundError:
 def get_cik(sym):
     """Get SEC CIK number from symbol."""
     base_dir = baseDir().path
-    all_syms_fpath = f"{base_dir}/tickers/all_symbols.gz"
+    all_syms_fpath = f"{base_dir}/tickers/all_symbols.parquet"
     all_symbols = pd.read_json(all_syms_fpath, compression='gzip')
 
     # Drop cik values that are NaNs or infinite
@@ -35,7 +35,7 @@ def get_cik(sym):
 def make_sec_cik_ref(sec_ref):
     """Make local dataframe with values from sec master."""
     base_dir, sec_ref_all = baseDir().path, pd.DataFrame()
-    sec_ref_fpath = f"{base_dir}/tickers/sec_ref.gz"
+    sec_ref_fpath = f"{base_dir}/tickers/sec_ref.parquet"
 
     if os.path.isfile(sec_ref_fpath):
         sec_ref_old = pd.read_json(sec_ref_fpath, compression='gzip')
@@ -45,13 +45,13 @@ def make_sec_cik_ref(sec_ref):
     else:
         sec_ref_all = sec_ref.copy(deep=True)
 
-    sec_ref_all.to_json(sec_ref_fpath, compression='gzip')
+    write_to_parquet(sec_ref_all, sec_ref_fpath)
 
 
 def sec_ref_from_combined():
     """Make local sec ref data from combined master_idx."""
     base_dir, mast_df = baseDir().path, None
-    fpath_all = f"{base_dir}/sec/daily_index/_all_combined.gz"
+    fpath_all = f"{base_dir}/sec/daily_index/_all_combined.parquet"
 
     # Read sec_master_combined dataframe
     mast_df = pd.read_json(fpath_all, compression='gzip')
@@ -62,16 +62,16 @@ def sec_ref_from_combined():
 
     # Define fpath of reference data
     base_dir = baseDir().path
-    fpath = f"{base_dir}/tickers/sec_ref.gz"
+    fpath = f"{base_dir}/tickers/sec_ref.parquet"
 
     # Write reference data to local file
-    sec_ref.to_json(fpath, compression='gzip')
+    write_to_parquet(sec_ref, fpath)
 
 
 def add_ciks_to_13FHRs():
     """Add cik column to existing 13FHRs."""
     base_dir, num_split = baseDir().path, None
-    fpath = f"{base_dir}/sec/institutions/**/*.gz"
+    fpath = f"{base_dir}/sec/institutions/**/*.parquet"
     choices = glob.glob(fpath, recursive=True)
 
     # Fix for server fpath vs local fpath
@@ -86,9 +86,9 @@ def add_ciks_to_13FHRs():
                     choice for choice in choices})
 
     for key, path in choice_dict.items():
-        df = pd.read_json(path, compression='gzip').copy(deep=True)
+        df = pd.read_parquet(path).copy()
         df['CIK'] = key
-        df.to_json(path, compression='gzip')
+        write_to_parquet(df, path)
     return choice_dict
 
 
@@ -133,17 +133,17 @@ class secFpaths():
             yr = hist_date[0:4]
             dt_fmt = hist_date
 
-        self.fpath = f"{self.base_sec}/daily_index/{yr}/_{dt_fmt}.gz"
+        self.fpath = f"{self.base_sec}/daily_index/{yr}/_{dt_fmt}.parquet"
 
     @classmethod
     def company_idx_fpath(cls, self, cik):
         """Get index of company filings."""
-        self.fpath = f"{self.base_sec}/company_index/{str(cik)[-1]}/_{cik}.gz"
+        self.fpath = f"{self.base_sec}/company_index/{str(cik)[-1]}/_{cik}.parquet"
 
     @classmethod
     def insider_trans_fpath(cls, self, cik):
         """Get index of company filings."""
-        self.fpath = f"{self.base_sec}/insider_trans/{str(cik)[-1]}/_{cik}.gz",
+        self.fpath = f"{self.base_sec}/insider_trans/{str(cik)[-1]}/_{cik}.parquet",
 
     @classmethod
     def institutions_fpath(cls, self, cik):
@@ -153,6 +153,6 @@ class secFpaths():
         fpath_quart = f"{fpath_base}/{f_cik[-1]}/_{f_cik}/{f_quart}"
         f_quart = f"Q{str((dt.month - 1) // 3 + 1)}"
         yr = dt.year
-        self.fpath = f"{self.base_sec}/institutions/{yr}/{str(cik)[-1]}/_{cik}/{f_quart}/_.gz"
+        self.fpath = f"{self.base_sec}/institutions/{yr}/{str(cik)[-1]}/_{cik}/{f_quart}/_.parquet"
         f_quart = f"Q{str((row_dt.month - 1) // 3 + 1)}"
         """
