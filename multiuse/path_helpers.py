@@ -1,13 +1,37 @@
 """Functions to help with local fpaths."""
 # %% codecell
+import os
 from pathlib import Path
 
+from tqdm import tqdm
 import pandas as pd
 
 try:
-    from scripts.dev.multiuse.help_class import getDate, help_print_arg, write_to_parquet
+    from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg, write_to_parquet
 except ModuleNotFoundError:
-    from multiuse.help_class import getDate, help_print_arg, write_to_parquet
+    from multiuse.help_class import baseDir, getDate, help_print_arg, write_to_parquet
+# %% codecell
+
+
+def get_sizes():
+    """Get sizes of all files with x ending."""
+    size_dict = {}
+
+    gzpath_list = list(Path(baseDir().path).glob('**/*.gz'))
+
+    for fpath in tqdm(gzpath_list):
+        size = os.path.getsize(str(fpath)) / 1000000
+        if size > 100:  # If size is greater than 100 mbs
+            size_dict[str(fpath)] = size
+
+    df_sizes = (pd.Series(size_dict)
+                  .to_frame()
+                  .reset_index()
+                  .rename(columns={'index': 'fpath', 0: 'size'}))
+
+    path_tw = Path(baseDir().path, 'errors', 'gz_sizes.parquet')
+    df_sizes.to_parquet(path_tw)
+
 # %% codecell
 
 
@@ -62,3 +86,8 @@ def concat_and_or_write(df_all, path, path_parq=True, path_gz=False, to_parq=Tru
             df_all.to_parquet(path)
         elif to_gz:
             df_all.to_json(path, compression='gzip')
+
+
+# %% codecell
+
+# %% codecell
