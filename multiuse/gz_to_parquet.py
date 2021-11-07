@@ -1,8 +1,11 @@
 """Convert gz files to parquet."""
 from pathlib import Path
+import gc
+from gzip import BadGzipFile
 
 from tqdm import tqdm
 import pandas as pd
+
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg, write_to_parquet
@@ -40,11 +43,11 @@ class JsonToParquet():
         """Start the for loop for file type change."""
         exc_list = []
         fpath_exc_list = []
+        gc.set_threshold(100, 5, 5)
 
         for fpath in tqdm(fpath_list):
             try:
-                df = pd.read_json(fpath)
-                write_to_parquet(df, fpath)
+                self._read_write_file(self, fpath)
             except Exception as e:
                 msg = f"{type(e)} : {str(fpath)} : {str(e)}"
                 help_print_arg(msg)
@@ -53,6 +56,26 @@ class JsonToParquet():
 
         self.exc_list += exc_list
         self.fpath_exc_list += fpath_exc_list
+
+    @classmethod
+    def _read_write_file(cls, self, fpath):
+        """Read, write, and free up memory."""
+        df = None
+
+        try:
+            df = pd.read_json(fpath)
+        except UnicodeDecodeError:
+            df = pd.read_parquet(fpath)
+        except BadGzipFile:
+            df = pd.read_parquet(fpath)
+
+        if '.json' in str(fpath):
+            fpath = f"{str(fpath)[:-5]}.parquet"
+        elif '.gz' in str(fpath):
+            fpath = f"{str(fpath)[:-3]}.parquet"
+
+        if isinstance(df, pd.DataFrame):
+            write_to_parquet(df, fpath)
 
     @classmethod
     def _write_error_lists(cls, self):
