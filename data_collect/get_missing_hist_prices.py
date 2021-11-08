@@ -57,8 +57,8 @@ class GetMissingDates():
         if str(key) not in key_options:
             self.proceed = False  # If provided key not in options
 
-        bpath = Path(baseDir().path, 'StockEOD/missing_dates/null_dates', key)
-        path = Path(get_most_recent_fpath(bpath))
+        bpath = Path(baseDir().path, 'StockEOD/missing_dates', key)
+        path = get_most_recent_fpath(bpath)
         df = pd.read_parquet(path)
 
 
