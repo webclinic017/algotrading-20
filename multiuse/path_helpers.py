@@ -55,9 +55,14 @@ def get_most_recent_fpath(fpath_dir, dt=None):
             return path_to_return
 
     if not path_to_return:
-        msg_1 = "Directory empty or path doesn't follow format '_dt.parquet'"
+        msg_1 = "Directory empty or path doesn't follow format '_dt.parquet'. Returning first path"
         msg_2 = f": {fpath_dir}"
         help_print_arg(f"{msg_1} {msg_2}")
+
+        paths = list(Path(fpath_dir).glob('*.parquet'))
+        if paths:
+            path_to_return = paths[0]
+            return path_to_return
 
 # %% codecell
 
