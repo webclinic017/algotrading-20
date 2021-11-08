@@ -16,7 +16,7 @@ import numpy as np
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
-    from scripst.dev.multiuse.create_file_struct import makedirs_with_permissions
+    from scripts.dev.multiuse.create_file_struct import makedirs_with_permissions
     from scripts.dev.api import serverAPI
     # from scripts.dev.data_collect.nasdaq_class import nasdaqShort
 except ModuleNotFoundError:
