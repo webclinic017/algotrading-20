@@ -409,6 +409,15 @@ class dataTypes():
     def _cols_to_cat(cls, self):
         """Convert object columns to categorical."""
         cols_to_cat = self.dtypes[self.dtypes == 'object'].index.to_list()
+        date_cols = []
+        for col in cols_to_cat:
+            if 'date' in str(col):
+                date_cols.append(str(col))
+            elif 'time' in str(col):
+                date_cols.append(str(col))
+        # Only keep columns that aren't in date col list
+        cols_to_cat = [col for col in cols_to_cat if str(col) not in date_cols]
+
         try:
             self.df[cols_to_cat] = self.df[cols_to_cat].astype('category')
         except TypeError:
@@ -417,6 +426,8 @@ class dataTypes():
                     self.df[col] = self.df[col].astype('category')
                 except Exception as e:
                     help_print_arg(f"Object column {col} with error: {str(e)}")
+
+        self.df[date_cols] = self.df[date_cols].astype('str')
 
     @classmethod
     def pos_or_neg_ints(cls, self):
