@@ -12,11 +12,13 @@ try:
     from scripts.dev.data_collect.iex_class import urlData
     from scripts.dev.multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
     from scripts.dev.multiuse.path_helpers import get_most_recent_fpath
+    from scripts.dev.data_cleaning.missing_hist_prices import MissingHistDates
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from data_collect.iex_class import urlData
     from multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
     from multiuse.path_helpers import get_most_recent_fpath
+    from data_cleaning.missing_hist_prices import MissingHistDates
     from api import serverAPI
 
 # %% codecell
@@ -56,8 +58,13 @@ class GetMissingDates():
             self.proceed = False  # If provided key not in options
 
         bpath = Path(baseDir().path, f"StockEOD/missing_dates/{key}")
-        path = get_most_recent_fpath(bpath)
-        df = pd.read_parquet(path)
+        path = Path(get_most_recent_fpath(bpath))
+        if path.exists():
+            df = pd.read_parquet(path)
+        else:
+            MissingHistDates()
+            path = Path(get_most_recent_fpath(bpath))
+            df = pd.read_parquet(path)
 
         # Define path of null dates
         null_path = Path(baseDir().path, 'StockEOD/missing_dates/null_dates', '_null_dates.parquet')
