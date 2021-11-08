@@ -55,7 +55,7 @@ class FpathsTest():
 
         if os.path.isfile(iex_close_fpath):
             self.sys_dict['iex_close_combined'] = True
-            iex_close = pd.read_json(iex_close_fpath, compression='gzip')
+            iex_close = pd.read_parquet(iex_close_fpath)
             iex_close_over = (iex_close[iex_close['symbol']
                               .isin(self.sym_list)]
                               .shape[0])
