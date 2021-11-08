@@ -65,22 +65,23 @@ class JsonToParquet():
     @classmethod
     def _read_write_file(cls, self, fpath):
         """Read, write, and free up memory."""
-        df = None
-
-        try:
-            df = pd.read_json(fpath)
-        except UnicodeDecodeError:
-            df = pd.read_parquet(fpath)
-        except BadGzipFile:
-            df = pd.read_parquet(fpath)
+        df, fpath_write = None, None
 
         if '.json' in str(fpath):
-            fpath = f"{str(fpath)[:-5]}.parquet"
+            fpath_write = f"{str(fpath)[:-5]}.parquet"
         elif '.gz' in str(fpath):
-            fpath = f"{str(fpath)[:-3]}.parquet"
+            fpath_write = f"{str(fpath)[:-3]}.parquet"
 
-        if isinstance(df, pd.DataFrame):
-            write_to_parquet(df, fpath)
+        if not fpath_write.exists():
+            try:
+                df = pd.read_json(fpath)
+            except UnicodeDecodeError:
+                df = pd.read_parquet(fpath)
+            except BadGzipFile:
+                df = pd.read_parquet(fpath)
+
+            if isinstance(df, pd.DataFrame):
+                write_to_parquet(df, fpath_write)
 
     @classmethod
     def _write_error_lists(cls, self):
