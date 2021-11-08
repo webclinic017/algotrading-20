@@ -47,7 +47,7 @@ def help_print_arg(arg):
 def write_to_parquet(df, fpath):
     """Writing to parquet with error exceptions."""
     df = dataTypes(df, parquet=True).df
-    df.to_parquet(fpath)
+    df.to_parquet(fpath, allow_truncated_timestamps=True)
 
 
 def help_print_error(e, parent=False, other=False, resp=False, ud=False):
@@ -101,9 +101,9 @@ def check_size(var, name=False):
     mb = round(getsizeof(var) / 1000000, 2)
 
     if name:
-        print(f"Var {name} is {mb} mb")
+        help_print_arg(f"Var {name} is {mb} mb")
     else:
-        print(f"Var is {mb} mb")
+        help_print_arg(f"Var is {mb} mb")
 
 
 class baseDir():
