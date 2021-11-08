@@ -1,4 +1,6 @@
 """Convert gz files to parquet."""
+import os
+from time import sleep
 from pathlib import Path
 import gc
 from gzip import BadGzipFile
@@ -46,13 +48,16 @@ class JsonToParquet():
         gc.set_threshold(100, 5, 5)
 
         for fpath in tqdm(fpath_list):
-            try:
-                self._read_write_file(self, fpath)
-            except Exception as e:
-                msg = f"{type(e)} : {str(fpath)} : {str(e)}"
-                help_print_arg(msg)
-                fpath_exc_list.append(fpath)
-                exc_list.append(msg)
+            size = os.path.getsize(str(fpath)) / 1000000
+             # If size < 250 mb
+            if size < 250 and 'apca' not in str(fpath) and 'intraday' not in str(fpath):
+                try:
+                    self._read_write_file(self, fpath)
+                except Exception as e:
+                    msg = f"{type(e)} : {str(fpath)} : {str(e)}"
+                    help_print_arg(msg)
+                    fpath_exc_list.append(fpath)
+                    exc_list.append(msg)
 
         self.exc_list += exc_list
         self.fpath_exc_list += fpath_exc_list
