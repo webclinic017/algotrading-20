@@ -169,6 +169,7 @@ class GetMissingDates():
     def _write_null_dates(cls, self, null_dates):
         """Write null/empty dates to local df."""
         null_all = pd.DataFrame.from_records(null_dates)
+        null_keep = pd.DataFrame()
 
         try:
             null_cols_keep = ['date', 'symbol']
