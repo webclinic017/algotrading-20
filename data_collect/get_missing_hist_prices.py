@@ -57,14 +57,10 @@ class GetMissingDates():
         if str(key) not in key_options:
             self.proceed = False  # If provided key not in options
 
-        bpath = Path(baseDir().path, f"StockEOD/missing_dates/{key}")
+        bpath = Path(baseDir().path, 'StockEOD/missing_dates/null_dates', key)
         path = Path(get_most_recent_fpath(bpath))
-        if path.exists():
-            df = pd.read_parquet(path)
-        else:
-            MissingHistDates()
-            path = Path(get_most_recent_fpath(bpath))
-            df = pd.read_parquet(path)
+        df = pd.read_parquet(path)
+
 
         # Define path of null dates
         null_path = Path(baseDir().path, 'StockEOD/missing_dates/null_dates', '_null_dates.parquet')
@@ -174,8 +170,12 @@ class GetMissingDates():
         """Write null/empty dates to local df."""
         null_all = pd.DataFrame.from_records(null_dates)
 
-        null_cols_keep = ['date', 'symbol']
-        null_keep = null_all[null_cols_keep].reset_index(drop=True)
+        try:
+            null_cols_keep = ['date', 'symbol']
+            null_keep = null_all[null_cols_keep].reset_index(drop=True)
+        except KeyError:
+            null_keep = null_all.copy()
+
         null_path = Path(baseDir().path, 'StockEOD/missing_dates/null_dates', '_null_dates.parquet')
         if null_path.exists():
             null_keep = pd.concat([pd.read_parquet(null_path), null_keep]).reset_index(drop=True)
