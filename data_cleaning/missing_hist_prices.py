@@ -128,6 +128,7 @@ class MissingHistDates():
         path = Path(bpath, 'date', dsuf)
         path_less_20 = Path(bpath, 'less_than_20', dsuf)
         path_all = Path(bpath, 'all', dsuf)
+
         # Write to parquet files
         write_to_parquet(self.df_less_than_20, path_less_20)
         write_to_parquet(self.all_missing, path_all)
