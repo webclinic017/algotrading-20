@@ -72,7 +72,7 @@ class JsonToParquet():
         elif '.gz' in str(fpath):
             fpath_write = f"{str(fpath)[:-3]}.parquet"
 
-        if not fpath_write.exists():
+        if not Path(fpath_write).exists():
             try:
                 df = pd.read_json(fpath)
             except UnicodeDecodeError:
