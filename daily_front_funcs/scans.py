@@ -35,8 +35,8 @@ class scansClass():
 
         fpath_dict = ({
             'vol': {
-                'avg': f"{self.base_dir}/scans/top_vol/_{dt}.gz",
-                'avg_1': f"{self.base_dir}/scans/top_vol/_{dt_1}.gz"
+                'avg': f"{self.base_dir}/scans/top_vol/_{dt}.parquet",
+                'avg_1': f"{self.base_dir}/scans/top_vol/_{dt_1}.parquet"
             }
         })
 
@@ -44,14 +44,14 @@ class scansClass():
         comb_base_path = f"{self.base_dir}/iex_eod_quotes/combined"
         # If path is a file, read file and return
         if os.path.isfile(path):
-            self.df = pd.read_json(path)
+            self.df = pd.read_parquet(path)
         else:  # Look for iex_eod_combined local file path
-            comb_path = f"{comb_base_path}/_{dt}.gz"
+            comb_path = f"{comb_base_path}/_{dt}.parquet"
             if os.path.isfile(comb_path):
                 self.comb_path = comb_path
                 self.path = fpath_dict[which][by]
             else:  # If comb_fpath data isn't available, go one day back
-                comb_path_1 = f"{comb_base_path}/_{dt_1}.gz"
+                comb_path_1 = f"{comb_base_path}/_{dt_1}.parquet"
                 if os.path.isfile(comb_path_1):
                     self.comb_path = comb_path_1
                     self.path = fpath_dict[which][f"{by}_1"]
@@ -66,12 +66,12 @@ class scansClass():
     def call_vol_avg(cls, self):
         """Perform ops for highest volume/avg."""
         # Read all symbols fpath and filter to only common stock
-        syms_fpath = f"{self.base_dir}/tickers/all_symbols.gz"
-        all_symbols = pd.read_json(syms_fpath, compression='gzip')
+        syms_fpath = f"{self.base_dir}/tickers/all_symbols.parquet"
+        all_symbols = pd.read_parquet(syms_fpath)
         cs_syms = all_symbols[all_symbols['type'] == 'cs']['symbol'].tolist()
 
         # Read all iex_close data, sort to only common stock, create new column
-        df = pd.read_json(self.comb_path, compression='gzip')
+        df = pd.read_parquet(self.comb_path)
         df = df[df['symbol'].isin(cs_syms)].copy(deep=True)
         df['vol/avg'] = (df['volume'] / df['avgTotalVolume'] * 100).round(0)
         df['changePercent'] = (df['changePercent'] * 100).round(1)
@@ -83,5 +83,5 @@ class scansClass():
 
     @classmethod
     def write_to_parquet(cls, self):
-        """Write dataframe to local compression json."""
+        """Write dataframe to local parquet file."""
         write_to_parquet(self.df, self.path)
