@@ -63,7 +63,6 @@ class MissingHistDates():
         fpath_null = Path(baseDir().path, 'StockEOD/missing_dates/null_dates/_null_dates.parquet')
         if fpath_null.exists():
             df_null = pd.read_parquet(fpath_null)
-            df_null['date'] = df_null['date']
             df = (pd.merge(df, df_null, on=['date', 'symbol'],
                            how='left', indicator=True)
                     .query('_merge == "left_only"')
