@@ -69,7 +69,7 @@ class MissingHistDates():
                     .drop(columns='_merge', axis=1)
                     .reset_index(drop=True))
 
-        sym_list = df['symbol'].unique().dropna().tolist()
+        sym_list = df['symbol'].unique().tolist()
 
         self.df_all = df.copy()
         self.sym_list = sym_list
