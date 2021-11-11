@@ -39,7 +39,7 @@ class MissingHistDates():
     self.df_less_than_20 : symbols from ^ with < 20 days missing
     """
 
-    def __init__(self, previous=False):
+    def __init__(self, previous=False, drop_null=True):
 
         self._df_to_use(self)
         self._dates_to_use(self)
@@ -54,10 +54,19 @@ class MissingHistDates():
     @classmethod
     def _df_to_use(cls, self):
         """Get and clean dataframe to use."""
-        scp_df = serverAPI('stock_close_prices').df
+        scp_df = serverAPI('stock_close_cb_all').df
         cols_to_use = ['symbol', 'date']
         df = scp_df[cols_to_use].copy()
         df.drop_duplicates(subset=['symbol', 'date'], inplace=True)
+
+        fpath_null = Path(baseDir().path, 'StockEOD/missing_dates/null_dates/_null_dates.parquet')
+        if fpath_null.exists():
+            df_null = pd.read_parquet(fpath_null)
+            df = (pd.merge(df, df_null, on=['date', 'symbol'],
+                           how='left', indicator=True)
+                    .query('_merge == "left_only"')
+                    .drop(columns='_merge', axis=1)
+                    .reset_index(drop=True))
 
         sym_list = df['symbol'].unique().dropna().tolist()
 
