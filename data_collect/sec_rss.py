@@ -81,7 +81,7 @@ class SecRssFeed():
 
         self.df = df.copy()
         try:
-            AnalyzeSecRss(latest=False, sec_df=df)
+            AnalyzeSecRss(latest=True, sec_df=df)
         except Exception as e:
             help_print_arg(f"SecRss: AnalyzeSecRss Error {str(e)}")
 
@@ -183,10 +183,10 @@ class AnalyzeSecRss():
             help_print_arg("AnalyzeSecRss: no matching stocks for rss feed")
 
         forms_to_watch = ['8-K', '3', '4']
-        df_forms = df_inv[df_inv['form'].isin(forms_to_watch)]
+        # df_forms = df_inv[df_inv['form'].isin(forms_to_watch)]
 
         msg_dict = {sym: [] for sym in inv_list}
-        for index, row in df_forms.iterrows():
+        for index, row in df_inv.iterrows():
             if row['cik']:
                 msg = f"{row['symbol']} has just filed form {row['form']}"
                 msg_dict[row['symbol']].append(msg)
