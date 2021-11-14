@@ -33,6 +33,8 @@ def get_daily_stats(row):
     stats = urlData(row['url']).df
 
     dt = getDate.query('iex_eod')
+    # Add date column
+    stats['date'] = dt
     base_path = Path(baseDir().path, 'company_stats/stats', str(dt.year))
     path = Path(base_path, row['symbol'].lower()[0], f"_{row['symbol']}.parquet")
 

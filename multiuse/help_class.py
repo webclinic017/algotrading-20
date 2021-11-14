@@ -47,7 +47,13 @@ def help_print_arg(arg):
 def write_to_parquet(df, fpath):
     """Writing to parquet with error exceptions."""
     df = dataTypes(df, parquet=True).df
-    df.to_parquet(fpath, allow_truncated_timestamps=True)
+    try:
+        df.to_parquet(fpath, allow_truncated_timestamps=True)
+    except ValueError:
+        # If problem validating dataframe, write dataframe to gz
+        # Needed a fallback so data doesn't get lost
+        fnew = Path(f"{str(fpath)[:-8]}_not_converted.gz")
+        df.to_json(fnew, compression='gzip')
 
 
 def help_print_error(e, parent=False, other=False, resp=False, ud=False):
