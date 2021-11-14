@@ -39,9 +39,9 @@ class MissingHistDates():
     self.df_less_than_20 : symbols from ^ with < 20 days missing
     """
 
-    def __init__(self, previous=False, drop_null=True):
+    def __init__(self, previous=False, drop_null=True, cs=False):
 
-        self._df_to_use(self)
+        self._df_to_use(self, cs)
         self._dates_to_use(self)
 
         if isinstance(self.df_all, pd.DataFrame):
@@ -52,7 +52,7 @@ class MissingHistDates():
             help_print_arg('MissingHistDates: Error getting data from server')
 
     @classmethod
-    def _df_to_use(cls, self):
+    def _df_to_use(cls, self, cs):
         """Get and clean dataframe to use."""
         scp_df = serverAPI('stock_close_cb_all').df
         cols_to_use = ['symbol', 'date']
@@ -68,6 +68,10 @@ class MissingHistDates():
                     .query('_merge == "left_only"')
                     .drop(columns='_merge', axis=1)
                     .reset_index(drop=True))
+        if cs:
+            all_syms = serverAPI('all_symbols').df
+            cs_adr = all_syms[all_syms['type'].isin(['cs', 'ad'])]['symbol']
+            df = df[df['symbol'].isin(cs_adr.tolist())].copy()
 
         sym_list = df['symbol'].unique().tolist()
 
