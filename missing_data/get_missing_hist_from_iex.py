@@ -12,13 +12,13 @@ try:
     from scripts.dev.data_collect.iex_class import urlData
     from scripts.dev.multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
     from scripts.dev.multiuse.path_helpers import get_most_recent_fpath
-    from scripts.dev.data_cleaning.missing_hist_prices import MissingHistDates
+    from scripts.dev.missing_data.missing_hist_prices import MissingHistDates
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from data_collect.iex_class import urlData
     from multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
     from multiuse.path_helpers import get_most_recent_fpath
-    from data_cleaning.missing_hist_prices import MissingHistDates
+    from missing_data.missing_hist_prices import MissingHistDates
     from api import serverAPI
 
 # %% codecell
@@ -31,6 +31,7 @@ class GetMissingDates():
     key: 'previous', 'all', 'less_than_20'. Corresponds to fpath dirs
     self.proceed : continue
     self.null_dates : list of null/empty dates
+    self.merged_df : merged dataframe with null dates
     self.missing_df : dataframe of missing dates
     self.single_df : dataframe of symbols with only one missing date
     self.multiple_df : dataframe of symbols with > 1 missingdate
@@ -41,7 +42,6 @@ class GetMissingDates():
         self.proceed = proceed
         while self.proceed:
             self._get_missing_dates_df(self, key)
-            self._get_single_dates(self)
             try:
                 self._get_single_dates(self)
                 self._get_multiple_dates(self, self.multiple_df)
@@ -59,20 +59,23 @@ class GetMissingDates():
 
         bpath = Path(baseDir().path, 'StockEOD/missing_dates', key)
         path = get_most_recent_fpath(bpath)
-        df = pd.read_parquet(path)
-
+        df_dates = pd.read_parquet(path)
 
         # Define path of null dates
         null_path = Path(baseDir().path, 'StockEOD/missing_dates/null_dates', '_null_dates.parquet')
         # Get all data that isn't null/empty
         if null_path.exists():
             null_df = pd.read_parquet(null_path)
-            df = (pd.merge(df, null_df, how='left', indicator=True)
+            df = (pd.merge(df_dates, null_df, how='left', indicator=True)
                     .query('_merge == "left_only"')
                     .drop(columns=['_merge'], axis=1)
                     .copy())
+            # If the merging failed
+            if df.empty:
+                df = df_dates
 
         self.null_dates = []
+        self.merged_df = df
         self.missing_df = self._clean_process_missing(self, df)
         self.single_df, self.multiple_df = self._get_single_multiple_dfs(self, self.missing_df)
 
@@ -86,9 +89,12 @@ class GetMissingDates():
         df['dt'] = df['date'].map(m)
         # Iex exact date url construction
         df['sym_lower'] = df['symbol'].str.lower()
-        df['url'] = (df.apply(lambda row:
-                              f"/stock/{row['sym_lower']}/chart/date/{row['dt']}?chartByDay=true",
-                              axis=1))
+        try:
+            df['url'] = (df.apply(lambda row:
+                                  f"/stock/{row['sym_lower']}/chart/date/{row['dt']}?chartByDay=true",
+                                  axis=1))
+        except KeyError:
+            help_print_arg(f"_clean_process_missing: lambda KeyError: {str(df.columns)}")
         # Construct .parquet paths for reading/writing to local data file
         dt = getDate.query('iex_previous')
         bpath = Path(baseDir().path, 'StockEOD', str(dt.year))
@@ -149,8 +155,13 @@ class GetMissingDates():
         # Iterate through subset
         for index, row in df_mod.iterrows():
             ud = urlData(row['url'])
+            # Request data again if the first time doesn't work
             if ud.df.empty:
-                self.null_dates.append(row)
+                ud = urlData(row['url'])
+                if ud.df.empty:
+                    self.null_dates.append(row)
+                else:
+                    df_list.append(ud.df)
             else:
                 df_list.append(ud.df)
 

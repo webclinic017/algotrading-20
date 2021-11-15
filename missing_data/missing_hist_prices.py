@@ -68,6 +68,7 @@ class MissingHistDates():
                     .query('_merge == "left_only"')
                     .drop(columns='_merge', axis=1)
                     .reset_index(drop=True))
+        # If common stock/adr only == True, then ignore other symbol types
         if cs:
             all_syms = serverAPI('all_symbols').df
             cs_adr = all_syms[all_syms['type'].isin(['cs', 'ad'])]['symbol']

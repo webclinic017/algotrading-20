@@ -110,7 +110,7 @@ D    - Basic information about the offering (Size/Date)
 13G  - Beneficial ownership
 13D  - Activist investor
 14A  - Definitive proxy statement - when a shareholder vote is required
-5    -
+5    - Annual statement of changes in beneficial ownership
 4    - Changes in beneficial ownership for company insiders
      - Directors/officers, shareholders with more than 10% of the company's stock
 3    - Initial statement of beneficial ownership
