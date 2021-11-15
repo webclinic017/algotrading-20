@@ -34,13 +34,23 @@ importlib.reload(sys.modules['data_collect.sec_routines'])
 
 importlib.reload(sys.modules['api'])
 
+from data_collect.sec_rss import SecRssFeed
+importlib.reload(sys.modules['data_collect.sec_rss'])
+from data_collect.sec_rss import SecRssFeed
+
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
 # Display maximum rows
-pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_rows', 50)
 
 # %% codecell
 #####################################################
+
+sec_rss = SecRssFeed()
+sec_df = sec_rss.df
+
+sec_df.head()
+# %% codecell
 
 sec_link = "https://www.sec.gov/opa/data/market-structure/market-structure-data-security-and-exchange.html"
 
