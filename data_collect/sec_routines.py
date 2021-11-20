@@ -191,6 +191,11 @@ class secMasterIdx():
     df, get_hist_date, url = False, False, False
     # hist_date is an optional param for a specific date
     # datetime.date or %Y%m%d formatted string
+    headers = ({'User-Agent': 'Rogue Technology Ventures edward@rogue.golf',
+                'Host': 'www.sec.gov',
+                'Accept-Encoding': 'gzip, deflate',
+                'Cache-Control': 'no-cache',
+                'Accept-Language': 'en-GB,en;q=0.5'})
 
     def __init__(self, hist_date=False):
         self.determine_params(self, hist_date)
@@ -200,9 +205,9 @@ class secMasterIdx():
                 self.process_data(self)
                 self.write_to_parquet(self)
             except KeyError:
-                print(self.url)
+                print(f"secMasterIdx: KeyError {self.url}")
             except EmptyDataError:
-                print(self.url)
+                print(f"secMasterIdx: EmptyDataError for url: {self.url}")
 
     @classmethod
     def determine_params(cls, self, hist_date):
@@ -215,9 +220,14 @@ class secMasterIdx():
     @classmethod
     def _read_existing_idx(cls, self, hist_date):
         """Read existing index file with fpath."""
-        yr = date.today().year
+        yr = None
+
         if isinstance(hist_date, datetime.date):
+            yr = hist_date.year
             hist_date = hist_date.strftime('%Y%m%d')
+        else:
+            yr = hist_date[0:4]
+
         self.fpath = f"{self.baster}/{yr}/_{hist_date}.parquet"
         self.fpath_raw = f"{self.baster}/{yr}/raw/_{hist_date}.parquet"
         # If local master file exists for that date
@@ -254,10 +264,10 @@ class secMasterIdx():
     @classmethod
     def retrieve_data(cls, self):
         """Get SEC master index file."""
-        get = requests.get(self.url)
+        get = requests.get(self.url, headers=self.headers)
         if get.status_code != 200:
             time.sleep(1)  # Sleep for 1 second and retry
-            get = requests.get(self.url)
+            get = requests.get(self.url, headers=self.headers)
         self.get = get
 
     @classmethod
@@ -266,10 +276,13 @@ class secMasterIdx():
         df = (pd.read_csv(BytesIO(self.get.content),
                           delimiter='|',
                           escapechar='\n',
-                          skiprows=5)).iloc[1:].copy(deep=True)
+                          skiprows=5)).iloc[1:]
         df.dropna(axis=0, subset=['CIK'], inplace=True)
         df.reset_index(drop=True, inplace=True)
-        self.df = df.copy(deep=True)
+        df['date'] = pd.to_datetime(df['Date Filed'], format='%Y%m%d', errors='coerce')
+        df['CIK'] = df['CIK'].astype('str').str.zfill(10)
+        df.rename(columns={'CIK': 'cik', 'Company Name': 'name'}, inplace=True)
+        self.df = df
 
     @classmethod
     def write_to_parquet(cls, self):

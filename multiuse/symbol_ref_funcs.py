@@ -46,3 +46,22 @@ def get_all_symbol_ref():
 
 
 # %% codecell
+
+def get_symbol_stats():
+    """Get stats for all symbols."""
+    try:
+        from scripts.dev.api import serverAPI
+    except ModuleNotFoundError:
+        from api import serverAPI
+
+    og_stats = serverAPI('stats_combined').df
+    stats = og_stats[og_stats['date'] != 'nan']
+    stats_max = stats[stats['date'] == stats['date'].max()].reset_index(drop=True).copy()
+
+    all_syms = serverAPI('all_symbols').df
+    all_syms.drop(columns=['date'], inplace=True)
+    df_stats = pd.merge(stats_max, all_syms, left_on=['companyName'], right_on=['name'], how='inner')
+
+    return df_stats
+
+# %% codecell
