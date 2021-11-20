@@ -49,8 +49,8 @@ def write_to_parquet(df, fpath):
     df = dataTypes(df, parquet=True).df
     try:
         df.to_parquet(fpath, allow_truncated_timestamps=True)
-    except ValueError:
-        help_print_arg(f"Could not convert {str(fpath)}")
+    except ValueError as ve:
+        help_print_arg(f"Could not convert {str(fpath)} with reason {str(ve)}")
         # If problem validating dataframe, write dataframe to gz
         # Needed a fallback so data doesn't get lost
         fnew = Path(f"{str(fpath)[:-8]}_not_converted.gz")
