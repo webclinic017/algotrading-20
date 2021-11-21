@@ -13,13 +13,18 @@ except ModuleNotFoundError:
 # %% codecell
 
 
-def get_sizes():
+def get_sizes(gz=False, parquet=True):
     """Get sizes of all files with x ending."""
     size_dict = {}
 
-    gzpath_list = list(Path(baseDir().path).glob('**/*.gz'))
+    file_ext = '.parquet'
+    if gz:
+        file_ext = '.gz'
 
-    for fpath in tqdm(gzpath_list):
+    path_list = list(Path(baseDir().path).glob(f'**/*{file_ext}'))
+
+
+    for fpath in tqdm(path_list):
         size = os.path.getsize(str(fpath)) / 1000000
         if size > 100:  # If size is greater than 100 mbs
             size_dict[str(fpath)] = size
