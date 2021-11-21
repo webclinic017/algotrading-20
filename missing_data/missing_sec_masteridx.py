@@ -25,7 +25,7 @@ def get_missing_sec_master_idx(sma_df=False):
     # sma_df is the master index file of all dates
     if not isinstance(sma_df, pd.DataFrame):
         sma_df = serverAPI('sec_master_all').df
-        sma_df['date'] = pd.to_datetime(sma_df['Date Filed'], unit='ms')
+        sma_df['date'] = pd.to_datetime(sma_df['date'], unit='ms')
 
     bus_days = getDate.get_bus_days(this_year=True)
     dt = getDate.query('iex_eod')
