@@ -31,11 +31,12 @@ except ModuleNotFoundError:
 # %% codecell
 
 
-def get_yf_loop_missing_hist(key='less_than_20', cs=False, refresh_missing_dates=True):
+def get_yf_loop_missing_hist(key='less_than_20', cs=False, sym_list=None, refresh_missing_dates=True):
     """Get less_than_20 syms and call GetYfMissingDates."""
-    sym_list = None
 
-    if cs is False:
+    if sym_list:
+        pass
+    elif cs is False:
         if refresh_missing_dates:
             MissingHistDates()
         bpath = Path(baseDir().path, f"StockEOD/missing_dates/{key}")
