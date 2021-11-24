@@ -40,7 +40,7 @@ def get_sizes(gz=False, parquet=True):
 # %% codecell
 
 
-def get_most_recent_fpath(fpath_dir, dt=None):
+def get_most_recent_fpath(fpath_dir, f_pre=None, dt=None):
     """Get the most recent fpath in a directory."""
     path_to_return = False
     if not dt:  # If no date passed, default to iex_eod
@@ -54,10 +54,16 @@ def get_most_recent_fpath(fpath_dir, dt=None):
                                           f"_{row['date'].date()}.parquet",
                                           axis=1))
     # Iterate through dataframe to find the most recent
-    for index, row in date_list.iterrows():
-        if Path(fpath_dir, row['fpath']).exists():
-            path_to_return = Path(fpath_dir, row['fpath'])
-            return path_to_return
+    if not f_pre:
+        for index, row in date_list.iterrows():
+            if Path(fpath_dir, row['fpath']).exists():
+                path_to_return = Path(fpath_dir, row['fpath'])
+                return path_to_return
+    elif f_pre:
+        for index, row in date_list.iterrows():
+            if Path(fpath_dir, f"{f_pre}{row['fpath']}").exists():
+                path_to_return = Path(fpath_dir, row['fpath'])
+                return path_to_return
 
     if not path_to_return:
         msg_1 = "Directory empty or path doesn't follow format '_dt.parquet'. Returning first path"
