@@ -20,30 +20,35 @@ try:
     from scripts.dev.multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
     from scripts.dev.multiuse.path_helpers import get_most_recent_fpath
     from scripts.dev.missing_data.missing_hist_prices import MissingHistDates
+    from scripts.dev.workbooks.fib_funcs import read_clean_combined_all
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from data_collect.iex_class import urlData
     from multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
     from multiuse.path_helpers import get_most_recent_fpath
     from missing_data.missing_hist_prices import MissingHistDates
+    from workbooks.fib_funcs import read_clean_combined_all
     from api import serverAPI
 
 # %% codecell
 
 
-def get_yf_loop_missing_hist(key='less_than_20', cs=False, sym_list=None, refresh_missing_dates=True):
+def get_yf_loop_missing_hist(key='less_than_20', cs=False, sym_list=None, verb=False, refresh_missing_dates=True):
     """Get less_than_20 syms and call GetYfMissingDates."""
 
     if sym_list:
         pass
-    elif cs is False:
-        if refresh_missing_dates:
-            MissingHistDates()
-        bpath = Path(baseDir().path, f"StockEOD/missing_dates/{key}")
-        fpath = get_most_recent_fpath(bpath)
-        df_dates = pd.read_parquet(fpath)
-        sym_list = df_dates['symbol'].unique().tolist()
-    else:
+        if verb:
+            help_print_arg('get_yf_loop_missing_hist: sym_list assumed')
+    elif key == 'get_ignore_ytd':
+        df_all = read_clean_combined_all()
+        df_2021 = df_all[df_all['date'].dt.year == 2021].copy(deep=True)
+        vc = df_2021.value_counts(subset='symbol', ascending=False)
+        syms_one_miss = vc[(vc < (vc.max() - 1)) & (vc > 0)].index
+        sym_list = syms_one_miss.tolist()
+        if verb:
+            help_print_arg('get_yf_loop_missing_hist: key==get_ignore_ytd : syms_one_miss')
+    elif cs is True:
         if refresh_missing_dates:
             MissingHistDates(cs=True)
         bpath = Path(baseDir().path, "StockEOD/missing_dates/all")
@@ -51,7 +56,17 @@ def get_yf_loop_missing_hist(key='less_than_20', cs=False, sym_list=None, refres
         df_dates = pd.read_parquet(fpath)
         # Get all symbols, reduce to common stock and adr's
         sym_list = df_dates['symbol'].unique().tolist()
-
+        if verb:
+            help_print_arg('get_yf_loop_missing_hist: cs=True')
+    else:
+        if refresh_missing_dates:
+            MissingHistDates()
+        bpath = Path(baseDir().path, f"StockEOD/missing_dates/{key}")
+        fpath = get_most_recent_fpath(bpath)
+        df_dates = pd.read_parquet(fpath)
+        sym_list = df_dates['symbol'].unique().tolist()
+        if verb:
+            help_print_arg('get_yf_loop_missing_hist: sym_list from missing_dates/key')
     for sym in tqdm(sym_list):
         try:
             GetYfMissingDates(sym=sym)
