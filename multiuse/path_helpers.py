@@ -44,7 +44,7 @@ def get_most_recent_fpath(fpath_dir, f_pre=None, f_suf=None, dt=None):
     """Get the most recent fpath in a directory."""
     path_to_return = False
     if not dt:  # If no date passed, default to iex_eod
-        dt = getDate.query('iex_eod')
+        dt = getDate.query('iex_close')
 
     dt_list = getDate.get_bus_days(this_year=True)
     date_list = (dt_list[dt_list['date'].dt.date <= dt]
