@@ -50,29 +50,30 @@ def get_most_recent_fpath(fpath_dir, f_pre=None, f_suf=None, dt=None):
     date_list = (dt_list[dt_list['date'].dt.date <= dt]
                  .sort_values(by=['date'], ascending=False))
 
+
     date_list['fpath'] = (date_list.apply(lambda row:
-                                          f"_{row['date'].date()}.parquet",
+                                          f"_{row['date'].date()}",
                                           axis=1))
     # Iterate through dataframe to find the most recent
     if not f_pre and not f_suf:
         for index, row in date_list.iterrows():
-            if Path(fpath_dir, row['fpath']).exists():
-                path_to_return = Path(fpath_dir, row['fpath'])
+            if Path(fpath_dir, f"{row['fpath']}.parquet").exists():
+                path_to_return = Path(fpath_dir, f"{row['fpath']}.parquet")
                 return path_to_return
     elif f_pre and not f_suf:
         for index, row in date_list.iterrows():
-            if Path(fpath_dir, f"{f_pre}{row['fpath']}").exists():
-                path_to_return = Path(fpath_dir, f"{f_pre}{row['fpath']}")
+            if Path(fpath_dir, f"{f_pre}{row['fpath']}.parquet").exists():
+                path_to_return = Path(fpath_dir, f"{f_pre}{row['fpath']}.parquet")
                 return path_to_return
     elif f_suf and not f_pre:
         for index, row in date_list.iterrows():
-            if Path(fpath_dir, f"{row['fpath']}{f_suf}").exists():
-                path_to_return = Path(fpath_dir, f"{row['fpath']}{f_suf}")
+            if Path(fpath_dir, f"{row['fpath']}{f_suf}.parquet").exists():
+                path_to_return = Path(fpath_dir, f"{row['fpath']}{f_suf}.parquet")
                 return path_to_return
     elif f_pre and f_suf:
         for index, row in date_list.iterrows():
-            if Path(fpath_dir, f"{f_pre}{row['fpath']}{f_suf}").exists():
-                path_to_return = Path(fpath_dir, f"{f_pre}{row['fpath']}{f_suf}")
+            if Path(fpath_dir, f"{f_pre}{row['fpath']}{f_suf}.parquet").exists():
+                path_to_return = Path(fpath_dir, f"{f_pre}{row['fpath']}{f_suf}.parquet")
                 return path_to_return
 
     if not path_to_return:
