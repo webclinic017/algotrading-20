@@ -8,9 +8,9 @@ import string
 import glob
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir
+    from scripts.dev.multiuse.help_class import baseDir, help_print_arg
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir
+    from multiuse.help_class import baseDir, help_print_arg
 
 # %% codecell
 ###############################################
@@ -102,4 +102,4 @@ def makedirs_with_permissions(path):
         os.umask(0)
         os.makedirs(path, mode=0o777)
     else:
-        print('Directory already exists')
+        help_print_arg(f"Directory already exists: {str(path)}")

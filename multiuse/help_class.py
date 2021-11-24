@@ -49,6 +49,10 @@ def write_to_parquet(df, fpath):
     df = dataTypes(df, parquet=True).df
     try:
         df.to_parquet(fpath, allow_truncated_timestamps=True)
+    except FileNotFoundError:
+        if not fpath.parent.exists():
+            fpath.parent.mkdir(mode=0o777, parents=True)
+        write_to_parquet(df, fpath)
     except ValueError as ve:
         help_print_arg(f"Could not convert {str(fpath)} with reason {str(ve)}")
         # If problem validating dataframe, write dataframe to gz
@@ -214,6 +218,23 @@ class getDate():
             dt_return = parse(dt).date()
 
         return dt_return
+
+    @staticmethod
+    def get_hol_list(this_year=True):
+        """Get holiday list."""
+        holidays_fpath = Path(baseDir().path, 'ref_data/holidays.parquet')
+        holidays = pd.read_parquet(holidays_fpath)
+        dt = getDate.query('sec_master')
+        current_holidays = None
+
+        if this_year:
+            current_holidays = (holidays[(holidays['date'].dt.year >= dt.year) &
+                                         (holidays['date'].dt.date <= dt)])
+        else:
+            current_holidays = holidays[holidays['date'].dt.date <= dt]
+
+        hol_list = current_holidays['date'].dt.date.tolist()
+        return hol_list
 
     @staticmethod
     def which_fname_date():
