@@ -112,7 +112,7 @@ class AnalyzeSecRss():
         self.testing, self.sec_df = testing, sec_df
 
         if isinstance(sec_df, pd.DataFrame):
-            latest = False
+            # latest = False
             if 'symbol' in sec_df.columns:
                 self.df = sec_df
                 if testing:
