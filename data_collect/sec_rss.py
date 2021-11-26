@@ -1,7 +1,7 @@
 """Studying SEC RSS Feeds."""
 # %% codecell
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import requests
 import pandas as pd
 
@@ -141,7 +141,9 @@ class AnalyzeSecRss():
 
         if latest:  # Get data from latest rss (10 minutes)
             prev_15 = (datetime.now() - timedelta(minutes=15)).time()
-            sec_df = sec_df[sec_df['dt'].dt.time > prev_15].copy()
+            sec_df = (sec_df[(sec_df['dt'].dt.time > prev_15)
+                      & (sec_df['dt'].dt.date == date.today())]
+                      .copy())
         # Store under class variable
         self.sec_df = sec_df.copy()
 
