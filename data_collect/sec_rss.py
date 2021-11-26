@@ -79,9 +79,15 @@ class SecRssFeed():
         except Exception as e:
             help_print_arg(f"SEC RSS CIK Error: {str(e)}")
 
+        df['dt'] = pd.to_datetime(df['pubDate'])
+        prev_15 = (datetime.now() - timedelta(minutes=60)).time()
+        sec_df = (df[(df['dt'].dt.time > prev_15)
+                  & (df['dt'].dt.date == date.today())]
+                  .copy())
+
         self.df = df.copy()
         try:
-            AnalyzeSecRss(latest=True, sec_df=df)
+            AnalyzeSecRss(latest=True, sec_df=sec_df)
         except Exception as e:
             help_print_arg(f"SecRss: AnalyzeSecRss Error {str(e)}")
 
