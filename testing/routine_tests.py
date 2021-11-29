@@ -77,7 +77,7 @@ class FpathsTest():
         """Check for iex company stats."""
         dt = getDate.query('iex_eod')
         fsuf = f"_{dt}.parquet"
-        path = Path(baseDir().path, 'company_stats/stats/combnined', fsuf)
+        path = Path(baseDir().path, 'company_stats/stats/combined', fsuf)
 
         if path.exists():
             self.sys_dict['IEX company stats'] = True
