@@ -4,6 +4,7 @@
 import os.path
 from datetime import date
 import pandas as pd
+from pathlib import Path
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate
@@ -171,3 +172,15 @@ class FpathsTest():
             self.sys_dict['nasdaq_ssr'] = True
         else:
             self.sys_dict['nasdaq_ssr'] = False
+
+    @classmethod
+    def check_bz_recs(cls, self):
+        """Check for bz analyst recs."""
+        dt = getDate.query('iex_close')
+        fsuf = f"_{dt}.parquet"
+        path = Path(baseDir().path, 'company_stats/analyst_recs', fsuf)
+
+        if path.exists():
+            self.sys_dict['Analyst ratings'] = True
+        else:
+            self.sys_dict['Analyst ratings'] = False
