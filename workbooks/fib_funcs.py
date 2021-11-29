@@ -38,6 +38,8 @@ def read_clean_combined_all(local=False):
         fpath = get_most_recent_fpath(bpath)
         cols_to_read = ['date', 'symbol', 'fOpen', 'fHigh', 'fLow', 'fClose', 'fVolume']
         df_all = pd.read_parquet(fpath, columns=cols_to_read)
+        if df_all['date'].dtype == 'object':
+            df_all['date'] = pd.to_datetime(df_all['date'])
         df_all.drop_duplicates(subset=['symbol', 'date'], inplace=True)
     else:
         all_syms = serverAPI('all_symbols').df

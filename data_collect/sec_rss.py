@@ -108,8 +108,8 @@ class SecRssFeed():
             self.df.to_parquet(path)
 
 
-
 # %% codecell
+
 
 class AnalyzeSecRss():
     """Analyze sec rss feed for stocks already invested."""
