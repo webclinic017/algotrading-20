@@ -38,6 +38,7 @@ class FpathsTest():
         self.check_stocktwits(self)
         self.check_nasdaq(self)
         self.check_bz_recs(self)
+        self.check_yfinance_options(self)
 
     @classmethod
     def get_all_syms(cls, self):
@@ -118,7 +119,7 @@ class FpathsTest():
         cboe_syms_path = f"{cboe_base_path}/cboe/syms_to_explore"
 
         cboe_path_dict = ({
-            'cboe_raw': f"{cboe_base_path}/mmo/_{dt}.parquet",
+            # 'cboe_raw': f"{cboe_base_path}/mmo/_{dt}.parquet",
             'cboe_nopop_2000': f"{cboe_base_path}/cboe/nopop_2000_{dt}.parquet",
             'cboe_long_time': f"{cboe_syms_path}/long_{dt}.parquet",
             'cboe_medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
@@ -127,7 +128,7 @@ class FpathsTest():
         })
 
         cboe_parquet_dict = ({
-            'cboe_raw': f"{cboe_base_path}/mmo/_{dt}.parquet",
+            # 'cboe_raw': f"{cboe_base_path}/mmo/_{dt}.parquet",
             'cboe_nopop_2000': f"{cboe_base_path}/cboe/nopop_2000_{dt}.parquet",
             'cboe_long_time': f"{cboe_syms_path}/long_{dt}.parquet",
             'cboe_medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
@@ -185,3 +186,15 @@ class FpathsTest():
             self.sys_dict['Analyst ratings'] = True
         else:
             self.sys_dict['Analyst ratings'] = False
+
+    @classmethod
+    def check_yfinance_options(cls, self):
+        """Check for combined yfinance options."""
+        dt = getDate.query('iex_eod')
+        fsuf = f"_{dt}.parquet"
+        path = Path(baseDir().path, 'derivatives/end_of_day/combined', fsuf)
+
+        if path.exists():
+            self.sys_dict['Yoptions combined'] = True
+        else:
+            self.sys_dict['Yoptions combined'] = False
