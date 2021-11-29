@@ -37,6 +37,7 @@ class FpathsTest():
         self.check_cboe(self)
         self.check_stocktwits(self)
         self.check_nasdaq(self)
+        self.check_bz_recs(self)
 
     @classmethod
     def get_all_syms(cls, self):
