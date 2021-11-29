@@ -32,6 +32,7 @@ class FpathsTest():
     def __init__(self):
         self.get_all_syms(self)
         self.check_iex_close(self)
+        self.check_iex_stats(self)
         self.check_warrants(self)
         self.check_scans(self)
         self.check_cboe(self)
@@ -70,6 +71,18 @@ class FpathsTest():
         else:
             self.sys_dict['IEX daily stock combined'] = False
             self.sys_dict['IEX close coverage'] = 0
+
+    @classmethod
+    def check_iex_stats(cls, self):
+        """Check for iex company stats."""
+        dt = getDate.query('iex_eod')
+        fsuf = f"_{dt}.parquet"
+        path = Path(baseDir().path, 'company_stats/stats/combnined', fsuf)
+
+        if path.exists():
+            self.sys_dict['IEX company stats'] = True
+        else:
+            self.sys_dict['IEX company stats'] = False
 
     @classmethod
     def check_warrants(cls, self):
