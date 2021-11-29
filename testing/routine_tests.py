@@ -57,19 +57,19 @@ class FpathsTest():
         iex_close_fpath = f"{self.base_dir}/iex_eod_quotes/combined/_{dt}.parquet"
 
         if os.path.isfile(iex_close_fpath):
-            self.sys_dict['iex_close_combined'] = True
+            self.sys_dict['IEX daily stock data'] = True
             iex_close = pd.read_parquet(iex_close_fpath)
             iex_close_over = (iex_close[iex_close['symbol']
                               .isin(self.sym_list)]
                               .shape[0])
             iex_cov = round((iex_close_over / len(self.sym_list)) * 100, 2)
 
-            self.sys_dict['iex_close_combined'] = True
-            self.sys_dict['iex_close_cov'] = iex_cov
+            self.sys_dict['IEX daily stock combined'] = True
+            self.sys_dict['IEX close coverage'] = iex_cov
 
         else:
-            self.sys_dict['iex_close_combined'] = False
-            self.sys_dict['iex_close_cov'] = 0
+            self.sys_dict['IEX daily stock combined'] = False
+            self.sys_dict['IEX close coverage'] = 0
 
     @classmethod
     def check_warrants(cls, self):
@@ -78,12 +78,12 @@ class FpathsTest():
         dt = getDate.query('iex_eod')
 
         wt_path_dict = ({
-            'cheapest': f"{wt_path_base}/cheapest/_{dt}.parquet",
-            'newest': f"{wt_path_base}/newest/_{dt}.parquet",
-            'top_perf': f"{wt_path_base}/top_perf/_{dt}.parquet",
-            'worst_perf': f"{wt_path_base}/worst_perf/_{dt}.parquet",
-            'all': f"{wt_path_base}/all/_{dt}.parquet",
-            'all_hist': f"{wt_path_base}/all_hist/_{dt}.parquet"
+            'Warrants: cheapest': f"{wt_path_base}/cheapest/_{dt}.parquet",
+            'Warrants: newest': f"{wt_path_base}/newest/_{dt}.parquet",
+            'Warrants: top perf ytd': f"{wt_path_base}/top_perf/_{dt}.parquet",
+            'Warrants: worst perf ytd': f"{wt_path_base}/worst_perf/_{dt}.parquet",
+            'Warrants: all': f"{wt_path_base}/all/_{dt}.parquet",
+            'Warrants: all historical': f"{wt_path_base}/all_hist/_{dt}.parquet"
         })
 
         for key in wt_path_dict.keys():
@@ -107,9 +107,9 @@ class FpathsTest():
         for keys in scans_path_dict.keys():
             for key in scans_path_dict[keys].keys():
                 if os.path.isfile(scans_path_dict[keys][key]):
-                    self.sys_dict[f"scans_{keys}_{key}"] = True
+                    self.sys_dict[f"Scans: {keys}_{key}"] = True
                 else:
-                    self.sys_dict[f"scans_{keys}_{key}"] = False
+                    self.sys_dict[f"Scans: {keys}_{key}"] = False
 
     @classmethod
     def check_cboe(cls, self):
@@ -120,19 +120,19 @@ class FpathsTest():
 
         cboe_path_dict = ({
             # 'cboe_raw': f"{cboe_base_path}/mmo/_{dt}.parquet",
-            'cboe_nopop_2000': f"{cboe_base_path}/cboe/nopop_2000_{dt}.parquet",
-            'cboe_long_time': f"{cboe_syms_path}/long_{dt}.parquet",
-            'cboe_medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
-            'cboe_short_time': f"{cboe_syms_path}/short_{dt}.parquet"
+            'CBOE nopop_2000': f"{cboe_base_path}/cboe/nopop_2000_{dt}.parquet",
+            'CBOE long_time': f"{cboe_syms_path}/long_{dt}.parquet",
+            'CBOE medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
+            'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet"
 
         })
 
         cboe_parquet_dict = ({
             # 'cboe_raw': f"{cboe_base_path}/mmo/_{dt}.parquet",
-            'cboe_nopop_2000': f"{cboe_base_path}/cboe/nopop_2000_{dt}.parquet",
-            'cboe_long_time': f"{cboe_syms_path}/long_{dt}.parquet",
-            'cboe_medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
-            'cboe_short_time': f"{cboe_syms_path}/short_{dt}.parquet"
+            'CBOE nopop_2000': f"{cboe_base_path}/cboe/nopop_2000_{dt}.parquet",
+            'CBOE long_time': f"{cboe_syms_path}/long_{dt}.parquet",
+            'CBOE medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
+            'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet"
 
         })
 
@@ -152,8 +152,8 @@ class FpathsTest():
         st_base = f"{self.base_dir}/stocktwits"
 
         st_path_dict = ({
-            'st_trending': f"{st_base}/trending/{dt}.parquet",
-            'st_my_watchlist': f"{st_base}/me/_watch_{dt}.parquet"
+            'Stocktwits: trending': f"{st_base}/trending/{dt}.parquet",
+            'Stocktwits: my watchlist': f"{st_base}/me/_watch_{dt}.parquet"
 
         })
 
@@ -171,9 +171,9 @@ class FpathsTest():
         self.ssr_list = fpath
 
         if os.path.isfile(fpath):
-            self.sys_dict['nasdaq_ssr'] = True
+            self.sys_dict['Nasdaq: daily SSR list'] = True
         else:
-            self.sys_dict['nasdaq_ssr'] = False
+            self.sys_dict['Nasdaq: daily SSR list'] = False
 
     @classmethod
     def check_bz_recs(cls, self):
