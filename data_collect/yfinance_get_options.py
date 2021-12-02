@@ -87,6 +87,11 @@ def yahoo_options(sym, proxy=False, n=False, temp=True):
 
     except Exception as e:
         # error_list.append(sym)
+        chain = ticker.option_chain()
+        df_calls = chain.calls
+        df_puts = chain.puts
+        df_list.append(df_calls)
+        df_list.append(df_puts)
         help_print_arg(str(e))
 
     try:
