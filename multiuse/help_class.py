@@ -47,9 +47,6 @@ def help_print_arg(arg):
 
 def write_to_parquet(df, fpath):
     """Writing to parquet with error exceptions."""
-    if isinstance(df, dd.DataFrame):
-        df = df.compute()
-
     df = dataTypes(df, parquet=True).df
     try:
         df.to_parquet(fpath, allow_truncated_timestamps=True)
