@@ -53,6 +53,8 @@ def write_to_parquet(df, fpath):
         if not fpath.parent.exists():
             fpath.parent.mkdir(mode=0o777, parents=True)
         write_to_parquet(df, fpath)
+    except TypeError:  # For dask use cases
+        df.to_parquet(fpath)
     except ValueError as ve:
         help_print_arg(f"Could not convert {str(fpath)} with reason {str(ve)}")
         # If problem validating dataframe, write dataframe to gz
