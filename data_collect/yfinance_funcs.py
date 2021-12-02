@@ -8,9 +8,11 @@ import pandas as pd
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, write_to_parquet
+    from scripts.dev.multiuse.path_helpers import get_most_recent_fpath
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, write_to_parquet
+    from multiuse.path_helpers import get_most_recent_fpath
     from api import serverAPI
 
 # %% codecell
@@ -34,9 +36,8 @@ def yoptions_combine_last(all=False):
         df_today.drop_duplicates(subset=['contractSymbol'], inplace=True)
 
         path = Path(baseDir().path, 'derivatives/end_of_day/combined', path_suf)
+        write_to_parquet(df_today, path)
 
-        df_today = dataTypes(df_today, parquet=True).df
-        df_today.to_parquet(path)
     elif all:  # Combine all data to combined_all directory
         df_all.drop_duplicates(subset=['contractSymbol', 'date'], inplace=True)
         path = Path(baseDir().path, 'derivatives/end_of_day/combined_all', path_suf)
@@ -93,19 +94,9 @@ def return_yoptions_temp_all():
 def get_cboe_ref(ymaster=False):
     """Get cboe reference data for use on yfinance."""
     df = None
-    path_suf = f"symref_{getDate.query('cboe')}.parquet"
-    path = Path(baseDir().path, 'derivatives/cboe_symref', path_suf)
-    if path.is_file():
-        df = pd.read_parquet(path)
-    else:
-        url_p1 = 'https://www.cboe.com/us/options/market_statistics/'
-        url_p2 = 'symbol_reference/?mkt=cone&listed=1&unit=1&closing=1'
-        url = f"{url_p1}{url_p2}"
-        get = requests.get(url)
-
-        df = pd.read_csv(BytesIO(get.content), low_memory=False)
-        df.to_parquet(path)
-
+    path = Path(baseDir().path, 'derivatives/cboe_symref')
+    fpath = get_most_recent_fpath(path, f_pre='symref')
+    df = pd.read_parquet(fpath)
     # cols_to_drop = ['Cboe Symbol', 'Closing Only']
     df = df.rename(columns={'Underlying': 'symbol'})
     # .drop(columns=cols_to_drop))
