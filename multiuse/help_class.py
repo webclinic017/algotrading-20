@@ -45,6 +45,11 @@ def help_print_arg(arg):
         pass
 
 
+def check_nan(a, b=np.NaN):
+    """Check nans."""
+    return (a == b) | ((a != a) & (b != b))
+
+
 def write_to_parquet(df, fpath):
     """Writing to parquet with error exceptions."""
     df = dataTypes(df, parquet=True).df

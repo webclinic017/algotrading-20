@@ -27,6 +27,49 @@ except ModuleNotFoundError:
 # %% codecell
 
 
+def get_nasdaq_symbol_changes():
+    """Get symbol change history from nasdaq."""
+    sym_change_url = 'https://api.nasdaq.com/api/quote/list-type-extended/symbolchangehistory'
+
+    nasdaq_headers = ({
+        'Host': 'api.nasdaq.com',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:94.0) Gecko/20100101 Firefox/94.0',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Origin': 'https://www.nasdaq.com',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Referer': 'https://www.nasdaq.com/',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
+        'Sec-GPC': '1',
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-cache'
+    })
+
+    get = requests.get(sym_change_url, headers=nasdaq_headers)
+
+    df_sym_change = None
+    if get.status_code == 200:
+        df_sym_change = (pd.DataFrame(get.json()['data']
+                         ['symbolChangeHistoryTable']['rows']))
+    else:
+        msg1 = 'get_nasdaq_symbol_changes failed with url'
+        msg2 = f"and status code {str(get.status_code)}"
+        help_print_arg(f"{msg1} {sym_change_url} {msg2}")
+
+    dt = getDate.query('iex_close')
+    path = (Path(baseDir().path, 'ref_data/symbol_ref/symbol_changes',
+                 f'_{dt}.parquet'))
+
+    if isinstance(df_sym_change, pd.DataFrame):
+        write_to_parquet(df_sym_change, path)
+    else:
+        raise Exception
+
+
 class nasdaqShort():
     """Get daily circut breaker short data."""
 
