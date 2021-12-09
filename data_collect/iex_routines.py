@@ -7,6 +7,7 @@ import os
 import os.path
 from pathlib import Path
 from time import sleep
+from tqdm import tqdm
 
 # import json
 from json import JSONDecodeError
@@ -29,14 +30,11 @@ from datetime import date, timedelta, time
 try:
     from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, local_dates, help_print_arg, write_to_parquet
     from scripts.dev.data_collect.iex_class import readData, urlData
+    from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, help_print_arg, write_to_parquet
     from data_collect.iex_class import readData, urlData
-
-# Display max 50 columns
-pd.set_option('display.max_columns', None)
-# Display maximum rows
-pd.set_option('display.max_rows', 500)
+    from api import serverAPI
 
 # %% codecell
 ##############################################
@@ -55,6 +53,24 @@ def otc_ref_data():
     fpath = f"{baseDir().path}/tickers/otc_syms.parquet"
     # Write otc symbols to local gzip file
     write_to_parquet(otc_syms_df, fpath)
+
+
+def get_company_meta_data():
+    """Get company meta data, save locally, from IEX."""
+    all_symbols = serverAPI('all_symbols').df
+    all_cs = all_symbols[all_symbols['type'].isin(['cs', 'ad'])]
+    sym_list = all_cs['symbol'].unique().tolist()
+
+    bpath = Path(baseDir().path, 'company_stats/meta')
+
+    for sym in tqdm(sym_list):
+        try:
+            ud = urlData(f"/stock/{sym}/company")
+            fpath_suf = f"{sym.lower()[0]}/_{sym}.parquet"
+            fpath = bpath.joinpath(fpath_suf)
+            write_to_parquet(ud.df, fpath)
+        except Exception as e:
+            print(f"Company meta stats error: {type(e)} {str(e)}")
 
 
 class dailySymbols():
