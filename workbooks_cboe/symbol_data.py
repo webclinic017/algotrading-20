@@ -1,7 +1,7 @@
 """Analyzing cboe symbol options data."""
 # %% codecell
 from pathlib import Path
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 import requests
 import pandas as pd
@@ -10,27 +10,101 @@ import numpy as np
 from io import BytesIO
 
 try:
-    from scripts.dev.multiuse.help_class import getDate
+    from scripts.dev.multiuse.help_class import getDate, baseDir, write_to_parquet
+    from scripts.dev.multiuse.create_file_struct import makedirs_with_permissions
+    from scripts.dev.data_collect.cboe_intraday import CboeIntraday
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
-    from multiuse.help_class import getDate
+    from multiuse.help_class import getDate, baseDir, write_to_parquet
+    from multiuse.create_file_struct import makedirs_with_permissions
+    from data_collect.cboe_intraday import CboeIntraday
     from api import serverAPI
 
 # %% codecell
+from missing_data.get_missing_hist_from_yf import get_yf_loop_missing_hist
 
+sym_list = ['GENI']
+get_yf_loop_missing_hist(sym_list=sym_list)
+# %% codecell
+# I'd like 2 dataframes:
+# One with the data updated every 10 minutes that I can
+# clean later on
+# Another with the raw timestamps that
+# I'll have to sort through later on
+from multiuse.path_helpers import get_most_recent_fpath
 
-url = 'https://www.cboe.com/us/options/market_statistics/symbol_data/csv/?mkt=cone'
-get = requests.get(url)
-
-df = None
-try:
-    df = pd.read_csv(BytesIO(get.content))
-    df.columns = [col.lower() for col in df.columns]
-except Exception as e:
-    print(e)
+dt = getDate.query('iex_close')
+bpath = Path(baseDir().path, 'derivatives/cboe_intraday/2021')
+fpath = get_most_recent_fpath(bpath, f_suf='_eod', dt=dt)
 
 # %% codecell
-df.head()
+from workbooks.fib_funcs import read_clean_combined_all
+df_all = read_clean_combined_all()
+
+# Eagles golf club
+
+# path_eod won't have the timestamps
+# %% codecell
+
+
+# %% codecell
+sapi_eod = serverAPI('cboe_intraday_eod')
+df_cboe = sapi_eod.df
+cols_to_rename = ({'Symbol': 'symbol', 'Call/Put': 'side',
+                   'Expiration': 'expirationDate',
+                   'Strike Price': 'strike'})
+df_cboe.rename(columns=cols_to_rename, inplace=True)
+df_cboe['symbol'] = df_cboe['symbol'].astype('category')
+
+# %% codecell
+sapi = serverAPI('yoptions_daily')
+df = sapi.df
+# %% codecell
+df_last = (df[df['lastTradeDate'].dt.date == df['lastTradeDate'].dt.date.max()]
+           .reset_index().copy())
+df_last.drop(columns=['side', 'strike', 'expDate'], inplace=True)
+
+cboe_symref = serverAPI('cboe_symref').df
+cboe_symref['OSI Symbol'] = cboe_symref['OSI Symbol'].str.replace(' ', '')
+cboe_symref = cboe_symref[['OSI Symbol', 'side', 'strike', 'expirationDate']]
+df_merged = (pd.merge(df_last, cboe_symref, left_on='contractSymbol',
+                      right_on='OSI Symbol', how='left'))
+df_merged.drop_duplicates(inplace=True)
+df_merged['expirationDate'] = (pd.to_datetime(df_merged['expirationDate'],
+                                              format='%y%m%d'))
+df_merged['strike'] = df_merged['strike'].astype(np.float32)
+
+df_syms = serverAPI('all_symbols').df
+df_cs = df_syms[df_syms['type'].isin(['cs', 'ad'])]
+cs_list = df_cs['symbol'].tolist()
+
+on = ['symbol', 'side', 'expirationDate', 'strike']
+df_comb = pd.merge(df_merged, df_cboe, on=on)
+df_comb.insert(1, 'rout/vol', df_comb['Routed'].div(df_comb['Volume']).round(2))
+(df_comb.insert(1, 'vol/oi', df_comb['Volume'].div(df_comb['openInterest']
+        .replace(0, 1), fill_value=0)
+        .round(2)))
+# %% codecell
+
+
+cols_to_drop = ['OSI Symbol', 'contractSymbol', 'lastTradeDate']
+col_order = (['symbol', 'vol/oi', 'rout/vol', 'side', 'strike',
+              'expirationDate', 'volume', 'Volume', 'openInterest',
+              'lastPrice', 'inTheMoney', 'impliedVolatility'])
+# Conditions
+conds = (df_comb['symbol'].isin(cs_list)) & (df_comb['openInterest'] > 1)
+df_comb.loc[conds].drop(columns=cols_to_drop)[col_order].sort_values(by=['vol/oi'], ascending=False).head(25)
+df_comb.columns
+
+
+# %% codecell
+
+
+df_last.head()
+
+# %% codecell
+
+# From 9:31 until market close
 
 # Cool, so there are 2,976 different unique symbols on a friday
 # I wonder what the cutoff is for this. I can probably request every 10 minutes

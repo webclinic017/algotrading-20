@@ -1,6 +1,20 @@
 """Analyze IEX End of Day Quotes."""
 # %% codecell
 ##################################
+import matplotlib.pyplot as plt
+from datetime import datetime
+from io import StringIO
+import gzip
+from data_collect.nasdaq_class import nasdaqShort
+from multiuse.create_file_struct import make_hist_prices_dir
+from charting.plt_standard import plot_cols
+from master_funcs.master_hist_prices import SplitGetHistPrices
+from data_collect.hist_prices import HistPricesV2
+from data_collect.iex_routines import iexClose, histPrices
+from data_collect.iex_class import readData, urlData
+from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, RecordHolidays
+from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, df_create_bins, RecordHolidays, check_size
+from studies.moving_averages import movingAverages
 import requests
 import pandas as pd
 import numpy as np
@@ -13,33 +27,22 @@ from dotenv import load_dotenv
 from json import JSONDecodeError
 from datetime import date
 import json
+from tqdm import tqdm
+from pathlib import Path
 
 from api import serverAPI
 importlib.reload(sys.modules['api'])
-from api import serverAPI
 
-from studies.moving_averages import movingAverages
 importlib.reload(sys.modules['studies.moving_averages'])
-from studies.moving_averages import movingAverages
 
-from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, df_create_bins, RecordHolidays, check_size
 importlib.reload(sys.modules['multiuse.help_class'])
-from multiuse.help_class import baseDir, dataTypes, getDate, local_dates, RecordHolidays
 
-from data_collect.iex_class import readData, urlData
-from data_collect.iex_routines import iexClose, histPrices
 
-from data_collect.hist_prices import HistPricesV2
 importlib.reload(sys.modules['data_collect.hist_prices'])
-from data_collect.hist_prices import HistPricesV2
 
-from master_funcs.master_hist_prices import SplitGetHistPrices
 
-from charting.plt_standard import plot_cols
 importlib.reload(sys.modules['charting.plt_standard'])
-from charting.plt_standard import plot_cols
 
-from multiuse.create_file_struct import make_hist_prices_dir
 
 # Display max 50 columns
 pd.set_option('display.max_columns', 100)
@@ -56,141 +59,18 @@ url1 = "https://fsapps.fiscal.treasury.gov/dts/files/21091000.txt"
 # %% codecell
 ##################################
 
-test_path = "/Users/unknown1/Algo/data/historical/2021/a/_A.parquet"
-df_A = pd.read_parquet(test_path)
 
-all_syms['symbol'].iloc[0]
+# %% codecell
+##################################
 
-result = get_all_max_hist()
-result
-
-fpath_base = f"{baseDir().path}/historical/2021/*/**.parquet"
-globs = glob.glob(fpath_base)
-sym_list = [path.split('_') for path in globs]
-sym_list = [path.split('.')[0] for path in sym_list]
-
-all_syms = serverAPI('all_symbols').df
-all_cs = all_syms[all_syms['type'] == 'cs']['symbol'].tolist()
-
-syms_needed = list(set(all_cs) - set(sym_list))
-len(syms_needed)
-
-from pathlib import Path
-sf_fpath = Path('../../algo_jansen/data/single_factor_syms.parquet')
-sf_fpath.resolve()
-sf_syms = pd.read_parquet(sf_fpath)
-sf_syms.head()
-
-hs_fpath = Path('../data/historical/2021')
-hs_fpath.resolve()
-hs_fpaths = list(hs_fpath.glob('**/*.parquet'))
-hs_list = [str(path).split('_')[1].split('.')[0] for path in hs_fpaths]
-
-syms_needed = list(set(sf_syms['symbols'].tolist()) - set(hs_list))
-len(syms_needed)
-# Now what I'd like to do is get historical data for all stocks and store them in this folder
-
-result = get_max_hist(syms_needed)
-result.keys()
-result['hist_errors_dict']
-
-def get_max_hist(sym_list):
-    load_dotenv()
-    base_url = os.environ.get("base_url")
-    base_path = f"{baseDir().path}/historical/2021"
-    true, false = True, False
-    payload = {'token': os.environ.get("iex_publish_api"), 'chartByDay': true}
-
-    hist_list = []
-    hists_checked = []
-    hist_errors_dict = {}
-    hist_errors = []
-
-    for sym in sym_list:
-        fpath = f"{base_path}/{sym[0].lower()}/_{sym}.parquet"
-        if not os.path.exists(fpath):
-
-            url = f"{base_url}/stock/{sym}/chart/max"
-            # payload = {'token': os.environ.get("iex_publish_api"), 'chartByDay': true}
-            get = requests.get(url, params=payload)
-
-            try:
-                df = pd.DataFrame(get.json())
-                # hist_dict[sym] = df
-                hist_list.append(sym)
-                df.to_parquet(fpath)
-            except Exception as e:
-                print(e)
-                hist_errors_dict[sym] = e
-                hist_errors.append(sym)
-        else:
-            hists_checked.append(sym)
-
-    result = ({'hist_list': hist_list, 'hists_checked': hists_checked,
-               'hist_errors_dict': hist_errors_dict, 'hist_errors': hist_errors})
-
-    return result
-
-
-
-def get_all_max_hist():
-    load_dotenv()
-    base_url = os.environ.get("base_url")
-    base_path = f"{baseDir().path}/historical/2021"
-    true, false = True, False
-    payload = {'token': os.environ.get("iex_publish_api"), 'chartByDay': true}
-
-    all_symbols = serverAPI('all_symbols').df
-    # all_syms = all_symbols[all_symbols['type'].isin(['cs', 'et'])]
-
-    all_syms = all_symbols[all_symbols['type'].isin(['cs'])]
-
-    hist_dict = {}
-    hist_list = []
-    hists_checked = []
-    hist_errors_dict = {}
-    hist_errors = []
-
-    sym_list = all_syms['symbol'].tolist()
-
-
-    for sym in sym_list:
-        # sym = 'TWTR'
-        fpath = f"{base_path}/{sym[0].lower()}/_{sym}.parquet"
-
-        if not os.path.exists(fpath):
-
-            url = f"{base_url}/stock/{sym}/chart/max"
-            # payload = {'token': os.environ.get("iex_publish_api"), 'chartByDay': true}
-            get = requests.get(url, params=payload)
-
-            try:
-                df = pd.DataFrame(get.json())
-                # hist_dict[sym] = df
-                hist_list.append(sym)
-                df.to_parquet(fpath)
-            except Exception as e:
-                print(e)
-                hist_errors_dict[sym] = e
-                hist_errors.append(sym)
-        else:
-            hists_checked.append(sym)
-        # break
-
-    result = ({'hist_dict': hist_dict, 'hist_list': hist_list, 'hists_checked': hists_checked,
-               'hist_errors_dict': hist_errors_dict, 'hist_errors': hist_errors})
-
-    return result
-
-
-df.head(10)
-df = pd.read_json(get_json)
+serverAPI('redo', val='create_sec_rss_hist')
 
 # %% codecell
 ##################################
 
 fpath = "/Users/unknown1/Algo/data/iex_eod_quotes/combined/_2021_all_2021-07-16.gz"
 df = pd.read_json(fpath, compression='gzip')
+
 
 #df = pd.read_csv(fpath, compression='gzip')
 
@@ -201,16 +81,25 @@ cols_to_keep = (['symbol', 'open', 'close', 'high', 'highTime', 'low',
                  'change', 'changePercent', 'volume', 'avgTotalVolume',
                  'marketCap', 'peRatio', 'week52High', 'week52Low',
                  'ytdChange'])
+p_fpath = "/Users/unknown1/Algo/data/iex_eod_quotes/combined/_2021_all_2021-07-16.parquet"
+df = dataTypes(df).df
 
-df = dataTypes(df).df.copy(deep=True)
+cols_f16 = df.select_dtypes(include=[np.float16]).columns.tolist()
+df[cols_f16] = df[cols_f16].astype(np.float32)
+
+df.to_parquet(p_fpath)
+df = pd.read_parquet(p_fpath)
+
+df.info()
+
 df_sub = df[cols_to_keep].copy(deep=True)
-df_sub.shape
+df_sub.drop(columns=['peRatio'], inplace=True)
+df_sub = df_sub.dropna()
 
-fpath = f"{baseDir().path}/iex_eod_quotes/subsets/_2021_all_2021-07-16.gz"
-df_sub.to_json(fpath, compression='gzip')
-df_sub = pd.read_json(fpath, compression='gzip')
-df_sub = dataTypes(df_sub).df.copy(deep=True)
-df = df_sub.copy(deep=True)
+df_sub.shape
+df_sub['symbol'].value_counts().head(50)
+df_sub.dropna().info()
+
 
 # I'd like to see the SEC master index for all of the top performers
 
@@ -245,12 +134,15 @@ url = f"https://algotrading.ventures/api/v1/prices/combined/{val}"
 get = requests.get(url).json()
 df = pd.DataFrame(get)
 df = dataTypes(df).df.copy(deep=True)
-cols = ['symbol', 'close', 'change', 'changePercent', 'volume', 'avgTotalVolume', 'today/avg_vol']
+cols = ['symbol', 'close', 'change', 'changePercent',
+        'volume', 'avgTotalVolume', 'today/avg_vol']
 
 
 # df['avgTotalVolume'] = df['avgTotalVolume'].where(df['avgTotalVolume'] != 0, 1)
-df_sub = df[(df['avgTotalVolume'] > 100) & (df['changePercent'] > .05)].copy(deep=True)
-df_sub['today/avg_vol'] = ((df_sub['volume'] / df_sub['avgTotalVolume']).round(1) * 100)
+df_sub = df[(df['avgTotalVolume'] > 100) & (
+    df['changePercent'] > .05)].copy(deep=True)
+df_sub['today/avg_vol'] = ((df_sub['volume']
+                           / df_sub['avgTotalVolume']).round(1) * 100)
 df_sub.sort_values(by=['today/avg_vol'], ascending=False).head(50)[cols]
 df['volume'].head(1)
 
@@ -260,29 +152,31 @@ aapl_ma = movingAverages(aapl).df
 
 # %% codecell
 ##################################
-import requests
-import gzip
-import pandas as pd
-import json
-from io import StringIO
 
 url = 'https://algotrading.ventures/api/v1/prices/eod/test'
 get = requests.get(url)
 # gzip_decom = gzip.decompress(get.content)
 df = pd.read_json(gzip.decompress(get.content))
-df = dataTypes(df).df
 
+
+df = dataTypes(df).df
+df = dataTypes(df, parquet=True).df
 
 # Get CIKS to map up with sec_master list
 all_syms = serverAPI('all_symbols').df
 all_syms.head(1)
 
-cols_to_include = ['symbol', 'latestTime', 'close', 'change', 'changePercent', 'volume', 'avgTotalVolume', 'today/avg_vol']
-df_sub = df[(df['avgTotalVolume'] > 100) & (df['changePercent'] > .05)].copy(deep=True)
-df_sub['latestTime'] = pd.to_datetime(df_sub['latestUpdate'], unit='ms').dt.date
-df_sub['today/avg_vol'] = ((df_sub['volume'] / df_sub['avgTotalVolume']).round(1) * 100)
+cols_to_include = ['symbol', 'latestTime', 'close', 'change',
+                   'changePercent', 'volume', 'avgTotalVolume', 'today/avg_vol']
+df_sub = df[(df['avgTotalVolume'] > 100) & (
+    df['changePercent'] > .05)].copy(deep=True)
+df_sub['latestTime'] = pd.to_datetime(
+    df_sub['latestUpdate'], unit='ms').dt.date
+df_sub['today/avg_vol'] = ((df_sub['volume']
+                           / df_sub['avgTotalVolume']).round(1) * 100)
 
-df_syms_to_check = all_syms[all_syms['symbol'].isin(df_sub_to_check['symbol'].tolist())]
+df_syms_to_check = all_syms[all_syms['symbol'].isin(
+    df_sub_to_check['symbol'].tolist())]
 df_syms_to_check = dataTypes(df_syms_to_check).df.copy(deep=True)
 df_syms_to_check['cik'] = df_syms_to_check['cik'].astype(np.uint32)
 df_syms = df_syms_to_check[['symbol', 'cik']].copy(deep=True)
@@ -294,14 +188,13 @@ sec_syms = pd.merge(df_syms, sec_master, on='CIK')
 
 # MEDS - director buys shares that are reported on the 4th. Huge jump on the 10th, volume on the 9th of June
 
-from datetime import datetime
 
 sec_syms[sec_syms['symbol'] == 'MEDS'].sort_values(by='date')
 
 
-df_sub_to_check = df_sub.sort_values(by=['today/avg_vol'], ascending=False).head(100)[cols_to_include]
+df_sub_to_check = df_sub.sort_values(
+    by=['today/avg_vol'], ascending=False).head(100)[cols_to_include]
 df_sub_to_check
-
 
 
 """
@@ -316,8 +209,6 @@ df = pd.read_csv(StringIO(gzip_com))
 ##################################
 
 
-
-
 df_ohlc = plot_cols(aapl_ma, vol=True, candle=True, moving_averages='cma')
 
 # %% codecell
@@ -329,15 +220,12 @@ get = requests.get(url_all)
 get.status_code
 
 
-
 iex_eod_all = serverAPI('iex_quotes_raw').df
 
 
 all_syms = serverAPI('all_symbols').df
 
 # Great so what I want to do here is get the last 5 days of data.
-
-
 
 
 # %% codecell
@@ -347,11 +235,10 @@ def get_this_year_bus_days():
     """Get a list of all of this years business days."""
     bus_days = getDate.get_bus_days()
     dt_today = date.today()
-    bus_days = (bus_days[(bus_days['date'].dt.year == dt_today.year) &
-                         (bus_days['date'].dt.dayofyear <
-                          dt_today.timetuple().tm_yday)])
+    bus_days = (bus_days[(bus_days['date'].dt.year == dt_today.year)
+                         & (bus_days['date'].dt.dayofyear <
+                            dt_today.timetuple().tm_yday)])
     return bus_days
-
 
 
 # Start of a fibonacci retracement opportunity.
@@ -362,7 +249,6 @@ def get_this_year_bus_days():
 
 # Look for overlap in social sentiment. One way to start doing this is to
 # Get all the stocktwits data, then the all symbols data, and map up the CIKs for the underlying SPACs.
-
 
 all_syms = serverAPI('all_symbols').df.copy(deep=True)
 all_syms = dataTypes(all_syms, resolve_floats=True).df.copy(deep=True)
@@ -392,11 +278,10 @@ deriv_list = ['wt', 'ut']
 
 all_derivs = all_syms[all_syms['type'].isin(deriv_list)]
 
-all_cs_wts = (all_syms[(all_syms['cik'].isin(all_derivs['cik'].tolist())) &
-                       (all_syms['type'] == 'cs')])
+all_cs_wts = (all_syms[(all_syms['cik'].isin(all_derivs['cik'].tolist()))
+                       & (all_syms['type'] == 'cs')])
 
 all_cs_syms = all_cs_wts['symbol'].tolist()
-
 
 
 all_st = serverAPI('st_trend_all')
@@ -407,7 +292,8 @@ all_st_df = dataTypes(all_st.df).df
 all_st_df.dropna(subset=['watchlist_count'], inplace=True)
 all_st_df.reset_index(drop=True, inplace=True)
 
-all_comb = all_st_df[all_st_df['symbol'].isin(all_cs_syms)].reset_index(drop=True)
+all_comb = all_st_df[all_st_df['symbol'].isin(
+    all_cs_syms)].reset_index(drop=True)
 
 df_counts = pd.DataFrame(all_comb['symbol'].value_counts() > 1).reset_index()
 df_counts = df_counts[df_counts['symbol'] == True].copy(deep=True)
@@ -417,7 +303,8 @@ all_ocgn = all_st_df[all_st_df['symbol'] == 'OCGN'].copy(deep=True)
 all_ocgn['timestamp'] = pd.to_datetime(all_ocgn['timestamp'], unit='ms')
 all_ocgn['date'] = all_ocgn['timestamp'].dt.date
 
-all_ocgn_by_day = all_ocgn.groupby(by='date').count().reset_index()[['date', 'id']].rename(columns={'id': 'count'})
+all_ocgn_by_day = all_ocgn.groupby(by='date').count().reset_index()[
+                                   ['date', 'id']].rename(columns={'id': 'count'})
 
 url = "https://algotrading.ventures/api/v1/symbols/data/OCGN"
 sym = requests.get(url).json()
@@ -425,7 +312,6 @@ ocgn_hist = pd.read_json(sym['iex_hist'])
 all_ocgn_by_day['date'] = pd.to_datetime(all_ocgn_by_day['date'])
 ocgn_sub = pd.merge(ocgn_hist, all_ocgn_by_day, on='date').copy(deep=True)
 ocgn_sub.set_index(keys='date', inplace=True)
-import matplotlib.pyplot as plt
 %matplotlib inline
 
 # %% codecell
@@ -440,7 +326,6 @@ plt.legend()
 all_ocgn.plot(x='date', '')
 
 all_ocgn['date'].min()
-
 
 
 all_st_df_cols = {'id': np.uint16, 'symbol': 'category', 'watchlist_count': np.uint32, 'timestamp': }
@@ -458,6 +343,13 @@ all_st_df.head(10)
 78,823,600
 """
 
+# %% codecell
+
+serverAPI('redo', val='make_yoptions_file_struct')
+# %% codecell
+cboe = serverAPI('redo', val='cboe_close')
+# %% codecell
+
 serverAPI('redo', val='combine_daily_stock_eod')
 
 serverAPI('redo', val='combine_apca_stock_eod')
@@ -469,6 +361,7 @@ serverAPI('redo', val='split_iex_hist')
 serverAPI('redo', val='daily_symbols')
 
 serverAPI('redo', val='iex_close')
+serverAPI('redo', val='iex_close_otc')
 
 serverAPI('redo', val='check_size')
 
@@ -535,12 +428,10 @@ times_need = bd_range[~bd_range.isin(df['date'])]
 dts_need = [bd.date().strftime('%Y%m%d') for bd in times_need]
 
 
-
 # %% codecell
 ##################################
 
 all_syms['type'].value_counts()
-
 
 
 # %% codecell
@@ -555,7 +446,8 @@ all_syms = serverAPI('all_symbols').df
 all_wts = all_syms[all_syms['type'] == 'wt'].copy(deep=True)
 cik_list = all_wts['cik'].tolist()
 
-all_cs_wt = all_syms[(all_syms['cik'].isin(cik_list)) & (all_syms['type'] != 'wt')].copy(deep=True)
+all_cs_wt = all_syms[(all_syms['cik'].isin(cik_list))
+                     & (all_syms['type'] != 'wt')].copy(deep=True)
 all_cs_wt.shape[0]
 all_cs_wt['type'].shape[0]
 all_cs_wt_na = all_cs_wt[all_cs_wt['type'].isna()]
@@ -568,7 +460,6 @@ all_cs_wt[all_cs_wt['type'] == 'ps']['name']
 all_cs_wt[all_cs_wt['type'] != 'cs']['name']
 # MSCI and global funds have the same CIK number
 # Units have type NaN, although not sure if these are only units
-
 
 
 # %% codecell
@@ -660,7 +551,6 @@ get.json()
 ##################################
 
 
-
 # %% codecell
 ##################################
 true = True
@@ -669,6 +559,7 @@ ind = 'rsi'
 sym = 'OCGN'
 range = '1M'
 per = 14
+
 
 def get_technical_hist(ind, sym, range):
     """Get historical technical indicator data."""
@@ -689,6 +580,7 @@ def get_technical_hist(ind, sym, range):
 
     return df_chart
 
+
 df_last = get_technical_hist(ind, sym, per)
 
 fpath = f"{base_dir}/intraday/2021/{sym.lower()[0]}/_{sym}.gz"
@@ -697,7 +589,7 @@ df_chart.to_json(fpath, compression='gzip')
 df_chart.tail(10)
 # 365 minutes in the trading day
 df_chart.shape
-df_ind.shape[0]/ 60
+df_ind.shape[0] / 60
 df_ind
 
 # %% codecell

@@ -1,6 +1,4 @@
-"""
-Get data from server through API.
-"""
+"""Get data from server through API."""
 # %% codecell
 ####################################
 import json
@@ -24,6 +22,8 @@ def make_url_dict():
     """Make the url dict."""
     url_dict = ({
         'apca_all': '/data/apca/all',
+        'analyst_recs_all': '/data/company_stats/analyst_recs/all',
+        'analyst_recs_mr': '/data/company_stats/analyst_recs/most_recent',
         'treasuries': '/econ/treasuries',
         'cboe_mmo_raw': '/cboe/mmo/raw',
         'cboe_mmo_top': '/cboe/mmo/top',
@@ -33,14 +33,15 @@ def make_url_dict():
         'cboe_dump_last': '/data/cboe/dump/last',
         'cboe_dump_all': '/data/cboe/dump/all',
         'cboe_symref': '/data/cboe/symref/parq',
-        'yoptions_all': '/data/yfinance/derivs/all',
+        'cboe_symref_all': '/data/cboe/symref/all',
+        'cboe_intraday_eod': '/data/cboe/intraday/eod/last',
+        'company_meta': '/data/companies/meta',
+        'yoptions_daily': '/data/yfinance/derivs/combined/daily',
+        'yoptions_all': '/data/yfinance/derivs/combined/all',
         'yoptions_temp': '/data/yfinance/derivs/temp',
         'yoptions_unfin': '/data/yfinance/derivs/unfinished',
+        'yoptions_stock': '/data/yfinance/derivs/stock',  # /<symbol>
         'yinfo_all': '/data/yfinance/info/all',
-        'st_stream': '/stocktwits/user_stream',
-        'st_trend_all': '/stocktwits/trending/all',
-        'st_trend_today': '/stocktwits/trending/today/explore',
-        'st_watch': '/stocktwits/watchlist',
         'iex_quotes_raw': '/prices/eod/all',
         'iex_comb_today': f"/prices/combined/{getDate.query('cboe')}",
         'gz_file_sizes': '/data/ref_data/get_sizes',
@@ -64,6 +65,10 @@ def make_url_dict():
         'stats_combined': '/data/stats/combined',
         'sec_rss_latest': '/data/sec/rss/latest',
         'sec_rss_all': '/data/sec/rss/all',
+        'st_stream': '/stocktwits/user_stream',
+        'st_trend_all': '/stocktwits/trending/all',
+        'st_trend_today': '/stocktwits/trending/today/explore',
+        'st_watch': '/stocktwits/watchlist',
         'redo': ''
     })
 
@@ -104,7 +109,7 @@ class serverAPI():
         elif which == 'redo' and 'val' in kwargs.keys():
             val = kwargs['val']
             self.url_dict[which] = f"/redo/functions/{val}"
-        elif which == 'stock_data' and 'symbol' in kwargs.keys():
+        elif which in ('stock_data', 'yoptions_stock') and 'symbol' in kwargs.keys():
             symbol = kwargs['symbol']
             self.url_dict[which] = f"{self.url_dict[which]}/{symbol}"
 
@@ -153,7 +158,6 @@ class serverAPI():
     @classmethod
     def concat_data(cls, self, dict):
         """Loop through and concatenate dataframes."""
-
         # Convert all keys to dataframes
         for key in dict.keys():
             dict[key] = pd.DataFrame(dict[key])
