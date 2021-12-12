@@ -58,9 +58,23 @@ def get_symbol_stats():
     stats = og_stats[og_stats['date'] != 'nan']
     stats_max = stats[stats['date'] == stats['date'].max()].reset_index(drop=True).copy()
 
+    # All non-otc symbols reference data
     all_syms = serverAPI('all_symbols').df
     all_syms.drop(columns=['date'], inplace=True)
     df_stats = pd.merge(stats_max, all_syms, left_on=['companyName'], right_on=['name'], how='inner')
+
+    # Company meta information
+    meta_sapi = serverAPI('company_meta')
+    meta_df = meta_sapi.df
+    meta_df['spac'] = np.where(meta_df['companyName'].str.contains('Acquisition'), 1, 0)
+    meta_df['fund'] = np.where(meta_df['companyName'].str.contains('Fund'), 1, 0)
+
+    non_fund_spac = (meta_df[(meta_df['spac'] != 1) & (meta_df['fund'] != 1)]
+                     .drop_duplicates(subset=['symbol']))
+    cols_to_keep = ['symbol', 'industry', 'sector', 'tags']
+    non_fund_spac = non_fund_spac[cols_to_keep]
+
+    df_stats = pd.merge(non_fund_spac, df_stats, on=['symbol'])
 
     return df_stats
 

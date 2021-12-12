@@ -45,3 +45,6 @@ Thumbs.db
 # Files and directories #
 #########################
 extra_code
+*%
+*.condapkgs
+*.yaml

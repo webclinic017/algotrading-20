@@ -62,6 +62,7 @@ path = Path(baseDir().path, 'studies/fibonacci', 'fib_vals.parquet')
 fib_df = pd.read_parquet(path)
 
 # fib_df
+fib_df[fib_df['symbol'] == 'SWK']
 
 # %% codecell
 

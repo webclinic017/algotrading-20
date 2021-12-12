@@ -147,10 +147,13 @@ def add_gap_col(df_all):
     not_the_same = df_all[df_all['symbol'] != df_all['prev_symbol']]
     df_all.loc[not_the_same.index, 'prev_close'] = np.NaN
     # df_all.drop(columns='prev_symbol', inplace=True)
-    df_all['gap'] = np.where((df_all['fOpen'] > (df_all['prev_close'] * 1.025)), 1, 0)
+    gap_cond_up = (df_all['prev_close'] * 1.025)
+    gap_cond_down = (df_all['prev_close'] * .975)
 
-    gap_up = ((df_all['fOpen'] > (df_all['prev_close'] * 1.025)))
-    gap_down = ((df_all['fOpen'] < (df_all['prev_close'] * -1.025)))
+    df_all['gap'] = np.where(~df_all['fOpen'].between(gap_cond_down, gap_cond_up), 1, 0)
+
+    gap_up = ((df_all['fOpen'] > gap_cond_up))
+    gap_down = ((df_all['fOpen'] < gap_cond_down))
     gap_rows = df_all[gap_up | gap_down]
 
     df_all.loc[gap_rows.index, 'gap'] = (gap_rows[['fOpen', 'prev_close']]
@@ -197,15 +200,22 @@ def make_moving_averages(df_all):
     sma_50 = []
     sma_200 = []
 
-    sym_list = df_all['symbol'].unique().tolist()
     df_all_sym = df_all.set_index('symbol')
+    sym_list = (df_all_sym.index.get_level_values('symbol')
+                          .unique().dropna().tolist())
+    syms_to_exclude = []
 
     for sym in tqdm(sym_list):
-        df_sym = df_all_sym.loc[sym]
-        val_50 = df_sym['fClose'].rolling(min_periods=50, window=50).mean().to_numpy()
-        val_200 = df_sym['fClose'].rolling(min_periods=200, window=200).mean().to_numpy()
-        sma_50.append(val_50)
-        sma_200.append(val_200)
+        try:
+            df_sym = df_all_sym.loc[sym]
+            val_50 = df_sym['fClose'].rolling(min_periods=50, window=50).mean().to_numpy()
+            val_200 = df_sym['fClose'].rolling(min_periods=200, window=200).mean().to_numpy()
+            sma_50.append(val_50)
+            sma_200.append(val_200)
+        except AttributeError:
+            syms_to_exclude.append(sym)
+    # Exclude syms where moving average doesn't fit
+    df_all = df_all[~df_all['symbol'].isin(syms_to_exclude)].copy()
 
     df_all['sma_50'] = np.concatenate(sma_50).ravel()
     df_all['sma_200'] = np.concatenate(sma_200).ravel()

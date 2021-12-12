@@ -48,116 +48,124 @@ from api import serverAPI
 # Display max 50 columns
 pd.set_option('display.max_columns', None)
 # Display maximum rows
-pd.set_option('display.max_rows', 200)
-
-# %% codecell
-##############################################################
-"""
-AD = ADR = American depository receipt - represents shares in a foreign entity
-ET = ETF
-PS = Preferred stock
-WT = Warrant
-Struct = Structured Product
-
-CBOE Market Making:
-Data for 2021-02-19 to 2021-02-25 inclusive. - Feb 26th and Feb 27th data access.
-"""
-getDate.query('cboe')
-
-cboe = serverAPI('cboe_mmo_top')
-cboe_df = cboe.df.copy(deep=True)
-cboe_df.dropna(axis=0, inplace=True)
-
-
-
-# %% codecell
-##############################################################
-serverAPI.url_dict
-
-
-all_syms = serverAPI('cboe_mmo_exp_all')
-all_syms.df.keys()
-
-for key in all_syms.df.keys():
-    print(key[-13:-3])
-
-
-march_14 = all_syms.df['2021-03-14'].copy(deep=True)
-march_14[~march_14['Underlying'].isin(['XSP'])].head(50)
-
-march_15 = all_syms.df['2021-03-15'].copy(deep=True)
-march_15[~march_15['Underlying'].isin(['XSP'])].head(50)
-
-march_16 = all_syms.df['2021-03-16'].copy(deep=True)
-march_16[~march_16['Underlying'].isin(['XSP'])].head(50)
-
-
-all_df = all_syms.df.copy(deep=True)
-
-
-all_df.head(10)
-
-all_df.sort_values(by=['vol/avg', 'totVol'], ascending=False).head(50)
-
-
-# %% codecell
-##############################################################
-
-cboe_all = serverAPI('cboe_mmo_top').df
-keys_to_use = sorted(cboe_all['dataDate'].value_counts().index)[2:]
-keys_to_use.reverse()
-
-cboe_all.drop(columns=['rptDate'], inplace=True)
-cboe_all.dtypes
-
-on_list = ['Cboe ADV', 'Underlying', 'expDate', 'liq_opp', 'side', 'totVol', 'vol/avg', 'vol_opp']
-
-unique_dict = {}
-for key in keys_to_use:
-    dt = datetime.datetime.strptime(key, "%Y-%m-%d").date()
-    cboe_base = cboe_all[cboe_all['dataDate'] == str(dt)].copy(deep=True)
-
-    for dtn,dtr in enumerate(range(1, 6)):
-        date_item = (dt - BusinessDay(n=dtr)).date()
-        try:
-            x = 2
-        except KeyError:  # If data is missing
-            continue
-
-        cboe_dt = cboe_all[cboe_all['dataDate'] == str(date_item)]
-
-        if dtn == 0:
-            cboe_last = pd.merge(cboe_base, cboe_dt, how='outer', on=on_list, indicator=True)
-        else:
-            cboe_last = pd.merge(cboe_left, cboe_dt, how='outer', on=on_list, indicator=True)
-        cboe_left = cboe_last[cboe_last['_merge'] == 'left_only'].copy(deep=True)
-        cboe_left.rename(columns={'dataDate_x': 'dataDate'}, inplace=True)
-        cboe_left.drop(columns=['dataDate_y', '_merge'], inplace=True)
-
-    unique_dict[key] = cboe_left
-    # break
-
-dt = '2021-03-22'
-cboe_syms = unique_dict[dt][unique_dict[dt]['Underlying'].isin(my_syms)]
-
-cboe_syms
-
-
-for key in unique_dict.keys():
-    print(key, unique_dict[key].shape[0])
-    print()
-
+pd.set_option('display.max_rows', 50)
 
 # %% codecell
 ##############################################################
 
 
-bs = BusinessDay(n=0)
-((date.today() - bs)).date()
-date.today()
+
+# %% codecell
+##############################################################
+# cboe_redo = serverAPI('redo', val='combine_cboe')
+
+url = 'https://algotrading.ventures/api/v1/data/cboe/dump/all'
+get = requests.get(url)
+df = pd.DataFrame(get.json())
+
+df['reportDate'] = pd.to_datetime(df['rptDate'].str[-13:-3], format='%Y-%m-%d')
+
+cols_to_drop = [col for col in df.columns if 'strike' in col or 'rpt' in col]
+
+df_sub = df.drop(columns=cols_to_drop).copy()
+df_sub['expDate'] = pd.to_datetime(df_sub['expDate'], unit='ms')
+
+# %% codecell
+
+df_sym_sub = df_sub['Underlying']
+cols_to_rename = {'reportDate': 'date', 'Underlying': 'symbol'}
+df_sub.rename(columns=cols_to_rename, inplace=True)
+
+# Read historical data collected from IEX
+combined_fpath = Path(baseDir().path, 'historical', 'combined', 'sub.parquet')
+df_hist = pd.read_parquet(combined_fpath)
+# Only include values after 2020
+df_hist = df_hist[df_hist.index.get_level_values('date') > '2020']
+df_use = df_hist[df_hist.index.get_level_values('symbol').isin(df_sub['symbol'].tolist())].copy()
+df_use['range'] = df_use['fHigh'] - df_use['fLow']
 
 
-((date.today() - BusinessDay(n=0))).date()
+
+# Create percentage change columns for the following days
+periods = [1, 2, 3, 5, 10]
+periods_to_cols = [f"pc_{p}" for p in periods]
+df_use.sort_index(level='symbol', inplace=True)
+# Cycle through percentage change columns, round to 0 decimal places
+for p, col in zip(periods, periods_to_cols):
+    df_use[col] = (-df_use['fClose'].pct_change(periods=-p) * 100).round(0)
+
+
+# df_use['diff_10'] = ((df_use['fClose'].shift(periods=-10) - df_use['fClose']) / df_use['fClose'])
+# df_use['fClose'].pct_change(-10).head(10)
+# df_use['diff_10'].head(10)
+
+# %% codecell
+# Reset index, merge with cboe data
+df_use_res = df_use.reset_index()
+df_use_res['date'] = pd.to_datetime(df_use_res['date'], format='%Y-%m-%d')
+
+df_comb = pd.merge(df_use_res, df_sub, on=['symbol', 'date'])
+# %% codecell
+
+df_comb.info()
+
+df_comb.head()
+
+# %% codecell
+
+fpath = '/Users/unknown1/Algo/data/derivatives/unusual/comb_hist.parquet'
+df_comb = df_comb.reset_index(drop=True)
+df_comb.to_parquet(fpath)
+# df_comb.head(10)
+# df_comb.groupby(by=['symbol', 'date', 'side']).sum().sort_values(by=['pc_3', 'vol/avg'], ascending=False).head(50)
+# df_comb.sort_values(by=['pc_3', 'vol/avg'], ascending=False).head(50)
+
+# %% codecell
+
+
+# %% codecell
+##############################################################
+df_comb = pd.read_parquet(fpath)
+
+df = df_comb.set_index(['date', 'symbol']).copy()
+df.info()
+
+df_comb.head()
+
+# %% codecell
+##############################################################
+column_order = (['side', 'vol/avg', 'totVol', 'Cboe ADV', 'pc_1', 'pc_3',
+                 'pc_5', 'expDate', 'fVolume', 'fClose', 'range', 'pc_2',
+                 'pc_10', 'liq_opp', 'fOpen', 'fHigh', 'fLow', 'vol_opp'])
+df = df[column_order].copy()
+# df[(df['pc_10'] > 10) & (df['pc_3'].between(-2, 3, inclusive=True))].sort_values(by=['pc_10', 'vol/avg'], ascending=False).head(50)
+
+# df.sort_values(by=['pc_10', 'vol/avg'], ascending=False).head(50)
+
+df['side_pc10+'] = np.where((df['side'] == 'C') & (df['pc_10'] > 10), 1, 0)
+df['side_pc10-'] = np.where((df['side'] == 'P') & (df['pc_10'] < -10), 1, 0)
+df['side_pc5+'] = np.where((df['side'] == 'C') & (df['pc_5'] > 10), 1, 0)
+df['side_pc5-'] = np.where((df['side'] == 'P') & (df['pc_5'] < -10), 1, 0)
+df['days_diff'] = df['expDate'] - df.index.get_level_values('date')
+
+# df[df.index.get_level_values('symbol') == 'ECHO']
+
+df_short = df[df['days_diff'] < timedelta(days=31)]
+
+df_short.sort_values(by=['side_pc10+', 'vol/avg'], ascending=False).head(50)
+
+# (5,100) or 5/45 or 10% of signals are profitable using the pc_10
+
+df_short.head()
+(df_short.reset_index().drop_duplicates(subset=['symbol', 'vol/avg'])
+         .sort_values(by=['side_pc10+', 'vol/avg'], ascending=False)
+         .set_index('date', 'symbol').head(50))
+# df.sort_values(by=['side_pc10+', 'vol/avg'], ascending=False).head(50)
+
+
+# %% codecell
+##############################################################
+
 
 cboe_df['date_dt'] = pd.to_datetime(cboe_df['dataDate'])
 cboe_df['date_df'] = (cboe_df['date_dt'] + bs).dt.date
@@ -168,17 +176,29 @@ my_syms =  my_watch['symbols'].values.tolist()
 
 # %% codecell
 ##############################################################
+# Threading
 
-fpath = '/Users/unknown1/Algo/data/derivatives/cboe_symref/symref_2021-02-18.gz'
-symref_df = pd.read_json(fpath, compression='gzip')
-symref_df.info(memory_usage='deep')
+import logging
+import threading
+import time
+import concurrent.futures
 
-from multiuse.help_class import dataTypes
-smref_df = dataTypes(symref_df).df
+def thread_function(name):
+    logging.info("Thread %s: starting", name)
+    time.sleep(2)
+    logging.info("Thread %s: finishing", name)
 
-smref_df.to_json(fpath, compression='gzip')
+if __name__ == "__main__":
+    format = "%(asctime)s: %(messae)s"
+    logging.basicConfig(format=format, level=logging.INFO,
+                        datefmt="%H:%M:%S")
 
-smref_df.info(memory_usage='deep')
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        executor.map(thread_function, range(3))
+
+# %% codecell
+
+
 # %% codecell
 ##############################################################
 top_df_og = cboeLocalRecDiff(which='top_2000', fresh=True).df
@@ -441,30 +461,9 @@ all_syms_vol['Trade Month'].value_counts()
 # %% codecell
 ##############################################################
 
-"""
-sym_df['yr'] = sym_df['yr'].astype('int8')
-cols_to_category = ['Symbol', 'Underlying', 'exchange']
-sym_df[cols_to_category] = sym_df[cols_to_category].astype('category')
 
-
-# Keep only the next few years
-sym_df['yr'] = sym_df['yr'].astype('int8')
-years_to_get = [20, 21, 22, 23, 24, 25]
-sym_df = sym_df[sym_df['yr'].isin(years_to_get)]
-
-
-sym_df.dtypes
-"""
 # %% codecell
 ##############################################################
-
-
-
-
-df.info(memory_usage='deep')
-
-
-
 
 
 # %% codecell
@@ -499,27 +498,7 @@ mmo_df2.info(memory_usage='deep')
 # %% codecell
 ##############################################################
 
-mmo_syms = mmo_df2['Underlying'].value_counts()[0:250].index.to_list()
-len(mmo_syms)
-len(mmo_syms)
 
-mmo_syms
-# .index.to_list()
-# comb_df = pd.merge(mmo_df2, df_vol_df, on=['], how='left')
-# mmo_df2['missedOpportunity'] = mmo_df2['Missed Liquidity'] / mmo_df2['Cboe ADV']
-
-mmo_df2.shape
-
-
-mmo_df2.sort_values(by=['Liquidity Opportunity'], ascending=False).head(200)
-mmo_df2[mmo_df2['Underlying'] == 'TXMD'].head(50)
-mmo_df2.sort_values(by=['Missed Liquidity'], ascending=False).head(50)
-mmo_df2[mmo_df2['Underlying'] == 'XIN'].head(10)
-
-mmo_df2.sort_values(by=['missedOpportunity'], ascending=False).head(50)
-mmo_df2.sort_values(by=['Liquidity Opportunity'], ascending=False).head(50)
-
-mmo_df2.rename(columns={'Underlying': 'underlying'}, inplace=True)
 
 
 # %% codecell

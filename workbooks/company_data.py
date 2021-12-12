@@ -11,21 +11,46 @@ import requests
 from dotenv import load_dotenv
 from pathlib import Path
 import glob
+from tqdm import tqdm
 
 import importlib
 import sys
 import datetime
 from datetime import timedelta, date
 
-from nested_lookup import nested_lookup
-
-from multiuse.help_class import baseDir
+from multiuse.help_class import baseDir, getDate, write_to_parquet
 #from .iex_class import urlData
 from data_collect.iex_class import urlData
 importlib.reload(sys.modules['data_collect.iex_class'])
 from data_collect.iex_class import urlData
+
+from api import serverAPI
+
 # %% codecell
 ######################################################################################
+
+
+def get_company_meta_data():
+    """Get company meta data, save locally, from IEX."""
+    all_symbols = serverAPI('all_symbols').df
+    all_cs = all_symbols[all_symbols['type'].isin(['cs', 'ad'])]
+    sym_list = all_cs['symbol'].unique().tolist()
+
+    bpath = Path(baseDir().path, 'company_stats/meta')
+
+
+    for sym in tqdm(sym_list):
+        try:
+            ud = urlData(f"/stock/{sym}/company")
+            fpath_suf = f"{sym.lower()[0]}/_{sym}.parquet"
+            fpath = bpath.joinpath(fpath_suf)
+            write_to_parquet(ud.df, fpath)
+        except Exception as e:
+            print(f"Company meta stats error: {type(e)} {str(e)}")
+
+get_company_meta_data()
+
+# %% codecell
 
 fund_class = companyStats(symbols, 'fund_ownership')
 fund_df = fund_class.df.copy(deep=True)
