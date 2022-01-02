@@ -42,8 +42,9 @@ def get_yf_loop_missing_hist(key='less_than_20', cs=False, sym_list=None, verb=F
             help_print_arg('get_yf_loop_missing_hist: sym_list assumed')
     elif key == 'get_ignore_ytd':
         df_all = read_clean_combined_all()
-        df_2021 = df_all[df_all['date'].dt.year == 2021].copy(deep=True)
-        vc = df_2021.value_counts(subset='symbol', ascending=False)
+        dt = getDate.query('iex_eod')
+        df_year = df_all[df_all['date'].dt.year == dt.year].copy(deep=True)
+        vc = df_year.value_counts(subset='symbol', ascending=False)
         syms_one_miss = vc[(vc < (vc.max() - 1)) & (vc > 0)].index
         sym_list = syms_one_miss.tolist()
         if verb:
