@@ -21,7 +21,8 @@ except ModuleNotFoundError:
 def yoptions_combine_last(all=False):
     """Combine all options with max date."""
     # Default is last. Change all to True for all_combined
-    fpath = Path(baseDir().path, 'derivatives/end_of_day/2021')
+    dt = getDate.query('iex_eod')
+    fpath = Path(baseDir().path, f'derivatives/end_of_day/{str(dt.year)}')
     globs = list(fpath.glob('**/*.parquet'))
 
     df_list = []
@@ -174,8 +175,9 @@ def yoptions_still_needed(recreate=False):
     ref_path = Path(baseDir().path, 'ref_data', 'syms_with_options.parquet')
     ref_df = pd.read_parquet(ref_path)
 
-
-    path_for_temp = Path(baseDir().path, 'derivatives/end_of_day/temp/2021')
+    dt = getDate.query('iex_eod')
+    fsuf = f'derivatives/end_of_day/temp/{str(dt.year)}'
+    path_for_temp = Path(baseDir().path, fsuf)
     paths_for_temp = list(path_for_temp.glob('**/*.parquet'))
 
     df_list = []

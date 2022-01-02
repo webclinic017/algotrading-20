@@ -16,6 +16,9 @@ def plot_cols(df, y='fClose', moving_averages=None, vol=False, candle=False, fig
     from matplotlib import style
     style.use('ggplot')
 
+    cols = df.columns
+    df = df.copy()
+
     if candle:
         import mplfinance as mpf
         from mplfinance.original_flavor import candlestick_ohlc
@@ -28,8 +31,10 @@ def plot_cols(df, y='fClose', moving_averages=None, vol=False, candle=False, fig
     try:
         if df['date'].dtype != '<M8[ns]':
             df['date'] = pd.to_datetime(df['date'], infer_datetime_format=True)
+        df['date_keys'] = df['date']
         df = df.set_index(keys='date')
     except KeyError:
+        print('Could not find date column')
         pass
 
     if vol and not candle:
@@ -37,8 +42,19 @@ def plot_cols(df, y='fClose', moving_averages=None, vol=False, candle=False, fig
         ax1 = plt.subplot2grid((7, 1), (0, 0), rowspan=4, colspan=1)
         ax2 = plt.subplot2grid((7, 1), (5, 0), rowspan=2, colspan=1, sharex=ax1)
 
-        ax1.plot(df.index, df[y], label='Close')
-        ax2.bar(df.index, df['volume'], label='Volume')
+        # ax1.plot(df.index, df[y], label='Close')
+        df_index = df.index.get_level_values('date')
+
+        df.plot(x='date_keys', y='fOpen', label='fOpen', kind='scatter', ax=ax1, color='black')
+        df.plot(x='date_keys', y='fClose', label='fClose', kind='scatter', ax=ax1, color='blue')
+        df.plot(x='date_keys', y='fHigh', label='fHigh', kind='scatter', ax=ax1, color='green')
+        df.plot(x='date_keys', y='fLow', label='fLow', kind='scatter', ax=ax1, color='red')
+        # print(dir(ax1))
+
+        if 'volume' in cols:
+            ax2.bar(df.index, df['volume'], label='Volume')
+        elif 'fVolume' in cols:
+            ax2.bar(df.index, df['vol/mil'], label='Volume (in millions)', color='Blue')
 
         if moving_averages:
             ma = moving_averages

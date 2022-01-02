@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 
 import pandas as pd
+import numpy as np
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, help_print_arg

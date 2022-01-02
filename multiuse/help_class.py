@@ -330,6 +330,23 @@ class getDate():
         return date_list
 
     @staticmethod
+    def get_bus_day_diff(df, col1, col2):
+        """Get the business day difference betweeen 2 columns."""
+        holidays_fpath = Path(baseDir().path, 'ref_data/holidays.parquet')
+        holidays = pd.read_parquet(holidays_fpath)
+        dt = getDate.query('sec_master')
+        current_holidays = (holidays[(holidays['date'].dt.year >= dt.year) &
+                                     (holidays['date'].dt.date <= dt)])
+        hol_list = current_holidays['date'].dt.date.tolist()
+        dt_list = (df.apply(lambda row:
+                   np.busday_count(row[col1].date(),
+                                   row[col2].date(),
+                                   holidays=hol_list),
+                   axis=1
+                  ))
+        return dt_list.values
+
+    @staticmethod
     def get_bus_days(testing=False, this_year=False):
         """Get all business days. If file, read and return."""
         df, dt_year, fpath = None, None, ''

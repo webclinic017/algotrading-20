@@ -38,7 +38,9 @@ def remove_StockEOD():
 
 def clear_yoptions_dirs():
     """Removing files in yoptions due to incompatibility."""
-    path = Path(baseDir().path, 'derivatives/end_of_day/2021')
+    dt = getDate.query('iex_eod')
+    fsuf = f"derivatives/end_of_day/{str(dt.year)}"
+    path = Path(baseDir().path, fsuf)
     path_list = list(path.glob('**/*.parquet'))
 
     for fpath in path_list:
