@@ -187,7 +187,6 @@ class HistPricesV2():
 
             write_to_parquet(all_df, self.fpath)
 
-
     @classmethod
     def write_to_parquet(cls, self):
         """Write dataframe to local file."""

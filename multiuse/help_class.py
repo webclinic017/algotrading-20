@@ -53,6 +53,7 @@ def check_nan(a, b=np.NaN):
 def write_to_parquet(df, fpath):
     """Writing to parquet with error exceptions."""
     df = dataTypes(df, parquet=True).df
+    fpath = Path(fpath)
     try:
         df.to_parquet(fpath, allow_truncated_timestamps=True)
     except FileNotFoundError:
