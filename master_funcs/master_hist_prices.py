@@ -164,8 +164,8 @@ class SplitGetHistPrices():
         try:
             from app.tasks import execute_func
             if normal or otc:
-                # Combine daily stock EOD in 15 minutes
-                execute_func.apply_async(('combine_daily_stock_eod', ), countdown=900)
+                # Combine daily stock EOD in 20 minutes
+                execute_func.apply_async(('combine_daily_stock_eod', ), countdown=1200)
                 # execute_func.delay('combine_daily_stock_eod')
             elif apca:
                 # Combine apca stock EOD in 2 hours
