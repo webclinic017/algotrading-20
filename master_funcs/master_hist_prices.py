@@ -164,8 +164,11 @@ class SplitGetHistPrices():
         try:
             from app.tasks import execute_func
             if normal or otc:
-                execute_func.delay('combine_daily_stock_eod')
+                # Combine daily stock EOD in 20 minutes
+                execute_func.apply_async(('combine_daily_stock_eod', ), countdown=1200)
+                # execute_func.delay('combine_daily_stock_eod')
             elif apca:
-                execute_func.delay('combine_apca_stock_eod')
+                # Combine apca stock EOD in 2 hours
+                execute_func.apply_async(('combine_apca_stock_eod', ), countdown=12000)
         except ModuleNotFoundError:
             pass
