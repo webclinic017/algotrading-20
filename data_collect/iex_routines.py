@@ -1,6 +1,4 @@
-"""
-Daily IEX data requests to run.
-"""
+"""Daily IEX data requests to run."""
 # %% codecell
 ##############################################
 import os
@@ -241,36 +239,6 @@ class iexClose():
         # Minimize file size and write to parquet
         write_to_parquet(all_df, fpath)
 
-    """
-    @classmethod
-    def _cget_update_local(cls, self, sym, dict):
-        #Get quote data, update fpath, upate gzip, write to gzip
-        get = requests.get(dict['url'], params=dict['pay'])
-        existing, new_data = '', ''
-        try:
-            new_data = pd.DataFrame(get.json(), index=range(1))
-        except JSONDecodeError:
-            return
-
-        fpath = dict['fpath']
-
-        try:
-            existing = pd.read_json(fpath, compression='gzip')
-        except FileNotFoundError as fe:
-            print(fe)
-            existing = pd.DataFrame()
-        except ValueError as ve:
-            print(ve)
-            existing = pd.DataFrame()
-
-        try:
-            new_df = pd.concat([existing, new_data])
-            new_df.reset_index(drop=True, inplace=True)
-            new_df.to_json(fpath, compression='gzip')
-        except ValueError as ve:
-            print(ve)
-            pass
-    """
 
 # %% codecell
 ##############################################
@@ -301,8 +269,7 @@ def write_combined():
     for dt in dt_counts:
         mod_df = this_df[this_df['date'] == dt]
         mod_df.reset_index(inplace=True, drop=True)
-        mod_df = dataTypes(mod_df).df
-        mod_fpath = f"{baseDir().path}/iex_eod_quotes/combined/_{dt}.parquet"
+        mod_fpath = f"{base_dir}/iex_eod_quotes/combined/_{dt}.parquet"
         write_to_parquet(mod_df, mod_fpath)
 
 
