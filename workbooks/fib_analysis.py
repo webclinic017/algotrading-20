@@ -182,7 +182,6 @@ rows = df_all[(df_all['symbol'] == 'COKE') & ((df_all['date'] >= max_row['start_
 
 fib_dict = get_fib_dict(df_sym, max_row, rows, verb=False)
 
-fib_dict
 
 # What makes COKE different?
 # The volume isn't even close to the highest
@@ -193,18 +192,12 @@ fib_dict
 # %% codecell
 
 # BIOX should be in the df_lr. Where did it go?
-df_four[df_four['symbol'] == 'BLRX']
-
-fib_dict
-
-fib_df['ext_cond'].value_counts()
 
 df_all_rsi = df_all[['symbol', 'date', 'rsi', 'marketcap']]
 rsi_merge = pd.merge(fib_df[['symbol', 'date']], df_all_rsi, on=['symbol', 'date'], how='inner')
 fib_syms = fib_df['symbol'].unique().tolist()
 rsi_merge.drop_duplicates(subset=['symbol'], inplace=True)
 
-rsi_merge
 
 fib_df = fib_df[fib_df['symbol'].isin(rsi_merge['symbol'].unique())].copy()
 fib_df.insert(3, 'rsi', rsi_merge['rsi'].values)
@@ -229,8 +222,6 @@ df_all['fCP5'] = (np.where(df_all['symbol'] == df_all['prev_symbol'],
 bpath = Path(baseDir().path, 'ml_data', 'fib_analysis')
 fib_df_path = bpath.joinpath('fib_df_temp.parquet')
 df_all_path = bpath.joinpath('df_all_temp.parquet')
-
-df_all.drop(columns=['cum5'], inplace=True)
 
 write_to_parquet(fib_df, fib_df_path)
 write_to_parquet(df_all, df_all_path)

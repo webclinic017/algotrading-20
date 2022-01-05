@@ -17,6 +17,7 @@ import talib
 
 try:
     from scripts.dev.data_collect.iex_class import urlData
+    from scripts.dev.studies.add_study_cols import add_gap_col, calc_rsi, make_moving_averages, add_fChangeP_col, add_fHighMax_col
     from scripts.dev.multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet, check_nan
     from scripts.dev.multiuse.create_file_struct import makedirs_with_permissions
     from scripts.dev.multiuse.path_helpers import get_most_recent_fpath
@@ -24,6 +25,7 @@ try:
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from data_collect.iex_class import urlData
+    from studies.add_study_cols import add_gap_col, calc_rsi, make_moving_averages, add_fChangeP_col, add_fHighMax_col
     from multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet, check_nan
     from multiuse.create_file_struct import makedirs_with_permissions
     from multiuse.path_helpers import get_most_recent_fpath
@@ -35,6 +37,7 @@ pd.DataFrame.mask = mask
 pd.DataFrame.chained_isin = chained_isin
 
 # %% codecell
+
 
 def read_clean_combined_all(local=False, dt=None):
     """Read, clean, and add columns to StockEOD combined all."""
@@ -58,36 +61,45 @@ def read_clean_combined_all(local=False, dt=None):
         df_all = df_all[cols_to_read]
         df_all = df_all[df_all['symbol'].isin(all_cs_syms)].copy()
         df_all['date'] = pd.to_datetime(df_all['date'])
+
+        # Define base bpath for 2015-2020 stock data
+        bpath = Path(baseDir().path, 'historical/each_sym_all')
+        path = get_most_recent_fpath(bpath.joinpath('each_sym_all', 'combined_all'))
+        df_hist = pd.read_parquet(path)
+        # Combine 2015-2020 stock data with ytd
+        df_all = pd.concat([df_hist, df_all]).copy()
+
         df_all.drop_duplicates(subset=['symbol', 'date'], inplace=True)
         df_all.reset_index(drop=True, inplace=True)
 
     if not dt:
         dt = getDate.query('iex_eod')
     # Exclude all dates from before this year
-    df_all = df_all[df_all['date'] >= str(dt.year)].copy()
+    df_all = (df_all[df_all['date'] >= str(dt.year)]
+              .dropna(subset=['fVolume'])
+              .copy())
 
-    df_all['fRange'] = (df_all['fHigh'] - df_all['fLow']).round(2)
+    # Get rid of all symbols that only have 1 day of data
+    df_vc = df_all['symbol'].value_counts()
+    df_vc_1 = df_vc[df_vc == 1].index.tolist()
+    df_all = (df_all[~df_all['symbol'].isin(df_vc_1)]
+              .reset_index(drop=True).copy())
+    # Sort by symbol, date ascending
+    df_all = df_all.sort_values(by=['symbol', 'date'], ascending=True)
 
-    # Add percent change under the column fChangeP
-    df_mod = df_all[['symbol', 'date', 'fClose']].copy()
-    df_mod_1 = (df_mod.pivot(index=['symbol'],
-                             columns=['date'],
-                             values=['fClose']))
-    df_mod_2 = (df_mod_1.pct_change(axis='columns',
-                                    fill_method='bfill',
-                                    limit=1))
-    df_mod_3 = (df_mod_2.stack()
-                        .reset_index()
-                        .rename(columns={'fClose': 'fChangeP'}))
-    df_all = (pd.merge(df_all, df_mod_3,
-                       how='left',
-                       on=['date', 'symbol']))
+    df_all['fRange'] = (df_all['fHigh'] - df_all['fLow'])
+    df_all['vol/mil'] = (df_all['fVolume'].div(1000000))
+    df_all['prev_close'] = df_all['fClose'].shift(periods=1, axis=0)
+    df_all['prev_symbol'] = df_all['symbol'].shift(periods=1, axis=0)
+
+    # Add fChangeP col
+    print('Fib funcs: adding fChangeP column')
+    df_all = add_fChangeP_col(df_all)
+
     # Merge with df_all and resume
 
-    df_all.dropna(subset=['fVolume'], inplace=True)
-    df_all['vol/mil'] = (df_all['fVolume'].div(1000000)).round(2)
-
     # Add gap column
+    print('Fib funcs: adding gap column')
     df_all = add_gap_col(df_all)
 
     # Add range of gap
@@ -110,25 +122,18 @@ def read_clean_combined_all(local=False, dt=None):
                       df_all['fChangeP'].rolling(min_periods=1, window=5).sum(),
                       0))
 
-    max_val = 0
-    max_test = []
-
-    for index, row in tqdm(df_all[['symbol', 'fHigh', 'prev_symbol']].iterrows()):
-        if row['symbol'] != row['prev_symbol']:
-            max_val = 0
-        if row['fHigh'] > max_val:
-            max_val = row['fHigh']
-            max_test.append(row['fHigh'])
-        else:
-            max_test.append(np.NaN)
-
-    df_all['fHighMax'] = max_test
+    df_all = df_all.copy()
+    # Calc RSI and moving averages
+    print('Fib Funcs: calc_rsi')
     df_all = calc_rsi(df_all)
+    print('Fib Funcs: making_moving_averages')
     df_all = make_moving_averages(df_all)
 
-    # fChange P already takes the previous close value into account
-    # df_all['fChangeP'] = ((df_all['fClose'] - df_all['prev_close']) / df_all['prev_close']).round(3)
-    # .astype('uint32')
+    # fHighMax funcs
+    print('Fib funcs: fHighMax')
+    df_all = add_fHighMax_col(df_all).copy()
+
+
     df_all = df_all.sort_values(by=['symbol', 'date'], ascending=True)
 
     float_32s = df_all.dtypes[df_all.dtypes == np.float32].index
@@ -138,139 +143,6 @@ def read_clean_combined_all(local=False, dt=None):
     df_all = dataTypes(df_all, parquet=True).df.copy()
 
     return df_all
-
-
-def add_gap_col(df_all):
-    """Add up/down gap column to df_all."""
-    df_all['prev_close'] = df_all['fClose'].shift(periods=1, axis=0)
-    df_all['prev_symbol'] = df_all['symbol'].shift(periods=1, axis=0)
-    not_the_same = df_all[df_all['symbol'] != df_all['prev_symbol']]
-    df_all.loc[not_the_same.index, 'prev_close'] = np.NaN
-    # df_all.drop(columns='prev_symbol', inplace=True)
-    gap_cond_up = (df_all['prev_close'] * 1.025)
-    gap_cond_down = (df_all['prev_close'] * .975)
-
-    df_all['gap'] = np.where(~df_all['fOpen'].between(gap_cond_down, gap_cond_up), 1, 0)
-
-    gap_up = ((df_all['fOpen'] > gap_cond_up))
-    gap_down = ((df_all['fOpen'] < gap_cond_down))
-    gap_rows = df_all[gap_up | gap_down]
-
-    df_all.loc[gap_rows.index, 'gap'] = (gap_rows[['fOpen', 'prev_close']]
-                                         .pct_change(axis='columns', periods=-1)
-                                         ['fOpen'].values.round(3))
-    cols_to_round = ['fOpen', 'fLow', 'fClose', 'fHigh']
-    df_all.dropna(subset=cols_to_round, inplace=True)
-    df_all.loc[:, cols_to_round] = df_all[cols_to_round].round(3)
-
-    return df_all
-
-
-def calc_rsi(df):
-    """Calculate and add RSI, overbought, oversold."""
-    rsi_vals = np.array([])
-    df_all_sym = df.set_index('symbol')
-    df_all_sym['fClose'] = df_all_sym['fClose'].astype(np.float64)
-    sym_list = (df_all_sym.index.get_level_values('symbol')
-                          .unique().dropna().tolist())
-
-    n = 0
-    for symbol in tqdm(sym_list):
-        try:
-            prices = df_all_sym.loc[symbol]['fClose'].to_numpy()
-            rsi_vals = np.append(rsi_vals, talib.RSI(prices))
-        except AttributeError:  # For symbols that don't exist
-            n += 1
-            print(symbol)
-            rsi_vals = np.append(rsi_vals, 0)
-        if n > 10:  # Assume something else is wrong
-            break
-            return df
-
-    rsi_vals = np.array(rsi_vals)
-    df['rsi'] = rsi_vals.ravel()
-    df['rsi_ob'] = np.where(df['rsi'] > 70, 1, 0)
-    df['rsi_os'] = np.where(df['rsi'] < 70, 1, 0)
-
-    return df
-
-
-def make_moving_averages(df_all):
-    """Make moving averages for dataframe."""
-    sma_50 = []
-    sma_200 = []
-
-    df_all_sym = df_all.set_index('symbol')
-    sym_list = (df_all_sym.index.get_level_values('symbol')
-                          .unique().dropna().tolist())
-    syms_to_exclude = []
-
-    for sym in tqdm(sym_list):
-        try:
-            df_sym = df_all_sym.loc[sym]
-            val_50 = df_sym['fClose'].rolling(min_periods=50, window=50).mean().to_numpy()
-            val_200 = df_sym['fClose'].rolling(min_periods=200, window=200).mean().to_numpy()
-            sma_50.append(val_50)
-            sma_200.append(val_200)
-        except AttributeError:
-            syms_to_exclude.append(sym)
-    # Exclude syms where moving average doesn't fit
-    df_all = df_all[~df_all['symbol'].isin(syms_to_exclude)].copy()
-
-    df_all['sma_50'] = np.concatenate(sma_50).ravel()
-    df_all['sma_200'] = np.concatenate(sma_200).ravel()
-
-    df_all['up50'] = df_all.mask('symbol', df_all['prev_symbol'])['sma_50'].diff()
-    df_all['up200'] = df_all.mask('symbol', df_all['prev_symbol'])['sma_200'].diff()
-    df_all['up50'] = np.where(df_all['up50'] > 0, 1, -1)
-    df_all['up200'] = np.where(df_all['up200'] > 0, 1, -1)
-
-    return df_all
-
-
-def get_beta_vals(df_all=None):
-    """Calculate beta values for stocks against SPY."""
-    if not isinstance(df_all, pd.DataFrame):
-        df_all = read_clean_combined_all(local=False)
-        df_all = df_all[df_all['date'] >= '2021']
-
-    mkt_data = (yf.download(tickers=['SPY'], period='ytd',
-                            interval='1d', auto_adjust=True))
-
-    cols_to_rename = ({'Date': 'date', 'Open': 'fOpen', 'High': 'fHigh',
-                       'Low': 'fLow', 'Close': 'mktClose', 'Volume': 'fVolume'})
-
-    df_spy = mkt_data.reset_index().rename(columns=cols_to_rename)
-    df_spy.insert(1, 'symbol', 'SPY')
-    df_spy['fChangeP'] = df_spy['mktClose'].pct_change(limit=1)
-    df_spy['fChangeP'].fillna(method='bfill', inplace=True)
-
-    df_all_pre = df_all[['date', 'symbol', 'fClose']].set_index(['date'])
-    df_all_pivot = df_all.pivot('date', 'symbol', 'fClose').reset_index()
-    df_spy_pivot = df_spy.pivot('date', 'symbol', 'mktClose').reset_index()
-
-    for col in tqdm(df_all_pivot.columns[1:]):
-        df_spy_pivot[col] = df_spy_pivot['SPY']
-
-    df_spy_pivot.drop(columns=['SPY'], inplace=True)
-
-    s_mkt_corr = df_all_pivot.corrwith(df_spy_pivot, axis=0, method='pearson')
-
-    df_all_ret_piv = df_all.pivot('date', 'symbol', 'fChangeP').reset_index().drop(columns=['date'])
-    df_spy_ret_piv = df_spy.pivot('date', 'symbol', 'fChangeP').reset_index().drop(columns=['date'])
-    s_all_std = df_all_ret_piv.std(axis=0)
-    s_mkt_std = df_spy_ret_piv.std(axis=0)
-
-    sym_list = df_all['symbol'].unique().tolist()
-
-    beta_pairs = []
-    for sym in tqdm(sym_list):
-        beta = (s_mkt_corr.loc[sym] * (s_all_std.loc[sym] / s_mkt_std.iloc[0]))
-        beta_pairs.append((sym, beta))
-
-    beta_df = pd.DataFrame(beta_pairs, columns=['symbol', 'beta'])
-
-    return beta_df
 
 
 def get_max_rows(df_sym, verb=False):

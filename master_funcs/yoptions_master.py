@@ -48,35 +48,50 @@ def collect_rest_of_yoptions():
 # %% codecell
 
 
-def yoptions_combine_temp_all(keep_temps=False, keep_unfin=False):
+def yoptions_combine_temp_all(keep_temps=False, keep_unfin=False, verbose=False):
     """Combine temporary options with historical records."""
     dt = getDate.query('iex_eod')
     yr = dt.year
     path_base = Path(baseDir().path, 'derivatives/end_of_day')
     temps = list(Path(path_base, 'temp', str(yr)).glob('**/*.parquet'))
 
-    for path in temps:
+    for tpath in temps:
         try:
-            sym = str(path.resolve()).split('_')[-1].split('.')[0]
+            # Derive symbol from temp fpath, construct new path to write
+            sym = str(tpath.resolve()).split('_')[-1].split('.')[0]
             path_to_write = Path(path_base, str(yr), sym.lower()[0], f"_{sym}.parquet")
+
+            if verbose:
+                n_pre = "yoptions_combine_temp_all: derived symbol path is"
+                help_print_arg(f"{n_pre} {sym}")
+                help_print_arg(f"path_to_write: {str(path_to_write)}")
+                help_print_arg(f"temp path: {str(tpath)}")
 
             if path_to_write.is_file():
                 df_old = pd.read_parquet(path_to_write)
-                df_new = pd.read_parquet(path)
+                df_new = pd.read_parquet(tpath)
                 # Combine dataframes and write to local file
                 df_all = pd.concat([df_old, df_new])
                 write_to_parquet(df_all, path_to_write)
+
+                if verbose:
+                    help_print_arg(f"path_to_write for symbol {sym} exists")
+
                 # Remove temp file
                 if not keep_temps:
-                    os.remove(path)
+                    os.remove(tpath)
             else:
-                df_new = pd.read_parquet(path)
-                write_to_parquet(df_new, path)
+                df_new = pd.read_parquet(tpath)
+                write_to_parquet(df_new, path_to_write)
+
+                if verbose:
+                    help_print_arg(f"path_to_write for symbol {sym} did not exist")
+
         except Exception as e:
             help_print_arg(str(e))
 
     if not keep_unfin:
-        unfinished_paths = list(Path(path_base, 'unfinished').glob('*.parquet'))
+        unfinished_paths = list(path_base.joinpath('unfinished').glob('*.parquet'))
         if unfinished_paths:
             for upath in unfinished_paths:
                 os.remove(upath)
@@ -87,6 +102,11 @@ def yoptions_combine_temp_all(keep_temps=False, keep_unfin=False):
 class SetUpYahooOptions():
     """A class to run the yahoo options function, and store results."""
     sym_df, testing = False, False
+
+    """
+    self.sym_df : symbol, bins
+    self.comb_df : combined df with symbol, proxy
+    """
 
     def __init__(self, followup=False, testing=False, options=True, other=False):
         self.testing, self.options, self.other = testing, options, other
@@ -107,8 +127,8 @@ class SetUpYahooOptions():
             help_print_arg('No SetUpYahooOptions __init__ condition satisfied')
 
         if self.proceed:  # Default True
-            df_comb = self.get_bins_and_combine(self, proxies)
-            self.initiate_for_loop(self, df_comb)
+            comb_df = self.get_bins_and_combine(self, proxies)
+            self.initiate_for_loop(self, comb_df)
 
     @classmethod
     def get_bins_and_combine(cls, self, proxies):
@@ -121,15 +141,16 @@ class SetUpYahooOptions():
         for bin, row in zip(bins, proxies):
             bin_df = bin_df.append({'bins': bin, 'proxy': row}, ignore_index=True)
 
-        df_comb = pd.merge(df_syms, bin_df, on='bins')
+        comb_df = pd.merge(df_syms, bin_df, on='bins')
         self.bins = bins
+        self.comb_df = comb_df
 
-        return df_comb
+        return comb_df
 
     @classmethod
-    def initiate_for_loop(cls, self, df_comb):
+    def initiate_for_loop(cls, self, comb_df):
         """Initiate for loop sequence."""
-        args = [df_comb[df_comb['bins'] == n] for n in iter(self.bins)]
+        args = [comb_df[comb_df['bins'] == n] for n in iter(self.bins)]
         for arg in args:
             if self.testing:
                 help_print_arg(str(arg))

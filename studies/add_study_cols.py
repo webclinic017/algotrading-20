@@ -1,0 +1,133 @@
+"""Add study columns to dataframe."""
+# %% codecell
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+import talib
+
+# %% codecell
+
+
+# %% codecell
+
+
+def add_fChangeP_col(df_all):
+    """Add percent change under the column fChangeP."""
+    df_mod = df_all[['symbol', 'date', 'fClose']].copy()
+    df_mod_1 = (df_mod.pivot(index=['symbol'],
+                             columns=['date'],
+                             values=['fClose']))
+    df_mod_2 = (df_mod_1.pct_change(axis='columns',
+                                    fill_method='bfill',
+                                    limit=1))
+    df_mod_3 = (df_mod_2.stack()
+                        .reset_index()
+                        .rename(columns={'fClose': 'fChangeP'}))
+    df_all = (pd.merge(df_all, df_mod_3,
+                       how='left',
+                       on=['date', 'symbol']))
+
+    return df_all
+
+
+def add_gap_col(df_all):
+    """Add up/down gap column to df_all."""
+    not_the_same = df_all[df_all['symbol'] != df_all['prev_symbol']]
+    df_all.loc[not_the_same.index, 'prev_close'] = np.NaN
+    # df_all.drop(columns='prev_symbol', inplace=True)
+    gap_cond_up = (df_all['prev_close'] * 1.025)
+    gap_cond_down = (df_all['prev_close'] * .975)
+
+    df_all['gap'] = (np.where(~df_all['fOpen'].between(
+                     gap_cond_down, gap_cond_up), 1, 0))
+
+    gap_up = ((df_all['fOpen'] > gap_cond_up))
+    gap_down = ((df_all['fOpen'] < gap_cond_down))
+    gap_rows = df_all[gap_up | gap_down]
+
+    df_all.loc[gap_rows.index, 'gap'] = (gap_rows[['fOpen', 'prev_close']]
+                                         .pct_change(axis='columns',
+                                                     periods=-1)
+                                         ['fOpen'].values.round(3))
+    cols_to_round = ['fOpen', 'fLow', 'fClose', 'fHigh']
+    df_all.dropna(subset=cols_to_round, inplace=True)
+    df_all.loc[:, cols_to_round] = df_all[cols_to_round].round(3)
+
+    return df_all
+
+
+def calc_rsi(df):
+    """Calculate and add RSI, overbought, oversold."""
+    rsi_vals = []
+    df_all_sym = df[['symbol', 'fClose']].set_index('symbol').copy()
+    df_all_sym['fClose'] = df_all_sym['fClose'].astype(np.float64)
+    sym_list = (sorted(df_all_sym.index.get_level_values('symbol')
+                       .unique().dropna().tolist()))
+    n = 0
+    for symbol in tqdm(sym_list):
+        try:
+            prices = df_all_sym.loc[symbol]['fClose'].to_numpy()
+            # rsi_vals = np.append(rsi_vals, talib.RSI(prices))
+            rsi_vals.append(talib.RSI(prices))
+        except AttributeError:  # For symbols that don't exist
+            n += 1
+            print(symbol)
+            rsi_vals.append(np.zeros(1))
+            # If there's a symbol error, add zeroes of equiv length
+
+            if n > 100:  # Assume something else is wrong
+                break
+                return df
+
+    # rsi_vals = np.array(rsi_vals)
+    df['rsi'] = np.concatenate(rsi_vals)
+    df['rsi_ob'] = np.where(df['rsi'] > 70, 1, 0)
+    df['rsi_os'] = np.where(df['rsi'] < 70, 1, 0)
+
+    return df
+
+
+def make_moving_averages(df_all):
+    """Make moving averages for dataframe."""
+    # Create new dataframe and set the index to symbol
+    df_all_sym = df_all.set_index('symbol')
+    df_all['sma_50'] = (df_all_sym['fClose'].rolling(min_periods=50,
+                                                     window=50)
+                                            .mean().to_numpy())
+    df_all['sma_200'] = (df_all_sym['fClose'].rolling(min_periods=200,
+                                                      window=200)
+                                             .mean().to_numpy())
+
+    df_all['prev_symbol'] = df_all['symbol'].shift(periods=1, axis=0)
+    df_all['up50'] = (df_all.mask('symbol', df_all['prev_symbol'])
+                      ['sma_50'].diff())
+    df_all['up200'] = (df_all.mask('symbol', df_all['prev_symbol'])
+                       ['sma_200'].diff())
+    df_all['up50'] = np.where(df_all['up50'] > 0, 1, -1)
+    df_all['up200'] = np.where(df_all['up200'] > 0, 1, -1)
+
+    return df_all
+
+
+def add_fHighMax_col(df_all):
+    """Add fHighMax column."""
+    max_val = 0
+    max_test = []
+
+    for index, row in tqdm(df_all[['symbol', 'fHigh', 'prev_symbol']].iterrows()):
+        if row['symbol'] != row['prev_symbol']:
+            max_val = 0
+        if row['fHigh'] > max_val:
+            max_val = row['fHigh']
+            max_test.append(row['fHigh'])
+        else:
+            max_test.append(np.NaN)
+
+    df_all['fHighMax'] = max_test
+
+    return df_all
+
+
+# %% codecell
