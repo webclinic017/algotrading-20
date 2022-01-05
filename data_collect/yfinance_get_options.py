@@ -64,6 +64,8 @@ def yahoo_options(sym, proxy=False, n=False, temp=True):
     elif temp:
         fpath = Path(fpath_base, 'temp', str(yr), sym.lower()[0], f"_{sym}.parquet")
 
+    print(fpath)
+
     if fpath.is_file():
         df_old = pd.read_parquet(fpath)
 
