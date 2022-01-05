@@ -40,13 +40,13 @@ def get_sizes(gz=False, parquet=True):
 # %% codecell
 
 
-def get_most_recent_fpath(fpath_dir, f_pre=None, f_suf=None, dt=None):
+def get_most_recent_fpath(fpath_dir, f_pre=None, f_suf=None, dt=None, this_year=True):
     """Get the most recent fpath in a directory."""
     path_to_return = False
     if not dt:  # If no date passed, default to iex_eod
         dt = getDate.query('iex_close')
 
-    dt_list = getDate.get_bus_days(this_year=True)
+    dt_list = getDate.get_bus_days(this_year=this_year)
     date_list = (dt_list[dt_list['date'].dt.date <= dt]
                  .sort_values(by=['date'], ascending=False))
 
@@ -77,13 +77,19 @@ def get_most_recent_fpath(fpath_dir, f_pre=None, f_suf=None, dt=None):
                 return path_to_return
 
     if not path_to_return:
+        path_to_return = get_most_recent_fpath(fpath_dir, this_year=False)
+        if path_to_return:
+            help_print_arg(f"get_most_recent_fpath: first failed. Returning {str(path_to_return)}")
+            return path_to_return
+
+    if not path_to_return:
         msg_1 = "Directory empty or path doesn't follow format '_dt.parquet'. Returning first path"
         msg_2 = f": {fpath_dir}"
         help_print_arg(f"{msg_1} {msg_2}")
 
         paths = list(Path(fpath_dir).glob('*.parquet'))
         if paths:
-            path_to_return = paths[0]
+            path_to_return = paths[-1]
             return path_to_return
 
 # %% codecell
