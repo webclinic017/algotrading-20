@@ -109,7 +109,12 @@ def read_clean_combined_all(local=False, dt=None):
 
     df_all['cumPerc'] = np.where(
         df_all['symbol'] == df_all['prev_symbol'],
-        df_all['fChangeP'] + df_all['fChangeP'].shift(1),
+        df_all['fChangeP'].cumsum(),
+        np.NaN)
+
+    df_all['perc5'] = np.where(
+        df_all['symbol'] == df_all['prev_symbol'],
+        df_all['cumPerc'].shift(-5) - df_all['cumPerc'],
         np.NaN)
 
     df_all['vol_avg_2m'] = np.where(
@@ -121,6 +126,7 @@ def read_clean_combined_all(local=False, dt=None):
     df_all['fCP5'] = (np.where(df_all['symbol'] == df_all['prev_symbol'],
                       df_all['fChangeP'].rolling(min_periods=1, window=5).sum(),
                       0))
+
 
     df_all = df_all.copy()
     # Calc RSI and moving averages
@@ -294,14 +300,29 @@ def get_rows(df_sym, max_row, verb=False, calc_date_range=False):
     for n in n_list:
         try:
             row = df_sym.loc[min_idx - (n + 1)]
+            row_pre = df_sym.loc[min_idx - (n)]
             # If not, go one row back
             if (row['fChangeP'] >= -.005) & (row['fClose'] < max_row['fClose'].iloc[0]) & (row['fClose'] > row['fOpen']):
                 # rows = pd.concat([row, max_row]).sort_values(by=['fVolume'], ascending=True)
                 if verb:
                     print(f"Min idx: {str(min_idx - (n + 1))}: pos rowChangeP & fClose < max_row['fClose']")
-            elif (abs(row['fChangeP']) < .0035) & (row['fHigh'] < max_row['fLow'].iloc[0]):
+            elif ((abs(row['fChangeP']) < .0035)
+                  & (row['fHigh'] * .995 < max_row['fLow'].iloc[0])
+                  & (row['fHigh'] > row_pre['fHigh'])
+                  & (row['fLow'] > row_pre['fLow'])):
                 if verb:
-                    print(f"Min idx: {str(min_idx - (n + 1))}: pos rowChangeP & fClose < max_row['fClose']")
+                    print(f"Min idx: {str(min_idx - (n + 1))}: row['fHigh'] * .995 < max_row['fLow']")
+            elif (((max_row['fLow'].iloc[0] > row['fLow'])
+                  & (max_row['fClose'].iloc[0] > row['fHigh']))
+                  & (row['fHigh'] > row_pre['fHigh'])
+                  & (row['fLow'] > row_pre['fLow'])):
+                if verb:
+                    print(f"Min idx: {str(min_idx - (n + 1))}: max_row['fLow'].iloc[0] > row['fLow']")
+            elif ((max_row['fLow'].iloc[0] > row['fLow']) & (max_row['fHigh'].iloc[0] < row['fOpen'])):
+                min_idx = min_idx - (n + 1)
+                if verb:
+                    print(f"Min idx condition reached: {str(min_idx - (n + 1))}: max_row['fHigh'] < row['fOpen']")
+                break
             elif ((max_row['fLow'].iloc[0] - row['fHigh']) > .5):
                 min_idx = min_idx - (n + 1)
                 if verb:
@@ -351,7 +372,7 @@ def get_rows(df_sym, max_row, verb=False, calc_date_range=False):
 def get_fib_dict(df_sym, max_row, rows, verb=False):
     """Create and return fibonacci ext/retr dict."""
     fib_percs = ([.001, .236, .382, .5, .618, .786, .999,
-                  1.236, 1.5, 1.618, 2.618, 4.236])
+                  1.236, 1.5, 1.618, 2.0, 2.618, 3.0, 4.236])
 
     fib_dict = {}
     fib_dict['symbol'] = max_row['symbol'].iloc[0]

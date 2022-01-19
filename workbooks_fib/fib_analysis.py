@@ -21,7 +21,7 @@ try:
     from scripst.dev.multiuse.create_file_struct import makedirs_with_permissions
     from scripts.dev.multiuse.path_helpers import get_most_recent_fpath
     from scripts.dev.multiuse.symbol_ref_funcs import get_symbol_stats
-    from scripts.dev.workbooks.fib_comb_data import add_sec_days_until_10q
+    from scripts.dev.workbooks_fib.fib_comb_data import add_sec_days_until_10q
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from data_collect.iex_class import urlData
@@ -29,13 +29,13 @@ except ModuleNotFoundError:
     from multiuse.create_file_struct import makedirs_with_permissions
     from multiuse.path_helpers import get_most_recent_fpath
     from multiuse.symbol_ref_funcs import get_symbol_stats
-    from workbooks.fib_comb_data import add_sec_days_until_10q
+    from workbooks_fib.fib_comb_data import add_sec_days_until_10q
     from api import serverAPI
 
 # %% codecell
-from workbooks.fib_funcs import read_clean_combined_all
-importlib.reload(sys.modules['workbooks.fib_funcs'])
-from workbooks.fib_funcs import read_clean_combined_all
+from workbooks_fib.fib_funcs import read_clean_combined_all
+importlib.reload(sys.modules['workbooks_fib.fib_funcs'])
+from workbooks_fib.fib_funcs import read_clean_combined_all
 
 
 from multiuse.pd_funcs import mask, chained_isin
@@ -60,6 +60,8 @@ df_diff_all = pd.read_parquet(path_con_all).drop_duplicates()
 
 path = Path(baseDir().path, 'studies/fibonacci', 'fib_vals.parquet')
 fib_df = pd.read_parquet(path)
+
+fib_df[fib_df['symbol'] == 'TSLA']
 
 # fib_df
 fib_df[fib_df['symbol'] == 'SWK']
@@ -271,8 +273,27 @@ for sym in tqdm(sym_list):
 
 
 
+bpath = Path(baseDir().path, 'ml_data/fib_analysis')
+fib_all_path = bpath.joinpath('fib_all_cleaned_data.parquet')
+
+df_test = pd.read_parquet(fib_all_path)
+cols_to_check = ['beta', 'filing', 'days_until']
+
+# Can't use beta calc - and it doesn't even make sense here
+from datetime import date
+dt = date(2021, 1, 1)
+
+df_all = read_clean_combined_all(dt=dt)
+df_all = add_sec_days_until_10q(df_all).copy()
+
+pre_cleaned_path = bpath.joinpath('pre_cleaned_data.parquet')
+df_pre = pd.read_parquet(pre_cleaned_path)
+df_pre.columns
+
+path_all_updated_cleaned = bpath.joinpath('df_all_updated_cleaned.parquet')
 
 
+df_all.columns
 
 # %% codecell
 
@@ -355,7 +376,7 @@ mrow_df = pd.read_parquet(path)
 # And get the high perf
 df_all['cumPerc'] = np.where(
     df_all['symbol'] == df_all['prev_symbol'],
-    df_all['fChangeP'] + df_all['fChangeP'].shift(1),
+    df_all['fChangeP'].cumsum(),
     np.NaN)
 
 df_all['perc_2weeks'] = np.where(
@@ -401,44 +422,13 @@ df_hist_sub[cols_to_round] = (df_hist_sub[cols_to_round].astype(np.float64)
 # perc_2weeks, perc_2months can be the response variables
 # Can make another response variable for whether the symbol hits the ext_2.618
 # %% codecell
-df_hist_sub['hit_1.618'] = np.where(
-    ((df_hist_sub['symbol'] == df_hist_sub['prev_symbol'])
-     & (df_hist_sub['fHigh'] > df_hist_sub['ext_1.618'])),
-               (((df_hist_sub['fHigh'] - df_hist_sub['ext_1.618']))
-                / df_hist_sub['ext_1.618']), 0)
 
-
-df_hist_sub['hit_2.618'] = np.where(
-    ((df_hist_sub['symbol'] == df_hist_sub['prev_symbol'])
-     & (df_hist_sub['fHigh'] > df_hist_sub['ext_2.618'])),
-               (((df_hist_sub['fHigh'] - df_hist_sub['ext_2.618']))
-                / df_hist_sub['ext_2.618']), 0)
-
-df_hist_sub['hit_4.236'] = np.where(
-    ((df_hist_sub['symbol'] == df_hist_sub['prev_symbol'])
-     & (df_hist_sub['fHigh'] > df_hist_sub['ext_4.236'])),
-               (((df_hist_sub['fHigh'] - df_hist_sub['ext_4.236']))
-                / df_hist_sub['ext_4.236']), 0)
-
-# %% codecell
-
-df_hist_sub['hit_2.618'] = np.where(
-    ((df_hist_sub['symbol'] == df_hist_sub['prev_symbol'])
-     & (df_hist_sub['fHigh'] > df_hist_sub['ext_2.618'])),
-     1, 0)
 
 
 # %% codecell
 path = Path(baseDir().path, 'ml_data/fib_analysis', 'pre_cleaned_data.parquet')
 write_to_parquet(df_hist_sub, path)
 
-
-df_hist_sub = pd.read_parquet(path)
-
-df_hist_sub.drop(columns=['hit_1.618', 'hit_4.236', 'perc_2weeks', 'perc_1month'], inplace=True, errors='ignore')
-df_hist_sub = df_hist_sub[df_hist_sub['date'] < (df_hist_sub['end_date'] + timedelta(days=30))].copy()
-
-df_hist_sub.columns
 # df_hist_sub.head()
 
 # %% codecell

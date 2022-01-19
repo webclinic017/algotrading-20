@@ -8,16 +8,13 @@ Short data comes out every day past 4:30 pm
 
 # %% codecell
 ############################################
-import os
 import sys
 from pathlib import Path
-from io import BytesIO
 import importlib
 from tqdm import tqdm
 
 import datetime
 
-import requests
 import pandas as pd
 import numpy as np
 
@@ -38,52 +35,37 @@ except ModuleNotFoundError:
 
 # %% codecell
 ############################################
-from missing_data.missing_hist_prices import MissingHistDates
-from missing_data.get_missing_hist_from_iex import GetMissingDates
-from missing_data.get_missing_hist_from_yf import GetYfMissingDates, get_yf_loop_missing_hist
-# rpt_date = getDate.query('occ')
-importlib.reload(sys.modules['missing_data.missing_hist_prices'])
-importlib.reload(sys.modules['missing_data.get_missing_hist_from_iex'])
-importlib.reload(sys.modules['missing_data.get_missing_hist_from_yf'])
-
-
 # %% codecell
 
 
-# %% codecell
-
-# get_yf_loop_missing_hist(cs=True, refresh_missing_dates=False)
-
-# So this is very interesting. With no null dates to check, the performance went up massively
-# mhd = MissingHistDates(cs=True)
-# %% codecell
-
-# %% codecell
-# Realistically I need to copy the null dataframe to accurately get the
 # %% codecell
 # %% codecell
 
 # %% codecell
 # %% codecell
-# What's my cutoff value? I'd like to see at least n rows * 2 - 1
-# So for this example, it's 3
-# For one row, it'd be 1 val that lines up
 
 # %% codecell
+# %% codecell
+# %% codecell
 
-df_coke = df_all[(df_all['symbol'] == 'COKE')]
-df_coke[df_coke['fVolume'].isin(df_coke['fVolume'].nlargest(10).tolist())
 
 # %% codecell
-from workbooks.fib_funcs import get_max_rows, get_rows, get_fib_dict, get_diff_dict, make_confirm_df, read_clean_combined_all, write_fibs_to_parquet
-importlib.reload(sys.modules['workbooks.fib_funcs'])
-from workbooks.fib_funcs import get_max_rows, get_rows, get_fib_dict, get_diff_dict, make_confirm_df, read_clean_combined_all, write_fibs_to_parquet
+from workbooks_fib.fib_funcs import get_max_rows, get_rows, get_fib_dict, get_diff_dict, make_confirm_df, read_clean_combined_all, write_fibs_to_parquet
+importlib.reload(sys.modules['workbooks_fib.fib_funcs'])
+from workbooks_fib.fib_funcs import get_max_rows, get_rows, get_fib_dict, get_diff_dict, make_confirm_df, read_clean_combined_all, write_fibs_to_parquet
 
 # %% codecell
-df_all = read_clean_combined_all(local=False)
+dt = datetime.date(2021, 1, 1)
+
+df_all = read_clean_combined_all(local=False, dt=dt)
 
 mrow_empty_list = []
 mrows_empty_list = []
+
+# %% codecell
+# dump_path = Path(baseDir().path, 'dump', 'df_all_cleaned_max.parquet')
+# write_to_parquet(df_all, dump_path)
+
 # %% codecell
 confirm_cols = ['symbol', 'fib', 'date', 'col', 'perc_diff']
 df_confirm_all = pd.DataFrame(columns=confirm_cols)
@@ -144,23 +126,6 @@ if len(symbol_list) > 50:
 
 # %% codecell
 
-df_sym
-
-res_list = [39, 51, 72, 83, 218]
-pos_rows = max_rows.loc[res_list[0]: res_list[-1]]
-
-max_row
-
-
-pos_rows.iloc[1]['fHighMax']
-pos_rows
-max_rows
-
-max_row
-
-
-
-max_rows
 
 # max_row = max_rows[max_rows['date'] == '2021-03-02']
 # max_row
@@ -236,14 +201,6 @@ symbol_list = df_mrow['symbol'].tolist()
 # %% codecell
 
 # %% codecell
-
-
-
-# %% codecell
-df_sym = (df_all[df_all['symbol'] == symbol]
-          .sort_values(by=['date'], ascending=True)
-          .reset_index(drop=True)
-          .copy())
 
 # %% codecell
 

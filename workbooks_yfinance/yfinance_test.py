@@ -18,16 +18,23 @@ try:
     from scripts.dev.multiuse.help_class import df_create_bins
 except ModuleNotFoundError:
     from multiuse.api_helpers import get_sock5_nord_proxies
-    from multiuse.help_class import baseDir, getDate
+    from multiuse.help_class import baseDir, getDate, write_to_parquet, help_print_arg
     from multiuse.help_class import df_create_bins
 
 # %% codecell
+
+from master_funcs.yoptions_master import SetUpYahooOptions, yoptions_combine_temp_all
+importlib.reload(sys.modules['master_funcs.yoptions_master'])
+from master_funcs.yoptions_master import SetUpYahooOptions, yoptions_combine_temp_all
+
+from data_collect.yfinance_get_options import yahoo_options
+importlib.reload(sys.modules['data_collect.yfinance_get_options'])
+from data_collect.yfinance_get_options import yahoo_options
 # %% codecell
 
-
-
 # %% codecell
-
+from api import serverAPI
+serverAPI('redo', val='yoptions_combine_temp_all')
 
 
 # 1. starts with SetUpYahooOptions

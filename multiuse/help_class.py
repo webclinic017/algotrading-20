@@ -50,10 +50,31 @@ def check_nan(a, b=np.NaN):
     return (a == b) | ((a != a) & (b != b))
 
 
-def write_to_parquet(df, fpath):
+def round_cols(df, cols=False, decimals=3):
+    """Round specified columns, or round all columns."""
+
+    if not cols:
+        cols = (df.select_dtypes(include=[np.float32, np.float64])
+                  .columns.tolist())
+
+    df[cols] = df[cols].astype(np.float64)
+    df[cols] = df[cols].round(decimals)
+
+    return df
+
+
+def write_to_parquet(df, fpath, combine=False):
     """Writing to parquet with error exceptions."""
     df = dataTypes(df, parquet=True).df
     fpath = Path(fpath)
+
+    if combine & fpath.exists():
+        df_old = pd.read_parquet(fpath)
+        df = pd.concat([df_old, df]).copy()
+
+        if isinstance(df.index, pd.RangeIndex):
+            df = df.reset_index(drop=True)
+
     try:
         df.to_parquet(fpath, allow_truncated_timestamps=True)
     except FileNotFoundError:
