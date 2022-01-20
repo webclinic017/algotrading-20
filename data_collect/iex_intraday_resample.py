@@ -7,11 +7,9 @@ import numpy as np
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, write_to_parquet, help_print_arg
-    from scripts.dev.data_collect.iex_class import urlData
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, getDate, write_to_parquet, help_print_arg
-    from data_collect.iex_class import urlData
     from api import serverAPI
 
 # %% codecell
