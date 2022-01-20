@@ -2,17 +2,16 @@
 # %% codecell
 ############################################
 import os.path
-from datetime import date
 from dotenv import load_dotenv
 
 import pandas as pd
 import requests
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, write_to_parquet
+    from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg, write_to_parquet
     from app.tasks_test import print_arg_test
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, write_to_parquet
+    from multiuse.help_class import baseDir, getDate, help_print_arg, write_to_parquet
 
 # %% codecell
 ############################################

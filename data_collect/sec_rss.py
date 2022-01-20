@@ -47,7 +47,7 @@ class SecRssFeed():
                     'Cache-Control': 'no-cache',
                     'Accept-Language': 'en-GB,en;q=0.5'})
         self.url = url
-        self.headers= headers
+        self.headers = headers
 
     @classmethod
     def get_rss_feed(cls, self):

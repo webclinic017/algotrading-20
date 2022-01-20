@@ -84,7 +84,7 @@ def calc_rsi(df):
     # rsi_vals = np.array(rsi_vals)
     df['rsi'] = np.concatenate(rsi_vals)
     df['rsi_ob'] = np.where(df['rsi'] > 70, 1, 0)
-    df['rsi_os'] = np.where(df['rsi'] < 70, 1, 0)
+    df['rsi_os'] = np.where(df['rsi'] < 30, 1, 0)
 
     return df
 
@@ -129,5 +129,34 @@ def add_fHighMax_col(df_all):
 
     return df_all
 
+
+# %% codecell
+
+
+def std_ann_deviation(df):
+    """Calculate std dev and annualized std dev."""
+
+    df['logfCP'] = np.where(
+        df['symbol'] == df['prev_symbol'],
+        np.log(df['fChangeP']),
+        np.NaN
+    )
+
+    df_sym = df.set_index('symbol')
+    syms = df_sym.index.unique()
+
+    std_dev = []
+    for sym in tqdm(syms):
+        std_dev.append(np.std(df_sym.loc[sym]['fChangeP']))
+
+    syms_std_dev = (pd.Series({sym: std for sym, std in zip(syms, std_dev)},
+                              name='s_std'))
+    df_sym['stdDev'] = df_sym.index.map(syms_std_dev).astype(np.float64)
+    df_sym['annStdDev'] = df_sym['stdDev'] * 252 ** 0.5
+
+    df_sym = df_sym.drop(columns=['logfCP']).copy()
+    df = df_sym.reset_index().copy()
+
+    return df
 
 # %% codecell
