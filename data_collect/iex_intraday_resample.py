@@ -85,7 +85,7 @@ class ResampleIntraday():
     def _resample_and_write(cls, self, fpath, bpath, dt):
         """Resample from 1 to 3,5 minute, write to local df file."""
         df = pd.read_parquet(fpath)
-        sym = fpath.split('_')[-1].split('.')[0]
+        sym = str(fpath).split('_')[-1].split('.')[0]
 
         fpre = sym[0].lower()
         fsuf = f"_{sym}.parquet"
