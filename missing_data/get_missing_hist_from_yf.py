@@ -14,20 +14,19 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 
-
 try:
     from scripts.dev.data_collect.iex_class import urlData
     from scripts.dev.multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
     from scripts.dev.multiuse.path_helpers import get_most_recent_fpath
     from scripts.dev.missing_data.missing_hist_prices import MissingHistDates
-    from scripts.dev.workbooks.fib_funcs import read_clean_combined_all
+    from scripts.dev.workbooks_fib.fib_funcs import read_clean_combined_all
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from data_collect.iex_class import urlData
     from multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
     from multiuse.path_helpers import get_most_recent_fpath
     from missing_data.missing_hist_prices import MissingHistDates
-    from workbooks.fib_funcs import read_clean_combined_all
+    from workbooks_fib.fib_funcs import read_clean_combined_all
     from api import serverAPI
 
 # %% codecell
