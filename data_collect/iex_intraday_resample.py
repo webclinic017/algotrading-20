@@ -77,9 +77,15 @@ class ResampleIntraday():
     def _start_fpaths_loop(cls, self):
         """Start the for loop for each fpath."""
         bpath = Path(baseDir().path, 'intraday')
+        error_dict = {}
 
         for fpath in self.fpaths:
-            self._resample_and_write(self, fpath, bpath, dt=self.dt)
+            try:
+                self._resample_and_write(self, fpath, bpath, dt=self.dt)
+            except Exception as e:
+                error_dict[str(fpath)] = {'type': str(type(e)), 'error': str(e)}
+
+        self._write_error_dict(self, error_dict)
 
     @classmethod
     def _resample_and_write(cls, self, fpath, bpath, dt):
@@ -98,5 +104,13 @@ class ResampleIntraday():
 
         write_to_parquet(df_3, fpath_3)
         write_to_parquet(df_5, fpath_5)
+
+    @classmethod
+    def _write_error_dict(cls, self, error_dict):
+        """Write error_dict to local df."""
+        path = Path(baseDir().path, 'errors', 'iex_intraday_resample.parquet')
+        df_errors = pd.DataFrame.from_dict(error_dict)
+        df_errors['date'] = getDate.query('iex_eod')
+        write_to_parquet(df_errors, path, combine=True)
 
 # %% codecell
