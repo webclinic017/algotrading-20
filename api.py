@@ -4,15 +4,19 @@
 import json
 from json import JSONDecodeError
 from io import BytesIO
+from pathlib import Path
 
 import pandas as pd
 import numpy as np
 import requests
+from tqdm import tqdm
 
 try:
-    from scripts.dev.multiuse.help_class import getDate, help_print_arg
+    from scripts.dev.multiuse.help_class import (getDate, baseDir,
+                                                 help_print_arg, write_to_parquet)
 except ModuleNotFoundError:
-    from multiuse.help_class import getDate, help_print_arg
+    from multiuse.help_class import (getDate, baseDir,
+                                     help_print_arg, write_to_parquet)
 
 # %% codecell
 ####################################
@@ -44,6 +48,7 @@ def make_url_dict():
         'yinfo_all': '/data/yfinance/info/all',
         'iex_quotes_raw': '/prices/eod/all',
         'iex_comb_today': f"/prices/combined/{getDate.query('cboe')}",
+        'iex_intraday_m1': '/data/hist/intraday/minute_1/all',
         'gz_file_sizes': '/data/ref_data/get_sizes',
         'fpath_list': '/data/ref_data/fpath_list',
         'missing_dates_less': '/data/hist/missing_dates/less_than_20',
@@ -149,6 +154,9 @@ class serverAPI():
             df = self._mmo_explore_all(self, df)
         elif which == 'stock_data':
             df = pd.read_json(df['iex_hist']).copy(deep=True)
+        elif which == 'iex_intraday_m1':
+            df = self._iex_intraday_m1(self, df)
+            # pass
         else:
             # Convert to dataframe
             df = pd.DataFrame(df)
@@ -170,20 +178,30 @@ class serverAPI():
 
         return this_df
 
-        """
-        all_df = pd.DataFrame()
+    @classmethod
+    def _iex_intraday_m1(cls, self, df):
+        """Write to local file structure."""
+        cols_to_keep = ['symbol', 'dtime', 'date', 'minute', 'exchangeType']
+        mkt_cols = [col for col in df.columns if 'market' in str(col)]
+        cols_to_keep = cols_to_keep + mkt_cols
+        df_m1 = df[cols_to_keep].copy()
+        # df_m1.rename(columns={'sym': 'symbol'}, inplace=True)
 
-        # Loop through dictionary and append data to dataframe
-        for x in dict:
-            # dict[x]['dataDate'] = str(x)[-13:-3]
-            new_df = pd.DataFrame(dict[x])
-            all_df = pd.concat([all_df, new_df])
-            # all_df = all_df.append(dict[x], ignore_index=True)
-            # all_df = pd.DataFrame.from_dict(all_df)
-        all_df.reset_index(inplace=True, drop=True)
+        df_m1['year'] = df_m1['date'].dt.year
+        df_idx_m1 = df_m1.set_index(['symbol', 'year'])
+        sym_list = df_idx_m1.index.get_level_values('symbol').unique()
+        yr_list = df_idx_m1.index.get_level_values('year').unique()
 
-        return all_df
-        """
+        bpath = Path(baseDir().path, 'intraday', 'minute_1')
+
+        for sym in tqdm(sym_list):
+            for yr in yr_list:
+                df_sym = df_idx_m1.loc[sym, yr].copy()
+                sym = str(sym)
+                fpath = bpath.joinpath(str(yr), sym[0].lower(), f"_{sym}.parquet")
+                write_to_parquet(df_sym.reset_index(), fpath)
+
+        return df_m1
 
     @classmethod
     def _clean_st_trend(cls, self, df):
