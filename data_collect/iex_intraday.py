@@ -98,6 +98,7 @@ class GetIntradayIexData():
         df_ud['dtime'] = (pd.to_datetime(df_ud['date'] + df_ud['minute'],
                           format='%Y-%m-%d%H:%M'))
         df_ud['date'] = pd.to_datetime(df_ud['date'], format='%Y-%m-%d')
+        df_ud['symbol'] = sym
         # Write to parquet and exit function
         write_to_parquet(df_ud, fpath, combine=True)
 

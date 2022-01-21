@@ -88,7 +88,10 @@ def yoptions_combine_temp_all(keep_temps=False, keep_unfin=False, verbose=False)
                     help_print_arg(f"path_to_write for symbol {sym} did not exist")
 
         except Exception as e:
-            help_print_arg(str(e))
+            if verbose:
+                help_print_arg(str(e))
+            else:
+                pass
 
     if not keep_unfin:
         unfinished_paths = list(path_base.joinpath('unfinished').glob('*.parquet'))
