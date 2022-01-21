@@ -2,8 +2,10 @@
 # %% codecell
 from pathlib import Path
 import os
+from datetime import datetime
 
 import pandas as pd
+from pandas import Timestamp
 import numpy as np
 from tqdm import tqdm
 from dotenv import load_dotenv
@@ -50,6 +52,11 @@ class GetIntradayIexData():
         """Start for loop for syms."""
         if not dt:
             dt = getDate.query('iex_eod')
+
+        if isinstance(dt, str):
+            dt = datetime.strptime(dt, '%Y%m%d').date()
+        elif isinstance(dt, Timestamp):
+            dt = dt.date()
 
         bpath = Path(baseDir().path, 'intraday', 'minute_1', str(dt.year))
 
