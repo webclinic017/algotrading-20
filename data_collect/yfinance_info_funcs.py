@@ -16,7 +16,7 @@ except ModuleNotFoundError:
 # %% codecell
 
 
-def execute_yahoo_func(df, which='yinfo', **kwargs):
+def execute_yahoo_func(df, which='yinfo', verbose=False, **kwargs):
     """Execute for loop. Run from tasks execute_function."""
     # Df is in json format because it's being passed from a celery task
     df = pd.read_json(df)
@@ -48,11 +48,13 @@ def execute_yahoo_func(df, which='yinfo', **kwargs):
                 break
         except TypeError as te:
             error_dict[index] = row
-            help_print_arg(f"Execute yahoo func: TypeError: {str(te)}")
-            help_print_arg(f"{str(index)}: {str(row)}")
+            if verbose:
+                help_print_arg(f"Execute yahoo func: TypeError: {str(te)}")
+                help_print_arg(f"{str(index)}: {str(row)}")
         except Exception as e:
             error_dict[index] = row
-            help_print_arg(f"Execute yahoo func: Gen Excp: {str(e)}")
+            if verbose:
+                help_print_arg(f"Execute yahoo func: Gen Excp: {str(e)}")
 
     try:
         # Create dataframe from error dict
@@ -68,7 +70,7 @@ def execute_yahoo_func(df, which='yinfo', **kwargs):
 # %% codecell
 
 
-def ysymbols_info(sym, base_dir=False, session=False, testing=False):
+def ysymbols_info(sym, base_dir=False, session=False, testing=False, verbose=False):
     """Get meta information for all ysymbols."""
     df_old, info = False, False
 
@@ -88,7 +90,8 @@ def ysymbols_info(sym, base_dir=False, session=False, testing=False):
         try:
             info = ticker.info(session=session)
         except TypeError as te:
-            help_print_arg(f"TypeError (proxy) from ysymbols_info: {te}")
+            if verbose:
+                help_print_arg(f"TypeError (proxy) from ysymbols_info: {te}")
     else:
         info = ticker.info
 
@@ -104,7 +107,8 @@ def ysymbols_info(sym, base_dir=False, session=False, testing=False):
         else:  # If not df_old, write file to local parquet file
             df_new.to_parquet(path)
     except Exception as e:
-        help_print_arg(f"Symbol {sym} with error {str(e)}")
+        if verbose:
+            help_print_arg(f"Symbol {sym} with error {str(e)}")
 
 
 # %% codecell

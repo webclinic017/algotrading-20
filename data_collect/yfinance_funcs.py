@@ -59,7 +59,7 @@ def yoptions_drop_hist_dupes():
         try:
             df = pd.read_parquet(fpath)
             df.drop_duplicates(subset=['contractSymbol', 'date'], inplace=True)
-            dataTypes(df, parquet=True).df.to_parquet(fpath)
+            write_to_parquet(df, fpath)
         except Exception as e:
             help_print_arg(e)
 

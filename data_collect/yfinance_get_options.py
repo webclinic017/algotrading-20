@@ -14,7 +14,7 @@ except ModuleNotFoundError:
 # %% codecell
 
 
-def execute_yahoo_options(df):
+def execute_yahoo_options(df, verbose=False):
     """Execute for loop. Run from tasks execute_function."""
     # Df is in json format because it's being passed from a celery task
     df = pd.read_json(df)
@@ -27,7 +27,8 @@ def execute_yahoo_options(df):
             yahoo_options(row['symbol'], proxy=row['proxy'])
         except SOCKS5AuthError as sae:
             # Print error
-            help_print_arg(str(sae))
+            if verbose:
+                help_print_arg(str(sae))
             try:
                 time.sleep(.5)
                 yahoo_options(row['symbol'], proxy=row['proxy'])
@@ -35,10 +36,12 @@ def execute_yahoo_options(df):
                 break
         except TypeError as te:
             error_dict[index] = row
-            help_print_arg(str(te))
+            if verbose:
+                help_print_arg(str(te))
         except Exception as e:
             error_dict[index] = row
-            help_print_arg(str(e))
+            if verbose:
+                help_print_arg(str(e))
 
     try:
         # Create dataframe from error dict
@@ -52,7 +55,7 @@ def execute_yahoo_options(df):
 
 
 
-def yahoo_options(sym, proxy=False, n=False, temp=True):
+def yahoo_options(sym, proxy=False, n=False, temp=True, verbose=False):
     """Get options chain data from yahoo finance."""
     dt = getDate.query('iex_eod')
     yr, fpath = dt.year, ''
@@ -64,7 +67,7 @@ def yahoo_options(sym, proxy=False, n=False, temp=True):
     elif temp:
         fpath = Path(fpath_base, 'temp', str(yr), sym.lower()[0], f"_{sym}.parquet")
 
-    print(fpath)
+    # print(fpath)
 
     if fpath.is_file():
         df_old = pd.read_parquet(fpath)
@@ -94,7 +97,8 @@ def yahoo_options(sym, proxy=False, n=False, temp=True):
         df_puts = chain.puts
         df_list.append(df_calls)
         df_list.append(df_puts)
-        help_print_arg(str(e))
+        if verbose:
+            help_print_arg(str(e))
 
     try:
         df_all = pd.concat(df_list)

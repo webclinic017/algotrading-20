@@ -144,7 +144,7 @@ class urlData():
 
         if get.status_code < 400:
             self._decode_data(self, get)
-        elif get.status_code == 429: # Assumed to be IEX "Too many requests"
+        elif get.status_code == 429:  # Assumed to be IEX "Too many requests"
             sleep(1)  # Sleep for 1 second
             get = requests.get(url, params=payload)
             self.get = get
