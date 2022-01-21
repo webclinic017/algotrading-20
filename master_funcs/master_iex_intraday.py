@@ -25,11 +25,11 @@ def get_last_30_intradays():
     df_m1 = serverAPI('iex_intraday_m1').df
     days_tget = (days[~days['date'].isin(df_m1['date']
                  .unique())].copy())
-    days_tget['dt_fmt'] = days_tget['date'].dt.strftime('%Y%m%d')
+    # days_tget['dt_fmt'] = days_tget['date'].dt.strftime('%Y%m%d')
 
     try:
         from app.tasks import execute_func
-        for dt in days_tget['dt_fmt']:
+        for dt in days_tget['date']:
             kwargs = {'dt': dt}
             execute_func.delay('iex_intraday', **kwargs)
     except ModuleNotFoundError:
