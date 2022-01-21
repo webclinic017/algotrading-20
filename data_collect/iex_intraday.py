@@ -54,7 +54,10 @@ class GetIntradayIexData():
             dt = getDate.query('iex_eod')
 
         if isinstance(dt, str):
-            dt = datetime.strptime(dt, '%Y%m%d').date()
+            try:
+                dt = datetime.strptime(dt, '%Y%m%d').date()
+            except ValueError:
+                dt = datetime.strptime(dt, '%Y-%m-%dT%H:%M:%S').date()
         elif isinstance(dt, Timestamp):
             dt = dt.date()
 
