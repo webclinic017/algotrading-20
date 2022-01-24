@@ -23,13 +23,18 @@ def resample_to_min(df, period='3T', reset_index=True):
 
     resamp = df.resample(period)
 
-    cols_to_open = ['open', 'marketOpen']
-    cols_to_close = (['close', 'marketClose', 'changeOverTime',
-                      'marketChangeOverTime'])
-    cols_to_high = ['high', 'marketHigh']
-    cols_to_low = ['low', 'marketLow']
-    cols_to_sum = (['volume', 'notional', 'numberOfTrades', 'marketVolume',
-                    'marketNotional', 'marketNumberOfTrades'])
+    cols_to_open = ['marketOpen']
+    cols_to_close = (['marketClose', 'marketChangeOverTime'])
+    cols_to_high = ['marketHigh']
+    cols_to_low = ['marketLow']
+    cols_to_sum = (['marketVolume', 'marketNotional', 'marketNumberOfTrades'])
+
+    if 'open' in df.columns:
+        cols_to_open.append('open')
+        cols_to_close = cols_to_close + ['close', 'changeOverTime']
+        cols_to_high.append('high')
+        cols_to_low.append('low')
+        cols_to_sum = cols_to_sum + ['volume', 'notional', 'numberOfTrades']
 
     df[cols_to_open] = resamp[cols_to_open].first()
     df[cols_to_close] = resamp[cols_to_close].last()
@@ -37,8 +42,9 @@ def resample_to_min(df, period='3T', reset_index=True):
     df[cols_to_low] = resamp[cols_to_low].min()
     df[cols_to_sum] = resamp[cols_to_sum].sum()
 
-    df['average'] = df['notional'].div(df['volume'])
     df['marketAverage'] = df['marketNotional'].div(df['marketVolume'])
+    if 'average' in df.columns:
+        df['average'] = df['notional'].div(df['volume'])
 
     df_per = df.resample(period).asfreq().copy()
 
@@ -54,6 +60,7 @@ class ResampleIntraday():
     """
     self.fpaths : all fpaths for 1 minute data files
     self.dt : dt
+    self.df_errors: dataframe of errors
     """
 
     def __init__(self, dt=None):
@@ -102,6 +109,11 @@ class ResampleIntraday():
         df_3 = resample_to_min(df, period='3T')
         df_5 = resample_to_min(df, period='5T')
 
+        if 'symbol' not in df_3.columns:
+            df_3['symbol'] = sym
+        if 'symbol' not in df_5.columns:
+            df_5['symbol'] = sym
+
         write_to_parquet(df_3, fpath_3)
         write_to_parquet(df_5, fpath_5)
 
@@ -109,8 +121,10 @@ class ResampleIntraday():
     def _write_error_dict(cls, self, error_dict):
         """Write error_dict to local df."""
         path = Path(baseDir().path, 'errors', 'iex_intraday_resample.parquet')
-        df_errors = pd.DataFrame.from_dict(error_dict)
+        df_errors = pd.DataFrame.from_dict(error_dict).T
         df_errors['date'] = getDate.query('iex_eod')
-        write_to_parquet(df_errors, path, combine=True)
+        write_to_parquet(df_errors, path, combine=False)
+
+        self.df_errors = df_errors
 
 # %% codecell
