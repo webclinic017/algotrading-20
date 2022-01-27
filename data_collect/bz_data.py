@@ -126,7 +126,7 @@ class WebScrapeBzRates:
         # fdrive = (webdriver.Firefox(
         #          executable_path=GeckoDriverManager().install()))
         path = '/usr/local/bin/.wdm/drivers/geckodriver/linux64/v0.30.0/geckodriver'
-        fdrive = webdriver.FireFox(executable_path=path)
+        fdrive = webdriver.Firefox(executable_path=path)
         burl = 'https://www.benzinga.com/analyst-ratings'
         fdrive.get(burl)
 
