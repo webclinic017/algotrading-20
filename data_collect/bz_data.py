@@ -6,7 +6,12 @@ import string
 import pandas as pd
 import requests
 from seleniumwire import webdriver
+from selenium.webdriver import FirefoxOptions
 from webdriver_manager.firefox import GeckoDriverManager
+
+
+opts = FirefoxOptions()
+opts.add_argument("--headless")
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, write_to_parquet, help_print_arg
@@ -125,8 +130,11 @@ class WebScrapeBzRates:
         """Start headless browser and navigate to page."""
         # fdrive = (webdriver.Firefox(
         #          executable_path=GeckoDriverManager().install()))
+        opts = FirefoxOptions()
+        opts.add_argument("--headless")
+
         path = '/usr/local/bin/geckodriver'
-        fdrive = webdriver.Firefox(executable_path=path)
+        fdrive = webdriver.Firefox(executable_path=path, options=opts)
         burl = 'https://www.benzinga.com/analyst-ratings'
         fdrive.get(burl)
 
