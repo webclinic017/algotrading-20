@@ -128,19 +128,27 @@ class urlData():
     Store get request: self.get
     """
 
-    def __init__(self, url_suf):
+    def __init__(self, url_suf, **kwargs):
         #print('Data accessible by xxx.df')
-        self._get_data(self, url_suf)
+        self._get_data(self, url_suf, **kwargs)
 
     @classmethod
-    def _get_data(cls, self, url_suf):
+    def _get_data(cls, self, url_suf, **kwargs):
         """Get data from IEX, return dataframe."""
         load_dotenv()  # Load environ variables
         url = f"{os.environ.get('base_url')}{url_suf}"
-        payload = {'token': os.environ.get('iex_publish_api')}
+        payload = None
+
+        if kwargs.keys():
+            payload = kwargs
+            payload['token'] = os.environ.get('iex_publish_api')
+        else:
+            payload = {'token': os.environ.get('iex_publish_api')}
+
         # Get data
         get = requests.get(url, params=payload)
         self.get = get
+        self.payload = payload
 
         if get.status_code < 400:
             self._decode_data(self, get)
