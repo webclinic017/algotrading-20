@@ -125,7 +125,7 @@ class WebScrapeBzRates:
         """Start headless browser and navigate to page."""
         # fdrive = (webdriver.Firefox(
         #          executable_path=GeckoDriverManager().install()))
-        path = '/usr/local/bin/.wdm/drivers/geckodriver/linux64/v0.30.0/geckodriver'
+        path = '/usr/local/bin/geckodriver'
         fdrive = webdriver.Firefox(executable_path=path)
         burl = 'https://www.benzinga.com/analyst-ratings'
         fdrive.get(burl)
