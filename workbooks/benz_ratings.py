@@ -16,7 +16,7 @@ from urllib.parse import urlencode, quote_plus
 
 from multiuse.help_class import getDate, baseDir, write_to_parquet, help_print_arg, dataTypes
 from data_collect.iex_class import urlData
-from workbooks.fib_funcs import read_clean_combined_all
+from workbooks_fib.fib_funcs import read_clean_combined_all
 from api import serverAPI
 # %% codecell
 sapi = serverAPI('redo', val='bz_recs')
@@ -97,20 +97,23 @@ importlib.reload(sys.modules['api'])
 sapi = serverAPI('analyst_recs_all')
 df = sapi.df
 
-df.drop(columns=['Company', 'Price Target Change'], inplace=True)
-
-float_32s = df.dtypes[df.dtypes == np.float32].index
-df[float_32s] = df[float_32s].astype(np.float64).round(3)
-
-# cols_to_round = {'mark': 2, 'perc_change': 2}
-# df.round(cols_to_round)
 df.info()
+
+df['Rating Change'].value_counts()
+
+df[df['symbol'] == 'OCGN']
+
+df['np/mark'] = np.where(
+    df['new_price'] > df['mark'],
+    1 - df['mark'].div(df['new_price']),
+    (df['mark'] - df['new_price']).div(df['mark'])
+)
+
+df.sort_values(by=['date'], ascending=True)
+
 df
 # %% codecell
 
-df_all = read_clean_combined_all()
-float_32s = df_all.dtypes[df_all.dtypes == np.float32].index
-df_all[float_32s] = df_all[float_32s].astype(np.float64).round(3)
 # cols_to_round = ['fOpen', 'fLow', 'fClose', 'fHigh']
 # df_all.dropna(subset=cols_to_round, inplace=True)
 # df_all.loc[:, cols_to_round] = df_all[cols_to_round].round(3)
