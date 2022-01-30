@@ -10,9 +10,6 @@ from selenium.webdriver import FirefoxOptions
 from webdriver_manager.firefox import GeckoDriverManager
 
 
-opts = FirefoxOptions()
-opts.add_argument("--headless")
-
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, write_to_parquet, help_print_arg, df_create_bins
     from scripts.dev.api import serverAPI
@@ -182,6 +179,7 @@ class WebScrapeBzRates:
 
         df_resp = pd.DataFrame(resp_list)
         self.df_resp = df_resp
+        self.fdrive.close()
 
     @classmethod
     def _parse_df_submit_get_request(cls, self, df_resp, dt_min, dt_max):

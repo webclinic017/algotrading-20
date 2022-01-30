@@ -47,6 +47,8 @@ def help_print_arg(arg):
 
 def check_nan(a, b=np.NaN):
     """Check nans."""
+    # if a.dtype == 'O':
+    #    a = a.astype(np.float64)
     return (a == b) | ((a != a) & (b != b))
 
 
@@ -67,7 +69,7 @@ def write_to_parquet(df, fpath, combine=False):
     """Writing to parquet with error exceptions."""
     df = dataTypes(df, parquet=True).df
     fpath = Path(fpath)
-
+    # Combine with existing dataframe if combine=True
     if combine & fpath.exists():
         df_old = pd.read_parquet(fpath)
         df = pd.concat([df_old, df]).copy()
