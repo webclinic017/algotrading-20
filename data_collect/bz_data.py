@@ -165,6 +165,9 @@ class WebScrapeBzRates:
 
         burl = 'https://www.benzinga.com/analyst-ratings'
         fdrive.get(burl)
+        fdrive.implicitly_wait(5)
+        sleep(5)
+
         self.fdrive = fdrive
 
     @classmethod
