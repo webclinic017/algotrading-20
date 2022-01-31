@@ -47,8 +47,10 @@ def help_print_arg(arg):
 
 def check_nan(a, b=np.NaN):
     """Check nans."""
-    # if a.dtype == 'O':
-    #    a = a.astype(np.float64)
+    if a.dtype == 'O':
+        if a.str.contains('NaN'):
+            a = a.astype(np.float64)
+            
     return (a == b) | ((a != a) & (b != b))
 
 

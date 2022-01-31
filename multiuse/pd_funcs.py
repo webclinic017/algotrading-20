@@ -9,6 +9,9 @@ import pandas as pd
 def mask(df, key, value, equals=True, not_equals=False, greater=False, lesser=False, notin=False):
     """Modified mask."""
     # If comparing rows values to singular value
+    if lesser or greater:
+        equals = False
+
     if not isinstance(value, list):
         if equals:
             df = df[df[key] == value]

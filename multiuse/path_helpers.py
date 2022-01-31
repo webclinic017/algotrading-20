@@ -65,7 +65,7 @@ def get_most_recent_fpath(fpath_dir, f_pre=None, f_suf=None, dt=None, this_year=
             if Path(fpath_dir, f"{f_pre}{row['fpath']}.parquet").exists():
                 path_to_return = Path(fpath_dir, f"{f_pre}{row['fpath']}.parquet")
                 return path_to_return
-    elif f_suf and not f_pre:
+    elif not f_pre and f_suf:
         for index, row in date_list.iterrows():
             if Path(fpath_dir, f"{row['fpath']}{f_suf}.parquet").exists():
                 path_to_return = Path(fpath_dir, f"{row['fpath']}{f_suf}.parquet")

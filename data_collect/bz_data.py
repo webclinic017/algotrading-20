@@ -2,12 +2,15 @@
 # %% codecell
 from pathlib import Path
 import string
+import sys
+from time import sleep
 
 import pandas as pd
 import requests
 from seleniumwire import webdriver
 from selenium.webdriver import FirefoxOptions
 from webdriver_manager.firefox import GeckoDriverManager
+from selenium.common.exceptions import WebDriverException
 
 
 try:
@@ -86,8 +89,8 @@ class BzRecs():
         if path.exists():
             df_old = pd.read_parquet(path)
             benz_df = (pd.concat([df_old, con_df])
-                             .drop_duplicates(subset=['date', 'symbol', 'Analyst Firm'])
-                             .reset_index(drop=True))
+                         .drop_duplicates(subset= ['date', 'symbol', 'Analyst Firm'])
+                         .reset_index(drop=True))
         else:
             benz_df = con_df.copy()
 
@@ -142,26 +145,26 @@ class WebScrapeBzRates:
     """
 
     def __init__(self, testing=False, dt_min=False, dt_max=False):
-        if not testing:
-            self._initiate_browser(self)
-            self._iterate_through_result(self, self.fdrive)
-            (self._parse_df_submit_get_request(self,
-             self.df_resp, dt_min, dt_max))
-            self._parse_get_request(self, self.get)
+        self._initiate_browser(self)
+        self._iterate_through_result(self, self.fdrive)
+        self._parse_df_submit_get_request(self, self.df_resp, dt_min, dt_max)
+        self._parse_get_request(self, self.get)
 
     @classmethod
     def _initiate_browser(cls, self):
         """Start headless browser and navigate to page."""
-        # fdrive = (webdriver.Firefox(
-        #          executable_path=GeckoDriverManager().install()))
-        opts = FirefoxOptions()
-        opts.add_argument("--headless")
+        fdrive = None  # Create empty variable
+        try:
+            opts = FirefoxOptions()
+            opts.add_argument("--headless")
+            path = '/usr/local/bin/geckodriver'
+            fdrive = webdriver.Firefox(executable_path=path, options=opts)
+        except WebDriverException:
+            fdrive = (webdriver.Firefox(
+                      executable_path=GeckoDriverManager().install()))
 
-        path = '/usr/local/bin/geckodriver'
-        fdrive = webdriver.Firefox(executable_path=path, options=opts)
         burl = 'https://www.benzinga.com/analyst-ratings'
         fdrive.get(burl)
-
         self.fdrive = fdrive
 
     @classmethod
@@ -179,16 +182,25 @@ class WebScrapeBzRates:
 
         df_resp = pd.DataFrame(resp_list)
         self.df_resp = df_resp
+        # Close browser
         self.fdrive.close()
 
     @classmethod
     def _parse_df_submit_get_request(cls, self, df_resp, dt_min, dt_max):
         """Get required params from dataframe, make new request."""
+        headers, params = None, None  # Set variables
         url = 'https://api.benzinga.com/api/v2.1/calendar/ratings'
         recs_row = (df_resp[df_resp['url'].str.contains(url)]
                     .reset_index(drop=True))
-        headers = dict(recs_row['headers'][0])
-        params = recs_row['params'][0]
+
+        if recs_row.empty:
+            msg = "WebScrapeBzRates: Can't find url in df_resp"
+            help_print_arg(msg)
+            sys.exit()
+
+        r0 = recs_row.index[0]
+        headers = dict(recs_row['headers'].iloc[r0])
+        params = recs_row['params'].iloc[r0]
 
         # Optional parameters for gathering historical data
         if dt_min:
