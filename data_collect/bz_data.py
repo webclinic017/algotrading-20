@@ -188,7 +188,7 @@ class WebScrapeBzRates:
     @classmethod
     def _parse_df_submit_get_request(cls, self, df_resp, dt_min, dt_max):
         """Get required params from dataframe, make new request."""
-        headers, params = None, None  # Set variables
+        r0 = None
         url = 'https://api.benzinga.com/api/v2.1/calendar/ratings'
         recs_row = (df_resp[df_resp['url'].str.contains(url)]
                     .reset_index(drop=True))
@@ -198,7 +198,12 @@ class WebScrapeBzRates:
             help_print_arg(msg)
             sys.exit()
 
-        r0 = recs_row.index[0]
+        try:
+            r0 = recs_row.index[0]
+        except KeyError:
+            help_print_arg(str(recs_row))
+            r0 = recs_row.index.tolist()[0]
+
         headers = dict(recs_row['headers'].iloc[r0])
         params = recs_row['params'].iloc[r0]
 
