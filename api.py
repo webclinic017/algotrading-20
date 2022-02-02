@@ -40,6 +40,7 @@ def make_url_dict():
         'cboe_symref': '/data/cboe/symref/parq',
         'cboe_symref_all': '/data/cboe/symref/all',
         'cboe_intraday_eod': '/data/cboe/intraday/eod/last',
+        'cboe_intraday_intra': '/data/cboe/intraday/intraday/last',
         'company_meta': '/data/companies/meta',
         'yoptions_daily': '/data/yfinance/derivs/combined/daily',
         'yoptions_all': '/data/yfinance/derivs/combined/all',
@@ -63,6 +64,7 @@ def make_url_dict():
         'stock_close_test': '/data/hist/daily/test',
         'all_symbols': '/symbols/all',
         'otc_syms': '/symbols/otc',
+        'syms_new_mr': '/data/symbols/new/mr',
         'cs_top_vol': '/scans/vol/avg',
         'sec_ref': '/sec/data/ref',
         'sec_inst_holdings': '/sec/data/institutions',
@@ -114,7 +116,13 @@ class serverAPI():
             self.url_dict[which] = f"/sec/data/master_idx/{val}/{refresh}"
         elif which == 'redo' and 'val' in kwargs.keys():
             val = kwargs['val']
+
+            if 'test' in kwargs.keys():
+                print('Test in kwargs.keys()')
+                val = f"{val}_test_task_redo"
+
             self.url_dict[which] = f"/redo/functions/{val}"
+
         elif which in ('stock_data', 'yoptions_stock') and 'symbol' in kwargs.keys():
             symbol = kwargs['symbol']
             self.url_dict[which] = f"{self.url_dict[which]}/{symbol}"

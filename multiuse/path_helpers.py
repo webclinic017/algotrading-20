@@ -40,7 +40,7 @@ def get_sizes(gz=False, parquet=True):
 # %% codecell
 
 
-def get_most_recent_fpath(fpath_dir, f_pre=None, f_suf=None, dt=None, this_year=True):
+def get_most_recent_fpath(fpath_dir, f_pre=None, f_suf=None, dt=None, this_year=True, second=False):
     """Get the most recent fpath in a directory."""
     path_to_return = False
     if not dt:  # If no date passed, default to iex_eod
@@ -76,8 +76,8 @@ def get_most_recent_fpath(fpath_dir, f_pre=None, f_suf=None, dt=None, this_year=
                 path_to_return = Path(fpath_dir, f"{f_pre}{row['fpath']}{f_suf}.parquet")
                 return path_to_return
 
-    if not path_to_return:
-        path_to_return = get_most_recent_fpath(fpath_dir, this_year=False)
+    if not path_to_return and not second:
+        path_to_return = get_most_recent_fpath(fpath_dir, this_year=False, second=True)
         if path_to_return:
             help_print_arg(f"get_most_recent_fpath: first failed. Returning {str(path_to_return)}")
             return path_to_return
