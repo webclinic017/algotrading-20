@@ -45,12 +45,10 @@ def otc_ref_data():
     """Get all otc reference data from IEX cloud."""
     # Use urlData function to get all otc sym ref data
     otc_syms = urlData('/ref-data/otc/symbols').df
-    # Minimize data types for otc symbols dataframe
-    otc_syms_df = dataTypes(otc_syms).df
     # Create fpath to store otc_syms
-    fpath = f"{baseDir().path}/tickers/otc_syms.parquet"
+    fpath = f"{baseDir().path}/tickers/symbol_list/otc_syms.parquet"
     # Write otc symbols to local gzip file
-    write_to_parquet(otc_syms_df, fpath)
+    write_to_parquet(otc_syms, fpath)
 
 
 def get_company_meta_data():
@@ -59,7 +57,7 @@ def get_company_meta_data():
     all_cs = all_symbols[all_symbols['type'].isin(['cs', 'ad'])]
     sym_list = all_cs['symbol'].unique().tolist()
 
-    bpath = Path(baseDir().path, 'company_stats/meta')
+    bpath = Path(baseDir().path, 'company_stats', 'meta')
 
     for sym in tqdm(sym_list):
         try:
@@ -101,28 +99,23 @@ class dailySymbols():
     def new_syms_ref_type(cls, self):
         """Get reference type data for new symbols."""
         iex_sup = urlData("/ref-data/symbols").df
-        syms_fname = f"{baseDir().path}/tickers/all_symbols.parquet"
-        self.write_to_parquet(self, iex_sup, syms_fname)
+        fpath = f"{baseDir().path}/tickers/all_symbols.parquet"
+        # Write to parquet file
+        write_to_parquet(iex_sup, fpath)
 
         iex_sup.drop(columns=['exchangeSuffix', 'exchangeName',
                               'name', 'iexId', 'region',
                               'currency', 'isEnabled', 'cik', 'lei', 'figi'],
                      axis=1, inplace=True)
-        # Convert data types
-        iex_sup = dataTypes(iex_sup).df
+
         new_syms_tp = iex_sup[iex_sup['symbol'].isin(self.new_syms['symbol'])]
         new_syms_tp.reset_index(inplace=True, drop=True)
 
         dt = getDate().query('occ')
-        syms_fname = f"{baseDir().path}/tickers/new_symbols/{dt}.parquet"
-        self.write_to_parquet(self, new_syms_tp, syms_fname)
+        fpath_new = f"{baseDir().path}/tickers/new_symbols/{dt}.parquet"
+        self.write_to_parquet(self, new_syms_tp, fpath_new)
 
         return new_syms_tp
-
-    @classmethod
-    def write_to_parquet(cls, self, df, syms_fname):
-        """Write new symbols parquet file to local parquet file."""
-        write_to_parquet(df, syms_fname)
 
 # %% codecell
 ##############################################
@@ -139,7 +132,7 @@ class iexClose():
 
     def __init__(self, otc=False):
         self.get_params(self)
-        self.get_all_symbols(self, otc)
+        self.symbols = self.get_all_symbols(self, otc)
         self.start_quote_process(self)
         self.combine_write(self)
 
@@ -154,21 +147,19 @@ class iexClose():
     def get_all_symbols(cls, self, otc):
         """Get list of all IEX supported symbols (9000 or so)."""
         all_symbols_fpath = ''
-        fpath_base = f"{baseDir().path}/tickers"
+        bpath = Path(baseDir().path, 'tickers', 'symbol_list')
 
         if otc:
-            all_symbols_fpath = f"{fpath_base}/otc_syms.parquet"
+            all_symbols_fpath = bpath.joinpath('otc_syms.parquet')
         else:
-            all_symbols_fpath = f"{fpath_base}/all_symbols.parquet"
+            all_symbols_fpath = bpath.joinpath('all_symbols.parquet')
 
         try:
             df_all_syms = pd.read_parquet(all_symbols_fpath)
         except ValueError:
             df_all_syms = readData.get_all_symbols()
 
-        df_all_syms = dataTypes(df_all_syms).df
-
-        self.symbols = list(df_all_syms['symbol'])
+        return list(df_all_syms['symbol'])
 
     @classmethod
     def start_quote_process(cls, self):
@@ -177,29 +168,16 @@ class iexClose():
 
         for sn, sym in enumerate(self.symbols):
             try:
-                """
-                dict = {}
-                dict['url'] = f"{self.base_url}/stock/{sym}/quote"
-                dict['fpath'] = f"{self.fpath_base}/{year}/{sym.lower()[0]}/_{sym}.gz"
-                dict['pay'] = self.payload
-                dict['sym'] = sym
-
-                self._get_update_local(self, sym, dict)
-                """
                 self._get_update_local(self, sym, year)
             except Exception as e:
                 print(e)
-            # except JSONDecodeError:
-            #    pass
-            # except SSLError:
-            #    pass
 
     @classmethod
-    def _get_update_local(cls, self, sym, year):
+    def _get_update_local(cls, self, sym, year, new_data=''):
         """Get quote data, update fpath, upate gzip, write to gzip."""
         self.url = f"{self.base_url}/stock/{sym}/quote"
         get = requests.get(self.url, params=self.payload)
-        existing, new_data = '', ''
+
         try:
             new_data = pd.DataFrame(get.json(), index=range(1))
             self.data_list.append(new_data)
@@ -207,24 +185,7 @@ class iexClose():
             return
 
         fpath = f"{self.fpath_base}/{year}/{sym.lower()[0]}/_{sym}.parquet"
-
-        existing = ''
-        try:
-            existing = pd.read_parquet(fpath)
-        except FileNotFoundError as fe:
-            print(fe)
-            existing = pd.DataFrame()
-        except ValueError as ve:
-            print(ve)
-            existing = pd.DataFrame()
-
-        try:
-            new_df = pd.concat([existing, new_data])
-            new_df.reset_index(drop=True, inplace=True)
-            write_to_parquet(new_df, fpath)
-        except ValueError as ve:
-            print(ve)
-            pass
+        write_to_parquet(new_data, fpath, combine=True)
 
     @classmethod
     def combine_write(cls, self):
@@ -276,6 +237,7 @@ def write_combined():
 # %% codecell
 ##############################################
 
+
 def get_sector_performance(drop_dup=False):
     """Run each business day, every 60 minutes, from market open."""
 
@@ -291,21 +253,10 @@ def get_sector_performance(drop_dup=False):
     iex_df['hour'] = last_hour
 
     # Read local data and concatenate
-    base_dir = baseDir().path
-    fpath = f"{base_dir}/tickers/sectors/performance_{last_date}.parquet"
+    bpath = Path(baseDir().path, 'tickers', 'sectors')
+    fpath = bpath.joinpath(f"performance_{last_date}.parquet")
 
-    if os.path.isfile(fpath):
-        old_df = pd.read_parquet(fpath)
-    else:
-        old_df = pd.DataFrame()
-
-    all_df = pd.concat([old_df, iex_df])
-    if drop_dup:
-        # Drop duplicates based on the hour, if any exist
-        (iex_df.sort_values(by=['lastUpdated'])
-               .drop_duplicates(subset=['name', 'hour'], inplace=True))
-    all_df.reset_index(inplace=True, drop=True)
-    write_to_parquet(all_df, fpath)
+    write_to_parquet(iex_df, fpath, combine=True)
 
 # %% codecell
 ##############################################

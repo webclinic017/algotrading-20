@@ -77,13 +77,14 @@ class nasdaqShort():
     sh_base = "http://nasdaqtrader.com/dynamic/symdir/shorthalts/shorthalts"
 
     def __init__(self, rpt_date):
+        self.dt = rpt_date
         self.rpt_date = rpt_date.strftime('%Y%m%d')
         self.df = self.get_data(self)
 
     @classmethod
     def get_data(cls, self):
         """Check for local parquet file."""
-        self.fpath = f"{self.fbase}/nasdaq_{self.rpt_date}.parquet"
+        self.fpath = f"{self.fbase}/nasdaq_{self.dt}.parquet"
         local_df = False
 
         if os.path.isfile(self.fpath):
