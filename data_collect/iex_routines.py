@@ -113,7 +113,7 @@ class dailySymbols():
 
         dt = getDate().query('occ')
         fpath_new = f"{baseDir().path}/tickers/new_symbols/{dt}.parquet"
-        self.write_to_parquet(self, new_syms_tp, fpath_new)
+        write_to_parquet(new_syms_tp, fpath_new)
 
         return new_syms_tp
 
