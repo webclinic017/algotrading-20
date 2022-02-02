@@ -4,6 +4,7 @@
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+from pathlib import Path
 import requests
 import pandas as pd
 
@@ -51,9 +52,8 @@ class ApcaSymbols():
     @classmethod
     def create_fpath(cls, self):
         """Create local fpath to write parquet file."""
-        base_dir = baseDir().path
-        fpath = f"{base_dir}/tickers/apca_ref.parquet"
-        self.fpath = fpath
+        bpath = Path(baseDir().path, 'tickers', 'symbols_lists')
+        self.fpath = bpath.joinpath('apca_ref.parquet')
 
     @classmethod
     def get_data(cls, self, base_url, headers):

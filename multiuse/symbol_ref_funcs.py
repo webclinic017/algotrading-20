@@ -23,10 +23,10 @@ def get_all_symbol_ref():
     df_all = None
 
     if env == "production":
-        base_path = Path(baseDir().path, 'tickers')
+        bpath = Path(baseDir().path, 'tickers', 'symbol_list')
 
-        com_syms_path = Path(base_path, 'all_symbols.parquet')
-        otc_syms_path = Path(base_path, 'otc_syms.parquet')
+        com_syms_path = bpath.joinpath('all_symbols.parquet')
+        otc_syms_path = bpath.joinpath('otc_syms.parquet')
         com_df = pd.read_parquet(com_syms_path)
         otc_df = pd.read_parquet(otc_syms_path)
         otc_df.dropna(subset=['cik'], inplace=True)

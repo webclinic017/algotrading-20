@@ -35,7 +35,7 @@ def get_cik(sym):
 def make_sec_cik_ref(sec_ref):
     """Make local dataframe with values from sec master."""
     base_dir, sec_ref_all = baseDir().path, pd.DataFrame()
-    sec_ref_fpath = f"{base_dir}/tickers/sec_ref.parquet"
+    sec_ref_fpath = f"{base_dir}/tickers/symbol_list/sec_ref.parquet"
 
     if os.path.isfile(sec_ref_fpath):
         sec_ref_old = pd.read_json(sec_ref_fpath, compression='gzip')
@@ -62,7 +62,7 @@ def sec_ref_from_combined():
 
     # Define fpath of reference data
     base_dir = baseDir().path
-    fpath = f"{base_dir}/tickers/sec_ref.parquet"
+    fpath = f"{base_dir}/tickers/symbol_list/sec_ref.parquet"
 
     # Write reference data to local file
     write_to_parquet(sec_ref, fpath)

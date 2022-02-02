@@ -40,7 +40,7 @@ def get_sizes(gz=False, parquet=True):
 # %% codecell
 
 
-def get_most_recent_fpath(fpath_dir, f_pre=None, f_suf=None, dt=None, this_year=True, second=False):
+def get_most_recent_fpath(fpath_dir, f_pre='', f_suf='', dt='', this_year=True, second=False):
     """Get the most recent fpath in a directory."""
     path_to_return = False
     if not dt:  # If no date passed, default to iex_eod
@@ -54,7 +54,33 @@ def get_most_recent_fpath(fpath_dir, f_pre=None, f_suf=None, dt=None, this_year=
     date_list['fpath'] = (date_list.apply(lambda row:
                                           f"_{row['date'].date()}",
                                           axis=1))
+
+    date_list['fpath_yr'] = (date_list.apply(lambda row:
+                                             f"_{row['date'].year}",
+                                             axis=1))
+    date_list['fpath_fmt'] = (date_list.apply(lambda row:
+                                              f"_{row['date'].date().strftime('%Y%m%d')}",
+                                              axis=1))
+
     # Iterate through dataframe to find the most recent
+    for index, row in date_list.iterrows():
+        tpath = Path(fpath_dir, f"{f_pre}{row['fpath']}{f_suf}.parquet")
+        if tpath.exists():
+            return tpath
+
+    # Iterate through dataframe to find the most recent
+    for index, row in date_list.iterrows():
+        tpath = Path(fpath_dir, f"{f_pre}{row['fpath_yr']}{f_suf}.parquet")
+        if tpath.exists():
+            return tpath
+
+    # Iterate through dataframe to find the most recent
+    for index, row in date_list.iterrows():
+        tpath = Path(fpath_dir, f"{f_pre}{row['fpath_fmt']}{f_suf}.parquet")
+        if tpath.exists():
+            return tpath
+
+    """
     if not f_pre and not f_suf:
         for index, row in date_list.iterrows():
             if Path(fpath_dir, f"{row['fpath']}.parquet").exists():
@@ -75,7 +101,7 @@ def get_most_recent_fpath(fpath_dir, f_pre=None, f_suf=None, dt=None, this_year=
             if Path(fpath_dir, f"{f_pre}{row['fpath']}{f_suf}.parquet").exists():
                 path_to_return = Path(fpath_dir, f"{f_pre}{row['fpath']}{f_suf}.parquet")
                 return path_to_return
-
+    """
     if not path_to_return and not second:
         path_to_return = get_most_recent_fpath(fpath_dir, this_year=False, second=True)
         if path_to_return:

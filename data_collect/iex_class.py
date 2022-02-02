@@ -39,27 +39,28 @@ class readData():
     @staticmethod
     def get_all_symbols():
         """Get and write to local file all symbols."""
-        syms_fpath = f"{baseDir().path}/tickers/all_symbols.parquet"
+        bpath = Path(baseDir().path, 'tickers', 'symbol_list')
+        fpath = bpath.joinpath('all_symbols.parquet')
         symbols = urlData("/ref-data/symbols").df
-        write_to_parquet(symbols, syms_fpath)
+        write_to_parquet(symbols, fpath)
         return symbols
 
     @staticmethod
     def all_iex_symbols():
         """Read all IEX symbols."""
-        symbols_base = f"{baseDir().path}/tickers"
-        all_symbols_fname = f"{symbols_base}/all_symbols.parquet"
-        ticker_df = pd.read_parquet(all_symbols_fname)
+        bpath = Path(baseDir().path, 'tickers', 'symbol_list')
+        fpath = bpath.joinpath('all_symbols.parquet')
+        ticker_df = pd.read_parquet(fpath)
         return ticker_df
 
     @staticmethod
     def etf_list():
         """Read local etf list."""
-        etf_fname = f"{baseDir().path}/tickers/etf_list.parquet"
+        etf_fname = f"{baseDir().path}/tickers/symbol_list/etf_list.parquet"
         if os.path.isfile(etf_fname):
             etf_df = pd.read_parquet(etf_fname)
         else:
-            symbols = urlData("/ref-data/symbols").df.copy(deep=True)
+            symbols = urlData("/ref-data/symbols").df
             etf_df = pd.DataFrame(symbols[symbols['type'] == 'et']['symbol'])
             etf_df.reset_index(inplace=True, drop=True)
             write_to_parquet(etf_df, etf_fname)
@@ -199,21 +200,7 @@ class urlData():
 
 # %% codecell
 ######################################################
-"""
-Writing etf_list to local json file
 
-etf_list = pd.DataFrame(all_symbols_df[all_symbols_df['type'].isin(['et'])]['symbol'].copy(deep=True))
-etf_list.reset_index(inplace=True, drop=True)
-
-
-
-symbols_base = f"{Path(os.getcwd()).parents[0]}/data/tickers"
-etf_list_fname = f"{symbols_base}/etf_list.gz"
-etf_list.to_json(etf_list_fname, compression='gzip')
-
-etf_df = pd.read_json(etf_list_fname, compression='gzip')
-
-"""
 # %% codecell
 
 
@@ -332,18 +319,19 @@ class companyStats():
     @classmethod
     def get_fname(cls, self, which):
         """Get local fname to use."""
-        base_dir = f"{baseDir().path}/company_stats"
-        self.fpath = f"{base_dir}/{self.stats_dict[which]['local_fpath']}"
+        bpath = f"{baseDir().path}/company_stats"
+        self.stats_fpath = self.stats_dict[which]['local_fpath']
+        self.fpath = bpath.joinpath(self.stats_fpath)
 
     @classmethod
     def check_local(cls, self, symbols, which):
         """Check for local data before requesting from IEX."""
         which = 'fund_ownership'
-        base_dir = f"{baseDir().path}/company_stats"
+        bpath = Path(baseDir().path, 'company_stats')
         all_df = pd.DataFrame()
 
         for sym in symbols:
-            full_path = f"{base_dir}/{self.stats_dict[which]['local_fpath']}/{sym[0].lower()}/*"
+            full_path = f"{bpath}/{self.stats_path}/{sym[0].lower()}/*"
             data_today = f"{full_path}_{date.today()}"
             data_yest = f"{full_path}_{date.today() - timedelta(days=1)}"
 
