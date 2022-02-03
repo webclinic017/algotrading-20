@@ -49,24 +49,24 @@ class SplitGetHistPrices():
     @classmethod
     def determine_params(cls, self, testing, normal, otc, apca, warrants, last_month, previous):
         """Determine fpath and other params."""
-        base_fpath = f"{baseDir().path}/tickers"
+        base_fpath = f"{baseDir().path}/tickers/symbol_list"
         fpath = ''
         # If using iex data, read compressed iex ref files
         if normal or otc:
             if normal:
-                fpath = f"{base_fpath}/all_symbols.gz"
+                fpath = f"{base_fpath}/all_symbols.parquet"
             elif otc:
-                fpath = f"{base_fpath}/otc_syms.gz"
+                fpath = f"{base_fpath}/otc_syms.parquet"
             # Read compressed symbol file
-            self.df = pd.read_json(fpath, compression='gzip')
+            self.df = pd.read_parquet(fpath)
         # If using alpaca ref file, get only active data symbols
         elif apca:
-            fpath = f"{base_fpath}/apca_ref.gz"
-            df = pd.read_json(fpath, compression='gzip')
+            fpath = f"{base_fpath}/apca_ref.parquet"
+            df = pd.read_parquet(fpath)
             self.df = df[df['status'] == 'active'].copy(deep=True)
         elif warrants:
-            fpath = f"{base_fpath}/all_symbols.gz"
-            df = pd.read_json(fpath, compression='gzip')
+            fpath = f"{base_fpath}/all_symbols.parquet"
+            df = pd.read_parquet(fpath)
             wt_df = df[df['type'].isin(['wt', 'ut', 'rt'])]
             self.df = wt_df.copy(deep=True)
 
