@@ -198,19 +198,19 @@ class secMasterIdx():
                 'Accept-Language': 'en-GB,en;q=0.5'})
 
     def __init__(self, hist_date=False):
-        self.determine_params(self, hist_date)
+        self._determine_params(self, hist_date)
         if not isinstance(self.df, pd.DataFrame):
-            self.retrieve_data(self)
+            self._retrieve_data(self)
             try:
-                self.process_data(self)
-                self.write_to_parquet(self)
+                self._process_data(self)
+                self._write_to_parquet(self)
             except KeyError:
                 print(f"secMasterIdx: KeyError {self.url}")
             except EmptyDataError:
                 print(f"secMasterIdx: EmptyDataError for url: {self.url}")
 
     @classmethod
-    def determine_params(cls, self, hist_date):
+    def _determine_params(cls, self, hist_date):
         """Check for existing file or construct params."""
         if hist_date:
             self._read_existing_idx(self, hist_date)
@@ -262,7 +262,7 @@ class secMasterIdx():
         self.url = f"{self.sec_burl}/{yr}/{f_quart}/{mast_suf}"
 
     @classmethod
-    def retrieve_data(cls, self):
+    def _retrieve_data(cls, self):
         """Get SEC master index file."""
         get = requests.get(self.url, headers=self.headers)
         if get.status_code != 200:
@@ -271,7 +271,7 @@ class secMasterIdx():
         self.get = get
 
     @classmethod
-    def process_data(cls, self):
+    def _process_data(cls, self):
         """Process sec master index file."""
         df = (pd.read_csv(BytesIO(self.get.content),
                           delimiter='|',
@@ -285,7 +285,7 @@ class secMasterIdx():
         self.df = df
 
     @classmethod
-    def write_to_parquet(cls, self):
+    def _write_to_parquet(cls, self):
         """Write dataframe to parquet."""
         write_to_parquet(self.df, self.fpath)
 

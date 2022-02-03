@@ -68,10 +68,18 @@ class SymbolRefMetaInfo():
         df_stats['nextEarningsDate'] = (pd.to_datetime(
                                         df_stats['nextEarningsDate']))
         df_stats['dt'] = pd.to_datetime(getDate.query('iex_eod'))
-        (df_stats.insert(6, 'days_until_ER',
-         getDate.get_bus_day_diff(df_stats, 'dt', 'nextEarningsDate')))
 
-        return df_stats
+        # Earnings data info (ned=Next Earnings Date)
+        df_ned = df_stats.dropna(subset=['nextEarningsDate']).copy()
+        df_ned['days_until_ER'] = (getDate.get_bus_day_diff(df_ned, 'dt',
+                                   'nextEarningsDate'))
+        # Get dataframe with no information for earnings dates
+        idx_diff = df_stats.index.difference(df_ned.index)
+        df_no_ned = df_stats[df_stats.index.isin(idx_diff)]
+        # Combine the two dataframes
+        df_comb = pd.concat([df_ned, df_no_ned]).drop(columns='dt')
+
+        return df_comb
 
     @classmethod
     def _join_dataframes(cls, self):

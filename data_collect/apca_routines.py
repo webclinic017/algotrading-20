@@ -52,7 +52,7 @@ class ApcaSymbols():
     @classmethod
     def create_fpath(cls, self):
         """Create local fpath to write parquet file."""
-        bpath = Path(baseDir().path, 'tickers', 'symbols_lists')
+        bpath = Path(baseDir().path, 'tickers', 'symbol_list')
         self.fpath = bpath.joinpath('apca_ref.parquet')
 
     @classmethod
