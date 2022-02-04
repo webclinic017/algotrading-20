@@ -10,6 +10,7 @@ import os.path
 from datetime import date
 import datetime
 from io import BytesIO
+from pathlib import Path
 
 import requests
 import pandas as pd
@@ -28,6 +29,20 @@ except ModuleNotFoundError:
 
 # %% codecell
 ################################################
+
+
+def sec_sym_list():
+    """Get list of symbols from SEC."""
+    # Symbol, Name CIK string
+    sec_cp_url = 'https://www.sec.gov/files/company_tickers.json'
+    get = requests.get(sec_cp_url)
+    sec_syms = pd.DataFrame(get.json()).T
+    sec_syms['cik_str'] = sec_syms['cik_str'].astype('str').str.zfill(10)
+
+    bpath = Path(baseDir().path, 'tickers', 'symbol_list')
+    ss_path = bpath.joinpath('sec_syms.parquet')
+
+    write_to_parquet(sec_syms, ss_path, combine=True, drop_duplicates=True)
 
 
 def form_4(get=False, url=False):

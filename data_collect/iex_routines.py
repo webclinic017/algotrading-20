@@ -84,7 +84,7 @@ class dailySymbols():
         old_syms = readData.last_bus_day_syms()
         old_syms['symbol'] = ''
 
-        # Get the differennce between todays/yesterdays symbols
+        # Get the difference between todays/yesterdays symbols
         syms_diff = (pd.concat([current_syms['symbol'], old_syms['symbol']])
                        .drop_duplicates(keep=False))
         # New symbols from last time checking symbols (yesterday)
