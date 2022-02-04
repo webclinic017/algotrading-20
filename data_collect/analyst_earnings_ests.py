@@ -18,10 +18,10 @@ except ModuleNotFoundError:
 # %% codecell
 
 
-def scraped_ee_dates():
+def scraped_ee_dates(verbose=False, hist=False, current_year=True):
     """Start for loop of dates to get future/past analyst estimates."""
     dt = getDate.query('iex_eod')
-    bdays = None
+    bdays, pos_days = None, None
 
     if (365 - dt.timetuple().tm_yday) > 15:
         bdays = getDate.get_bus_days(this_year=True)
@@ -32,7 +32,15 @@ def scraped_ee_dates():
     bdays['current_date'] = pd.to_datetime(getDate.query('iex_close'))
     bdays['bday_diff'] = (getDate.get_bus_day_diff(
                           bdays, 'current_date', 'date'))
-    pos_days = bdays[bdays['bday_diff'].between(0, 15)].copy()
+
+    if hist and not current_year:
+        pos_days = bdays[bdays['bday_diff'] < 15].copy()
+    elif hist and current_year:
+        cond1 = (bdays['bday_diff'] < 15)
+        cond2 = (bdays['date'].dt.year == dt.year)
+        pos_days = bdays[cond1 & cond2].copy()
+    else:
+        pos_days = bdays[bdays['bday_diff'].between(0, 15)].copy()
 
     bpath = Path(baseDir().path, 'economic_data', 'analyst_earnings')
     fpath_dir = bpath.joinpath(f"_{str(dt.year)}")
@@ -45,9 +53,15 @@ def scraped_ee_dates():
                                 .map(os.path.exists))
     dt_need = pos_days[~pos_days['fpath_exists']]
 
+    dt_list = []
+
     for dt in dt_need['date']:
         ScrapedEE(dt=dt.date())
         sleep(randint(5, 15))
+        dt_list.append(dt.date())
+
+    if verbose:
+        help_print_arg(str(dt_list))
 
 
 # %% codecell
