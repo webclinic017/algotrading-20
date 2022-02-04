@@ -99,8 +99,9 @@ class dailySymbols():
     def new_syms_ref_type(cls, self):
         """Get reference type data for new symbols."""
         iex_sup = urlData("/ref-data/symbols").df
-        fpath = f"{baseDir().path}/tickers/all_symbols.parquet"
-        fpath_new = f"{baseDir().path}/tickers/symbol_list/all_symbols.parquet"
+        bpath = Path(baseDir().path, 'tickers')
+        fpath = bpath.joinpath('all_symbols.parquet')
+        fpath_new = bpath.joinpath('symbol_list', 'all_symbols.parquet')
         # Write to parquet file
         write_to_parquet(iex_sup, fpath)
         write_to_parquet(iex_sup, fpath_new)

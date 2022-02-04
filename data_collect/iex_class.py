@@ -78,7 +78,7 @@ class readData():
 
         if not os.path.isfile(syms_fname):
             print('Not data available. Defaulting to mid Feb symbols.')
-            syms_fname = f"{baseDir().path}/tickers/all_symbols.parquet"
+            syms_fname = f"{baseDir().path}/tickers/symbol_list/all_symbols.parquet"
         # Read local parquet file
         try:
             old_syms = pd.read_parquet(syms_fname)

@@ -66,7 +66,7 @@ class scansClass():
     def call_vol_avg(cls, self):
         """Perform ops for highest volume/avg."""
         # Read all symbols fpath and filter to only common stock
-        syms_fpath = f"{self.base_dir}/tickers/all_symbols.parquet"
+        syms_fpath = f"{self.base_dir}/tickers/symbol_list/all_symbols.parquet"
         all_symbols = pd.read_parquet(syms_fpath)
         cs_syms = all_symbols[all_symbols['type'] == 'cs']['symbol'].tolist()
 
