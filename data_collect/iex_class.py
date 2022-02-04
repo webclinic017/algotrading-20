@@ -26,8 +26,12 @@ from datetime import date, timedelta, time
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, help_print_arg, write_to_parquet
+    from scripts.dev.multiuse.path_helpers import get_most_recent_fpath
+    from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, getDate, help_print_arg, write_to_parquet
+    from multiuse.path_helpers import get_most_recent_fpath
+    from api import serverAPI
 
 # %% codecell
 ######################################################
@@ -73,18 +77,21 @@ class readData():
     @staticmethod
     def last_bus_day_syms():
         """Read all symbols from the last business day."""
-        last_date = getDate().query('last_syms')
-        syms_fname = f"{baseDir().path}/tickers/new_symbols/{last_date}.parquet"
+        sdir = Path(baseDir().path, 'tickers', 'new_symbols')
+        fpath = get_most_recent_fpath(sdir, f_pre='_')
+        sym_df = False
 
-        if not os.path.isfile(syms_fname):
-            print('Not data available. Defaulting to mid Feb symbols.')
-            syms_fname = f"{baseDir().path}/tickers/symbol_list/all_symbols.parquet"
-        # Read local parquet file
-        try:
-            old_syms = pd.read_parquet(syms_fname)
-        except ValueError:
-            old_syms = pd.DataFrame()
-        return old_syms
+        if fpath.exists():
+            sym_df = pd.read_parquet(fpath)
+        else:
+            fpath = sdir.parent.joinpath('symbol_list', 'all_symbols.parquet')
+            if fpath.exists():
+                sym_df = pd.read_parquet(fpath)
+            else:
+                sym_df = serverAPI('all_symbols').df
+                write_to_parquet(sym_df, fpath)
+
+        return sym_df
 
 # %% codecell
 

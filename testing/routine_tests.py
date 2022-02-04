@@ -201,11 +201,14 @@ class FpathsTest():
     @classmethod
     def check_nasdaq(cls, self):
         """Check for nasdaq SSR list."""
-        dt = getDate.query('iex_eod').strftime('%Y%m%d')
-        fpath = f"{self.base_dir}/short/daily_breaker/nasdaq_{dt}.parquet"
-        self.ssr_list = fpath
+        dt = getDate.query('iex_eod')
+        bpath = Path(self.base_dir, 'short', 'daily_breaker')
+        fpath = bpath.joinpath(f"nasdaq_{dt}.parquet")
+        fpath_fmt = bpath.joinpath(f"nasdaq_{dt.strftime('%Y%m%d')}")
 
-        if os.path.isfile(fpath):
+        if fpath.exists():
+            self.sys_dict['Nasdaq: daily SSR list'] = True
+        elif fpath_fmt.exists():
             self.sys_dict['Nasdaq: daily SSR list'] = True
         else:
             self.sys_dict['Nasdaq: daily SSR list'] = False

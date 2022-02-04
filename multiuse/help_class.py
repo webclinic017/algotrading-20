@@ -67,7 +67,7 @@ def round_cols(df, cols=False, decimals=3):
     return df
 
 
-def write_to_parquet(df, fpath, combine=False):
+def write_to_parquet(df, fpath, combine=False, drop_duplicates=False):
     """Writing to parquet with error exceptions."""
     df = dataTypes(df, parquet=True).df
     fpath = Path(fpath)
@@ -78,6 +78,8 @@ def write_to_parquet(df, fpath, combine=False):
 
         if isinstance(df.index, pd.RangeIndex):
             df = df.reset_index(drop=True)
+        if drop_duplicates:
+            df.drop_duplicates(inplace=True)
 
     try:
         df.to_parquet(fpath, allow_truncated_timestamps=True)
