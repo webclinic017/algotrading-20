@@ -156,7 +156,7 @@ class FpathsTest():
             'CBOE long_time': f"{cboe_syms_path}/long_{dt}.parquet",
             'CBOE medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
             'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet",
-            'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/{mkt_dt}_eod.parquet"
+            'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/_{mkt_dt}_eod.parquet"
 
         })
 
@@ -166,7 +166,7 @@ class FpathsTest():
             'CBOE long_time': f"{cboe_syms_path}/long_{dt}.parquet",
             'CBOE medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
             'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet",
-            'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/{mkt_dt}_eod.parquet"
+            'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/_{mkt_dt}_eod.parquet"
 
         })
 
