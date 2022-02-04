@@ -40,6 +40,40 @@ def get_sizes(gz=False, parquet=True):
 # %% codecell
 
 
+def path_or_yr_direct(bdir):
+    """Pass a directory in, see if any directories match."""
+    r15 = range(15)
+    dt = getDate.query('iex_close')
+    neg_yr_list = [f"_{str(dt.year - n)}" for n in r15]
+    pos_yr_list = [f"_{str(dt.year + n)}" for n in r15]
+    yr_dir_list = neg_yr_list + pos_yr_list
+
+    dirs = [f for f in list(bdir.iterdir()) if f.name in yr_dir_list]
+
+    return dirs
+
+
+def paths_combine_dataframes(dirs, cb_path='', cb_all_path='', verbose=False):
+    """Read dataframes and combine into combined, combined_all fpaths."""
+    df_list = []
+
+    for dir in dirs:
+        path_list = dir.glob('**/*.parquet')
+        for f in path_list:
+            df_list.append(pd.read_parquet(f))
+
+    df_all = pd.concat(df_list)
+
+    df_cb = df_all[df_all['date'] == df_all['date'].max()]
+
+    if verbose:
+        msg = f"paths_combine_dataframes {str(df_cb['date'].max())}"
+        help_print_arg(msg)
+
+    write_to_parquet(df_cb, cb_path)
+    write_to_parquet(df_all, cb_all_path)
+
+
 def get_most_recent_fpath(fpath_dir, f_pre='', f_suf='', dt='', this_year=True, second=False):
     """Get the most recent fpath in a directory."""
     path_to_return = False
