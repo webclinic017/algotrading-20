@@ -56,9 +56,12 @@ def scraped_ee_dates(verbose=False, hist=False, current_year=True):
     dt_list = []
 
     for dt in dt_need['date']:
-        ScrapedEE(dt=dt.date())
-        sleep(randint(5, 15))
-        dt_list.append(dt.date())
+        try:
+            ScrapedEE(dt=dt.date())
+            sleep(randint(5, 15))
+            dt_list.append(dt.date())
+        except Exception as e:
+            help_print_arg(f"scraped_ee_dates {type(e)} {str(e)}")
 
     if verbose:
         help_print_arg(str(dt_list))
