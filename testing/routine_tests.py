@@ -53,7 +53,7 @@ class FpathsTest():
         self.all_syms, self.sym_list = all_syms, sym_list
 
     @classmethod
-    def check_iex_close(cls, self, test_api):
+    def check_iex_close(cls, self):
         """Check for iex_close and iex_combined."""
         dt = getDate.query('iex_eod')
         prev_dt = getDate.query('iex_previous')
