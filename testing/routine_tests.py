@@ -146,19 +146,19 @@ class FpathsTest():
     def check_cboe(cls, self):
         """Check local cboe file market maker opportunities."""
         dt = getDate.query('cboe')
-        mkt_dt = getDate.query('mkt_open')
-        mkt_yr = str(mkt_dt.year)
+        # mkt_dt = getDate.query('mkt_open')
+        # mkt_yr = str(mkt_dt.year)
         cboe_bpath = f"{self.base_dir}/derivatives"
         cboe_syms_path = f"{cboe_bpath}/cboe/syms_to_explore"
-        cboe_intra = f"{cboe_bpath}/cboe_intraday"
+        # cboe_intra = f"{cboe_bpath}/cboe_intraday"
 
         cboe_path_dict = ({
             # 'cboe_raw': f"{cboe_base_path}/mmo/_{dt}.parquet",
             'CBOE nopop_2000': f"{cboe_bpath}/cboe/nopop_2000_{dt}.parquet",
             'CBOE long_time': f"{cboe_syms_path}/long_{dt}.parquet",
             'CBOE medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
-            'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet",
-            'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/_{mkt_dt}_eod.parquet"
+            'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet"
+            # 'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/_{mkt_dt}_eod.parquet"
 
         })
 
@@ -167,8 +167,8 @@ class FpathsTest():
             'CBOE nopop_2000': f"{cboe_bpath}/cboe/nopop_2000_{dt}.parquet",
             'CBOE long_time': f"{cboe_syms_path}/long_{dt}.parquet",
             'CBOE medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
-            'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet",
-            'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/_{mkt_dt}_eod.parquet"
+            'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet"
+            # 'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/_{mkt_dt}_eod.parquet"
 
         })
 
