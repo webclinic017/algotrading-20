@@ -31,8 +31,7 @@ class FpathsTest():
     base_dir = baseDir().path
     sys_dict = {}
 
-    def __init__(self, test_api=False):
-        self.test_api = test_api
+    def __init__(self):
         self.get_all_syms(self)
         self.check_iex_close(self)
         self.check_iex_stats(self)
@@ -47,7 +46,9 @@ class FpathsTest():
     @classmethod
     def get_all_syms(cls, self):
         """Get the all_syms dataframe."""
-        all_syms = serverAPI('all_symbols').df
+        # all_syms = serverAPI('all_symbols').df
+        syms_path = Path(baseDir().path, 'tickers', 'symbol_list', 'all_symbols.parquet')
+        all_syms = pd.read_parquet(syms_path)
         sym_list = all_syms['symbol'].tolist()
 
         self.all_syms, self.sym_list = all_syms, sym_list
@@ -60,20 +61,19 @@ class FpathsTest():
         # IEX Close
         iex_close_fpath = f"{self.base_dir}/iex_eod_quotes/combined/_{dt}.parquet"
 
-        if self.test_api:
-            prev_bpath = Path(self.base_dir, 'StockEOD')
-            prev_comb = prev_bpath.joinpath('combined', f"_{prev_dt}.parquet")
-            prev_comb_all = prev_bpath.joinpath('combined_all', f"_{prev_dt}.parquet")
+        prev_bpath = Path(self.base_dir, 'StockEOD')
+        prev_comb = prev_bpath.joinpath('combined', f"_{prev_dt}.parquet")
+        prev_comb_all = prev_bpath.joinpath('combined_all', f"_{prev_dt}.parquet")
 
-            if prev_comb.exists():
-                self.sys_dict['IEX Previous Daily Combined'] = True
-            else:
-                self.sys_dict['IEX Previous Daily'] = False
+        if prev_comb.exists():
+            self.sys_dict['IEX Previous Daily Combined'] = True
+        else:
+            self.sys_dict['IEX Previous Daily'] = False
 
-            if prev_comb_all.exists():
-                self.sys_dict['IEX Previous Daily Combined All'] = True
-            else:
-                self.sys_dict['IEX Previous Daily Combined All'] = False
+        if prev_comb_all.exists():
+            self.sys_dict['IEX Previous Daily Combined All'] = True
+        else:
+            self.sys_dict['IEX Previous Daily Combined All'] = False
 
         if os.path.isfile(iex_close_fpath):
             self.sys_dict['IEX daily stock data'] = True
@@ -146,19 +146,19 @@ class FpathsTest():
     def check_cboe(cls, self):
         """Check local cboe file market maker opportunities."""
         dt = getDate.query('cboe')
-        # mkt_dt = getDate.query('mkt_open')
-        # mkt_yr = str(mkt_dt.year)
+        mkt_dt = getDate.query('mkt_open')
+        mkt_yr = str(mkt_dt.year)
         cboe_bpath = f"{self.base_dir}/derivatives"
         cboe_syms_path = f"{cboe_bpath}/cboe/syms_to_explore"
-        # cboe_intra = f"{cboe_bpath}/cboe_intraday"
+        cboe_intra = f"{cboe_bpath}/cboe_intraday"
 
         cboe_path_dict = ({
             # 'cboe_raw': f"{cboe_base_path}/mmo/_{dt}.parquet",
             'CBOE nopop_2000': f"{cboe_bpath}/cboe/nopop_2000_{dt}.parquet",
             'CBOE long_time': f"{cboe_syms_path}/long_{dt}.parquet",
             'CBOE medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
-            'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet"
-            # 'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/_{mkt_dt}_eod.parquet"
+            'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet",
+            'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/_{mkt_dt}_eod.parquet"
 
         })
 
@@ -167,8 +167,8 @@ class FpathsTest():
             'CBOE nopop_2000': f"{cboe_bpath}/cboe/nopop_2000_{dt}.parquet",
             'CBOE long_time': f"{cboe_syms_path}/long_{dt}.parquet",
             'CBOE medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
-            'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet"
-            # 'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/_{mkt_dt}_eod.parquet"
+            'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet",
+            'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/_{mkt_dt}_eod.parquet"
 
         })
 
