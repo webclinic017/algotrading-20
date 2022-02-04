@@ -50,7 +50,7 @@ def check_nan(a, b=np.NaN):
     if a.dtype == 'O':
         if a.str.contains('NaN'):
             a = a.astype(np.float64)
-            
+
     return (a == b) | ((a != a) & (b != b))
 
 
@@ -312,6 +312,9 @@ class getDate():
                 query_date = (date.today() - BusinessDay(n=1)).date()
         elif site in ('iex_close'):
             if weekend:
+                query_date = (date.today() - BusinessDay(n=1)).date()
+        elif site in ('mkt_open'):
+            if getDate.time_cutoff(cutoff_hm=9.0) or weekend:
                 query_date = (date.today() - BusinessDay(n=1)).date()
         elif site in ('iex_eod'):
             if getDate.time_cutoff(cutoff_hm=16.15) or weekend:
