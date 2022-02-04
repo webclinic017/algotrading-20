@@ -135,8 +135,9 @@ class secCompanyIdx():
     @classmethod
     def construct_params(cls, self, sym, cik):
         """Construct url and local fpath."""
-        all_syms_fpath = f"{self.base_dir}/tickers/all_symbols.parquet"
-        all_symbols = pd.read_parquet(all_syms_fpath)
+        bpath = baseDir().path
+        syms_fpath = bpath.joinpath('/tickers/symbol_list/all_symbols.parquet')
+        all_symbols = pd.read_parquet(syms_fpath)
         # Drop cik values that are NaNs or infinite
         all_symbols.dropna(axis=0, subset=['cik'], inplace=True)
         all_symbols['cik'] = all_symbols['cik'].astype(np.uint32)
@@ -149,7 +150,8 @@ class secCompanyIdx():
                    & (all_symbols['type'] == 'cs')])
 
         # Construct local fpath
-        self.fpath = f"{self.base_dir}/sec/company_index/{str(cik)[-1]}/_{cik}.parquet"
+        fsuf = f"/sec/company_index/{str(cik)[-1]}/_{cik}.parquet"
+        self.fpath = bpath.joinpath(fsuf)
         # Sec base url
         sec_burl = 'https://data.sec.gov/submissions/CIK'
         self.url = f"{sec_burl}{str(cik).zfill(10)}.json"
@@ -318,7 +320,7 @@ class secInsiderTrans():
         if sym and not cik:  # Get CIK
             self.cik, self.sym = get_cik('TDAC').astype(np.uint32), sym
         elif cik and not sym:  # Get underlying symbll from ref data
-            syms_fpath = f"{self.base_dir}/tickers/all_symbols.parquet"
+            syms_fpath = f"{self.base_dir}/tickers/symbol_list/all_symbols.parquet"
             all_syms = pd.read_parquet(syms_fpath)
             sym_row = (all_syms[(all_syms['cik'] == cik)
                                 & (all_syms['type'] == 'cs')].iloc[0])

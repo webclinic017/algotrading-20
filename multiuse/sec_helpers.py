@@ -10,8 +10,10 @@ import numpy as np
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, write_to_parquet
+    from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, getDate, dataTypes, write_to_parquet
+    from api import serverAPI
 
 # %% codecell
 ##############################################
@@ -19,9 +21,7 @@ except ModuleNotFoundError:
 
 def get_cik(sym):
     """Get SEC CIK number from symbol."""
-    base_dir = baseDir().path
-    all_syms_fpath = f"{base_dir}/tickers/all_symbols.parquet"
-    all_symbols = pd.read_json(all_syms_fpath, compression='gzip')
+    all_symbols = serverAPI('all_symbols').df
 
     # Drop cik values that are NaNs or infinite
     all_symbols.dropna(axis=0, subset=['cik'], inplace=True)
