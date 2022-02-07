@@ -4,6 +4,7 @@ from pathlib import Path
 import string
 import sys
 from time import sleep
+from datetime import date
 
 import pandas as pd
 import requests
@@ -110,22 +111,21 @@ class BzRecs():
 # %% codecell
 
 
-def get_hist_bz_ratings(year=False):
+def get_hist_bz_ratings(cutoff=None, start_dt=None, this_year=True):
     """Initiate data collection of past analyst ratings."""
     # Pull analyst ratings (default is this year)
     recs = serverAPI('analyst_recs_scraped').df
-    ytd_busdays = None
+    rec_dates = recs['date'].dt.date.unique()
 
-    if not year:  # Assume this year
-        bus_days = getDate.get_bus_days(this_year=True)
-        dt = getDate.query('iex_eod')
-        ytd_busdays = bus_days[bus_days['date'].dt.date <= dt]
+    start_dt = date(2021, 1, 1)
 
-    dates_needed = (ytd_busdays[~ytd_busdays['date']
-                    .isin(recs['date'].dt.date.unique())]
-                    .copy())
+    dt = getDate.query('iex_eod')
+    bus_days = (getDate.get_bus_days(this_year=this_year,
+                                     cutoff=dt, start_dt=start_dt))
 
+    dates_needed = bus_days[~bus_days['date'].isin(rec_dates)].copy()
     dt_w_bins = df_create_bins(dates_needed, bin_size=2)
+
     for bin in dt_w_bins['bins'].unique():
         df_mod = dt_w_bins[dt_w_bins['bins'] == bin].copy()
         dt_min = df_mod['date'].dt.date.min()
