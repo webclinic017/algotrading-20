@@ -114,9 +114,6 @@ class stwitsUserStream():
             self.prev_fpath = f"{user_fpath}/raw_{self.this_year}.parquet"
             self.syms_fpath = f"{user_fpath}/syms_{self.this_year}.parquet"
 
-            # Create local directory if it does not exist
-            if not os.path.isdir(user_fpath):
-                os.mkdir(user_fpath)
             user_url = f"{self.base_url}/user/{u}.json"
             # Data decoded
             self._get_ops(self, user_url, user_fpath)
@@ -163,10 +160,9 @@ class stwitsUserStream():
     def _concat_drop(cls, fpath, st_df):
         """If prev file exists, concat, drop duplicates."""
         prev_df = pd.DataFrame()
-        try:
+
+        if Path(fpath).exists():
             prev_df = pd.read_parquet(fpath)
-        except ValueError:
-            pass
 
         comb_df = pd.concat([prev_df, st_df])
         # If the raw df, use ID for dropping duplicates
@@ -178,13 +174,12 @@ class stwitsUserStream():
             comb_df.drop_duplicates(
                         subset=['symbol', 'created_at'],
                         inplace=True)
-        df = comb_df.copy(deep=True)
+        df = comb_df.reset_index(drop=True).copy()
         return df
 
     @classmethod
     def _write_to_parquet(cls, fpath, df):
         """Reset index and write dataframe to parquet."""
-        df.reset_index(inplace=True, drop=True)
         write_to_parquet(df, fpath)
 
 # %% codecell

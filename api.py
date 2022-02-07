@@ -29,6 +29,7 @@ def make_url_dict():
         'analyst_recs_all': '/data/company_stats/analyst_recs/all',
         'analyst_recs_mr': '/data/company_stats/analyst_recs/most_recent',
         'analyst_recs_scraped': '/data/company_stats/analyst_recs/scraped',
+        'analyst_ests_all': '/data/company_stats/analyst_ests/all',
         'treasuries': '/econ/treasuries',
         'cboe_mmo_raw': '/cboe/mmo/raw',
         'cboe_mmo_top': '/cboe/mmo/top',

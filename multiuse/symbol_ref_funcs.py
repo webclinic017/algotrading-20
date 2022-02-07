@@ -9,10 +9,41 @@ import numpy as np
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, help_print_arg
+    from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, help_print_arg
-
+    from api import serverAPI
 # %% codecell
+
+
+def remove_funds_spacs(query='symbol not in @exclude_list'):
+    """Remove funds and other non-common stock symbols."""
+    all_syms = serverAPI('all_symbols').df
+    cond_str = all_syms['name'].str.lower().str
+    # Exclude dict
+    edict = {}
+    edict['spacs'] = all_syms[cond_str.contains('acquisition')]
+    edict['funds'] = all_syms[cond_str.contains('fund')]
+    edict['etfs'] = all_syms[all_syms['type'] == 'et']
+
+    other_list = ['ps', 'rt', 'struct', 'ut', 'wt']
+    edict['others'] = all_syms[all_syms['type'].isin(other_list)]
+
+    edict['inv_corp'] = all_syms[cond_str.contains('investment corp')]
+    edict['capital'] = all_syms[cond_str.contains('capital')]
+    edict['trusts'] = all_syms[(cond_str.contains('trust'))]
+
+    # Exclude certain words
+    words_to_exclude = (['reit', 'municipal', 'income', 'merger',
+                         'investors', ' spac ', ' i ', ' ii ',
+                         ' iv ', ' v ', ' vi '])
+    for word in words_to_exclude:
+        edict[word] = all_syms[cond_str.contains(word)]
+
+    exclude_list = pd.concat([val['symbol'] for val in edict.values()])
+    result = all_syms.query(query).reset_index(drop=True)
+
+    return result
 
 
 def get_all_symbol_ref():

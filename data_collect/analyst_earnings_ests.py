@@ -47,7 +47,7 @@ def scraped_ee_dates(verbose=False, hist=False, current_year=True):
 
     pos_days['fpath'] = (pos_days.apply(lambda row:
                          f"{fpath_dir}/_{str(row['date'].date())}.parquet",
-                         axis=1))
+                                        axis=1))
 
     pos_days['fpath_exists'] = (pos_days['fpath'].astype(str)
                                 .map(os.path.exists))
