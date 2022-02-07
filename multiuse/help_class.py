@@ -47,9 +47,12 @@ def help_print_arg(arg):
 
 def check_nan(a, b=np.NaN):
     """Check nans."""
-    if a.dtype == 'O':
-        if a.str.contains('NaN'):
-            a = a.astype(np.float64)
+    try:
+        if a.dtype == 'O':
+            if a.str.contains('NaN'):
+                a = a.astype(np.float64)
+    except AttributeError:
+        pass
 
     return (a == b) | ((a != a) & (b != b))
 
@@ -378,7 +381,7 @@ class getDate():
         return dt_list.values
 
     @staticmethod
-    def get_bus_days(testing=False, this_year=False):
+    def get_bus_days(testing=False, this_year=False, cutoff=None):
         """Get all business days. If file, read and return."""
         df, dt_year, fpath = None, None, ''
         if this_year:
@@ -390,7 +393,7 @@ class getDate():
         if testing:
             print(fpath)
 
-        if not os.path.isfile(fpath):
+        if not os.path.isfile(fpath) or cutoff or this_year:
             rh = RecordHolidays().df['date']
             # Record the earliest/latest holiday and use that as range
             dt_min = rh.min().date()
@@ -403,6 +406,8 @@ class getDate():
 
             if this_year:
                 days = days[days['date'].dt.year == dt_year].copy(deep=True)
+            if cutoff:
+                days = days[days['date'].dt.date <= cutoff].copy(deep=True)
 
             days.reset_index(drop=True, inplace=True)
             # Write to local json file
