@@ -381,7 +381,7 @@ class getDate():
         return dt_list.values
 
     @staticmethod
-    def get_bus_days(testing=False, this_year=False, cutoff=None):
+    def get_bus_days(testing=False, this_year=False, cutoff=None, start_dt=None):
         """Get all business days. If file, read and return."""
         df, dt_year, fpath = None, None, ''
         if this_year:
@@ -408,6 +408,8 @@ class getDate():
                 days = days[days['date'].dt.year == dt_year].copy(deep=True)
             if cutoff:
                 days = days[days['date'].dt.date <= cutoff].copy(deep=True)
+            if start_dt:
+                days = days[days['date'].dt.date >= start_dt].copy(deep=True)
 
             days.reset_index(drop=True, inplace=True)
             # Write to local json file
