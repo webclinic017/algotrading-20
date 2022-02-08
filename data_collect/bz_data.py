@@ -124,7 +124,7 @@ def get_hist_bz_ratings(cutoff=None, start_dt=None, this_year=True):
                                      cutoff=dt, start_dt=start_dt))
 
     dates_needed = bus_days[~bus_days['date'].isin(rec_dates)].copy()
-    dt_w_bins = df_create_bins(dates_needed, bin_size=2)
+    dt_w_bins = df_create_bins(dates_needed, bin_size=3)
 
     for bin in dt_w_bins['bins'].unique():
         df_mod = dt_w_bins[dt_w_bins['bins'] == bin].copy()
