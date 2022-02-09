@@ -18,19 +18,23 @@ import talib
 try:
     from scripts.dev.data_collect.iex_class import urlData
     from scripts.dev.studies.add_study_cols import add_gap_col, calc_rsi, make_moving_averages, add_fChangeP_col, add_fHighMax_col
-    from scripts.dev.multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet, check_nan
+    from scripts.dev.multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
+    from scripts.dev.multiuse.df_helpers import DfHelpers
     from scripts.dev.multiuse.create_file_struct import makedirs_with_permissions
     from scripts.dev.multiuse.path_helpers import get_most_recent_fpath
     from scripts.dev.multiuse.pd_funcs import mask, chained_isin
     from scripts.dev.api import serverAPI
+    from scripts.dev.multiuse.symbol_ref_funcs import remove_funds_spacs
 except ModuleNotFoundError:
     from data_collect.iex_class import urlData
     from studies.add_study_cols import add_gap_col, calc_rsi, make_moving_averages, add_fChangeP_col, add_fHighMax_col
-    from multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet, check_nan
+    from multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
+    from multiuse.df_helpers import DfHelpers
     from multiuse.create_file_struct import makedirs_with_permissions
     from multiuse.path_helpers import get_most_recent_fpath
     from multiuse.pd_funcs import mask, chained_isin
     from api import serverAPI
+    from multiuse.symbol_ref_funcs import remove_funds_spacs
 
 # %% codecell
 pd.DataFrame.mask = mask
@@ -39,7 +43,7 @@ pd.DataFrame.chained_isin = chained_isin
 # %% codecell
 
 
-def read_clean_combined_all(local=False, dt=None):
+def read_clean_combined_all(local=False, dt=None, filter_syms=True):
     """Read, clean, and add columns to StockEOD combined all."""
     df_all = None
 
@@ -52,14 +56,14 @@ def read_clean_combined_all(local=False, dt=None):
             df_all['date'] = pd.to_datetime(df_all['date'])
         df_all.drop_duplicates(subset=['symbol', 'date'], inplace=True)
     else:
-        all_syms = serverAPI('all_symbols').df
-        all_cs = all_syms[all_syms['type'].isin(['cs', 'ad'])]
-        all_cs_syms = all_cs['symbol'].unique().tolist()
-
         cols_to_read = ['date', 'symbol', 'fOpen', 'fHigh', 'fLow', 'fClose', 'fVolume']
         df_all = serverAPI('stock_close_cb_all').df
         df_all = df_all[cols_to_read]
-        df_all = df_all[df_all['symbol'].isin(all_cs_syms)].copy()
+
+        if filter_syms:
+            all_cs_syms = remove_funds_spacs()
+            df_all = df_all[df_all['symbol'].isin(all_cs_syms['symbol'])].copy()
+
         df_all['date'] = pd.to_datetime(df_all['date'])
 
         # Define base bpath for 2015-2020 stock data
@@ -181,7 +185,7 @@ def get_max_rows(df_sym, verb=False):
             continue
 
         cond_1 = ((row['fChangeP'] in (max_rows['fChangeP'].nlargest(5).tolist()))
-                  & (not check_nan(row['fHighMax']))
+                  & (not DfHelpers.check_nan(row['fHighMax']))
                   & ((((row['fClose'] - row['fOpen']) / row['fRange'])) > .50))
         # ^ Remove candles extended tails, small body
         cond_2 = ((prev_row['fChangeP'] > 0)
@@ -487,24 +491,13 @@ def make_confirm_df(rows, cutoff, diff_dict, fib_dict, df_confirm_all):
 def write_fibs_to_parquet(df_confirm_all, fib_dict_list):
     """Write fibonacci data to local dataframe."""
     path = Path(baseDir().path, 'studies/fibonacci', 'confirmed_all.parquet')
-    df_confirm_all = dataTypes(df_confirm_all, parquet=True).df
-    df_confirm_all.to_parquet(path)
+    write_to_parquet(df_confirm_all, path)
 
     fib_df = pd.DataFrame.from_records(fib_dict_list)
-    holidays_fpath = Path(baseDir().path, 'ref_data/holidays.parquet')
-    holidays = pd.read_parquet(holidays_fpath)
-    dt = getDate.query('sec_master')
-    current_holidays = (holidays[(holidays['date'].dt.year >= dt.year) &
-                                 (holidays['date'].dt.date <= dt)])
-    hol_list = current_holidays['date'].dt.date.tolist()
     (fib_df.insert(2, "date_range",
-     fib_df.apply(lambda row:
-         np.busday_count(row['start_date'].date(),
-                         row['end_date'].date(),
-                         holidays=hol_list),
-            axis=1)))
-    fib_df = dataTypes(fib_df, parquet=True).df
-    path = Path(baseDir().path, 'studies/fibonacci', 'fib_vals.parquet')
-    fib_df.to_parquet(path)
+     getDate.get_bus_day_diff(fib_df, 'start_date', 'end_date')))
+    path = Path(baseDir().path, 'studies/fibonacci', 'fib_vals_test.parquet')
+    write_to_parquet(fib_df, path)
+
 
 # %% codecell

@@ -49,9 +49,9 @@ pd.set_option('display.max_columns', 100)
 pd.set_option('display.max_rows', 150)
 # %% codecell
 
-df_all = fib_all_clean_combine_write(read=False)
+df_all = fib_all_clean_combine_write(read=True)
 df_peak_troughs = add_fib_peaks_troughs_diffs(read=True).copy()
-df_cleaned = fib_pp_cleaned(read=False, drop=False).copy()
+df_cleaned = fib_pp_cleaned(read=True, drop=False).copy()
 
 df_cleaned = fib_clean_to_view(df_cleaned).copy()
 # %% codecell
