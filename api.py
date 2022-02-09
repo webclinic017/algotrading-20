@@ -48,6 +48,7 @@ def make_url_dict():
         'yoptions_temp': '/data/yfinance/derivs/temp',
         'yoptions_unfin': '/data/yfinance/derivs/unfinished',
         'yoptions_stock': '/data/yfinance/derivs/stock',  # /<symbol>
+        'errors_fix_intraday_dataframes': '/data/errors/fix_intraday_dataframes',
         'yinfo_all': '/data/yfinance/info/all',
         'iex_quotes_raw': '/prices/eod/all',
         'iex_comb_today': f"/prices/combined/{getDate.query('cboe')}",
@@ -193,8 +194,10 @@ class serverAPI():
     def _iex_intraday_m1(cls, self, df):
         """Write to local file structure."""
         cols_to_keep = ['symbol', 'dtime', 'date', 'minute', 'exchangeType']
-        mkt_cols = [col for col in df.columns if 'market' in str(col)]
+        df_cols = df.columns
+        mkt_cols = [col for col in df_cols if 'market' in str(col)]
         cols_to_keep = cols_to_keep + mkt_cols
+        cols_to_keep = [col for col in cols_to_keep if col in df_cols]
         df_m1 = df[cols_to_keep].copy()
         # df_m1.rename(columns={'sym': 'symbol'}, inplace=True)
 

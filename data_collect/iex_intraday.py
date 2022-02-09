@@ -110,6 +110,10 @@ class GetIntradayIexData():
         df_ud['date'] = pd.to_datetime(df_ud['date'], format='%Y-%m-%d')
         df_ud.insert(0, 'symbol', sym)
         # Write to parquet and exit function
+        df_ud['symbol'] = df_ud['symbol'].astype('category')
+        (df_ud.drop(columns=['minute', 'exchangeType'],
+                    inplace=True, errors="ignore"))
+
         write_to_parquet(df_ud, fpath, combine=True)
 
     @classmethod
