@@ -6,6 +6,22 @@ import pandas as pd
 # %% codecell
 
 
+def perc_change(df, col1, col2, multiply=False):
+    """Percentage change (between columns)."""
+    result = ((df[col2] - df[col1]) / df[col1])
+    if multiply:
+        result = result * 100
+    return result
+
+
+def vc(df, **kwargs):
+    """Value counts except without the full name."""
+    if isinstance(df, pd.Series):
+        return df.value_counts()
+    elif isinstance(df, pd.DataFrame):
+        return df.value_counts(**kwargs)
+
+
 def mask(df, key, value, equals=True, not_equals=False, greater=False, lesser=False, notin=False):
     """Modified mask."""
     # If comparing rows values to singular value
