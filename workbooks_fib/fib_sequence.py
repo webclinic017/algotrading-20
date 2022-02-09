@@ -66,6 +66,7 @@ mrows_empty_list = []
 # dump_path = Path(baseDir().path, 'dump', 'df_all_cleaned_max.parquet')
 # write_to_parquet(df_all, dump_path)
 
+
 # %% codecell
 confirm_cols = ['symbol', 'fib', 'date', 'col', 'perc_diff']
 df_confirm_all = pd.DataFrame(columns=confirm_cols)

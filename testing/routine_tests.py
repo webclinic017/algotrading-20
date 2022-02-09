@@ -68,7 +68,7 @@ class FpathsTest():
         if prev_comb.exists():
             self.sys_dict['IEX Previous Daily Combined'] = True
         else:
-            self.sys_dict['IEX Previous Daily'] = False
+            self.sys_dict['IEX Previous Daily Combined'] = False
 
         if prev_comb_all.exists():
             self.sys_dict['IEX Previous Daily Combined All'] = True

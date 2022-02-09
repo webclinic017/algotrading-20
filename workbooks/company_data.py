@@ -19,7 +19,6 @@ import datetime
 from datetime import timedelta, date
 
 from multiuse.help_class import baseDir, getDate, write_to_parquet
-#from .iex_class import urlData
 from data_collect.iex_class import urlData
 importlib.reload(sys.modules['data_collect.iex_class'])
 from data_collect.iex_class import urlData

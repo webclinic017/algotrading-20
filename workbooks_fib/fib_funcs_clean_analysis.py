@@ -20,7 +20,7 @@ except ModuleNotFoundError:
 # %% codecell
 
 
-def fib_all_clean_combine_write(read=False, round=True):
+def fib_all_clean_combine_write(dt=False, read=False, round=True):
     """Take pre_cleaned_data and fib_vals. Combine for further analysis."""
     df_all = None
     bpath = Path(baseDir().path, 'ml_data/fib_analysis')
@@ -30,7 +30,8 @@ def fib_all_clean_combine_write(read=False, round=True):
     if read:
         df_all = pd.read_parquet(fib_all_path)
     else:
-        dt = date(2021, 1, 1)
+        if not dt:
+            dt = date(2021, 1, 1)
         df_pre = read_clean_combined_all(dt=dt)
 
         fib_df = pd.read_parquet(fib_vals_path)

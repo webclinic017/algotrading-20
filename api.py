@@ -47,8 +47,8 @@ def make_url_dict():
         'yoptions_all': '/data/yfinance/derivs/combined/all',
         'yoptions_temp': '/data/yfinance/derivs/temp',
         'yoptions_unfin': '/data/yfinance/derivs/unfinished',
-        'yoptions_stock': '/data/yfinance/derivs/stock',  # /<symbol>
-        'errors_fix_intraday_dataframes': '/data/errors/fix_intraday_dataframes',
+        'yoptions_stock': '/data/yfinance/derivs/stock',
+        'e_fix_intraday_dataframes': '/data/errors/fix_intraday_dataframes',
         'yinfo_all': '/data/yfinance/info/all',
         'iex_quotes_raw': '/prices/eod/all',
         'iex_comb_today': f"/prices/combined/{getDate.query('cboe')}",
@@ -167,8 +167,8 @@ class serverAPI():
         elif which == 'stock_data':
             df = pd.read_json(df['iex_hist']).copy(deep=True)
         elif which == 'iex_intraday_m1':
-            df = self._iex_intraday_m1(self, df)
-            # pass
+            # df = self._iex_intraday_m1(self, df)
+            pass
         else:
             # Convert to dataframe
             df = pd.DataFrame(df)
