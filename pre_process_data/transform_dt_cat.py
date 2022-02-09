@@ -35,16 +35,27 @@ class DTCategoricalTransform():
     @classmethod
     def _categorical_encoding(cls, self, df):
         """Categorically encode columns and set values."""
+        cat_cols = df.select_dtypes(include=['object', 'category']).columns
+        df = df.copy()
+        for col in cat_cols:
+            if df[col].dtype == 'object':
+                df[col] = df[col].astype('category')
+                # print(f"Converted {col} from object to category")
+        """
         cat_cols = (['cond', 'ext_cond', 'fibCloseCol', 'fibCode',
                      'fibHighMinCol', 'fibLowMinCol', 'ifMinMax', 'symbol'])
+        """
 
         cat_dict = {key: '' for key in cat_cols}
 
         for key in cat_dict.keys():
-            cats = pd.factorize(df[key].cat.categories)
-            cat_sub = {key: val for key, val in zip(cats[1], cats[0])}
-            cat_dict[key] = cat_sub
-            df[key] = df[key].map(cat_dict[key])
+            try:
+                cats = pd.factorize(df[key].cat.categories)
+                cat_sub = {key: val for key, val in zip(cats[1], cats[0])}
+                cat_dict[key] = cat_sub
+                df[key] = df[key].map(cat_dict[key])
+            except AttributeError:
+                print(f"_categorical_encoding: {key} not a categorical variable")
 
         self.df = df
         self.cat_dict = cat_dict
@@ -75,8 +86,12 @@ class DTCategoricalTransform():
         key_list = cat_dict.keys()
         val_list = []
         for key in key_list:
-            for key2, val in cat_dict[key].items():
-                val_list.append((key, key2, val))
+            try:
+                for key2, val in cat_dict[key].items():
+                    val_list.append((key, key2, val))
+            except AttributeError:
+                msg = f"_write_categorical_dict_to_df: {key2} no attribute items"
+                print(msg)
 
             # print(dtc.cat_dict[key])
             # break
