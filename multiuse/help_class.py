@@ -21,10 +21,11 @@ from datetime import timedelta, date
 import datetime
 import pytz
 import time
-from pandas.tseries.offsets import BusinessDay
 from gzip import BadGzipFile
 
 import pandas as pd
+from pandas.tseries.offsets import BusinessDay
+from pandas.api.types import infer_dtype
 import numpy as np
 import dask.dataframe as dd
 import requests
@@ -72,6 +73,11 @@ def round_cols(df, cols=False, decimals=3):
 
 def write_to_parquet(df, fpath, combine=False, drop_duplicates=False):
     """Writing to parquet with error exceptions."""
+    cols = df.columns
+    for col in cols:  # If datatype is mixed. Convert to str
+        if infer_dtype(col) in ['mixed', 'mixed-integer']:
+            df[col] = df[col].astype('str')
+
     df = dataTypes(df, parquet=True).df
     fpath = Path(fpath)
     # Combine with existing dataframe if combine=True
