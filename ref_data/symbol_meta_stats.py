@@ -21,11 +21,14 @@ class SymbolRefMetaInfo():
     var : self.stats : basic financial/technical stats
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, df_all=None, **kwargs):
         self.meta = self._call_stock_meta_info(self)
         self.all_symbols = self._get_all_symbols(self)
         self.stats = self._get_stats_info(self)
         self.df = self._join_dataframes(self)
+
+        if isinstance(df_all, pd.DataFrame):
+            self.df_all, df_all = self._combine_for_ml(self, df_all, self.df)
 
     @classmethod
     def _call_stock_meta_info(cls, self):
@@ -88,5 +91,13 @@ class SymbolRefMetaInfo():
         df_joined = df_list[0].join(df_list[1:]).copy()
 
         return df_joined
+
+    @classmethod
+    def _combine_for_ml(cls, self, df_all, df):
+        """Combine df_all with df for sector/industry columns."""
+        df_to_merge = df[['sector', 'industry']].dropna().reset_index()
+        df_all = pd.merge(df_all, df_to_merge, on='symbol', how='left')
+
+        return df_all
 
 # %% codecell

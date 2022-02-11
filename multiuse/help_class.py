@@ -86,7 +86,7 @@ def write_to_parquet(df, fpath, combine=False, drop_duplicates=False):
 
     try:
         df.to_parquet(fpath, allow_truncated_timestamps=True)
-    except FileNotFoundError:
+    except (FileNotFoundError, OSError):
         if not fpath.parent.exists():
             fpath.parent.mkdir(mode=0o777, parents=True)
         write_to_parquet(df, fpath)
