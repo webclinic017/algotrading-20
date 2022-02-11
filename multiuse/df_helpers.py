@@ -22,7 +22,7 @@ class DfHelpers():
         """Check nans."""
         try:
             if a.dtype == 'O':
-                if a.str.contains('NaN'):
+                if a.str.contains('NaN').any():
                     a = a.astype(np.float64)
         except AttributeError:
             pass

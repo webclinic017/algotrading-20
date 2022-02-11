@@ -49,3 +49,5 @@ extra_code
 *.condapkgs
 *.yaml
 *.
+.aws
+.ropeproject
