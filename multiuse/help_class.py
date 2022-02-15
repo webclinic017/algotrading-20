@@ -30,6 +30,7 @@ import numpy as np
 import dask.dataframe as dd
 import requests
 from dateutil.parser import parse
+from pyarrow.lib import ArrowInvalid
 
 # %% codecell
 ###############################################################################
@@ -71,7 +72,7 @@ def round_cols(df, cols=False, decimals=3):
     return df
 
 
-def write_to_parquet(df, fpath, combine=False, drop_duplicates=False):
+def write_to_parquet(df, fpath, combine=False, drop_duplicates=False, **kwargs):
     """Writing to parquet with error exceptions."""
     cols = df.columns
     for col in cols:  # If datatype is mixed. Convert to str
@@ -87,8 +88,12 @@ def write_to_parquet(df, fpath, combine=False, drop_duplicates=False):
 
         if isinstance(df.index, pd.RangeIndex):
             df = df.reset_index(drop=True)
-        if drop_duplicates:
-            df.drop_duplicates(inplace=True)
+        if drop_duplicates or 'cols_to_drop' in kwargs.keys():
+            if 'cols_to_drop' in kwargs.keys():
+                cols = kwargs['cols_to_drop']
+                df.drop_duplicates(subset=cols, inplace=True)
+            else:
+                df.drop_duplicates(inplace=True)
 
     try:
         df.to_parquet(fpath, allow_truncated_timestamps=True)
@@ -98,6 +103,9 @@ def write_to_parquet(df, fpath, combine=False, drop_duplicates=False):
         write_to_parquet(df, fpath)
     except TypeError:  # For dask use cases
         df.to_parquet(fpath)
+    except ArrowInvalid:
+        fpath_pkl = fpath.parent.joinpath(f"{fpath.stem}.pickle")
+        df.to_pickle(fpath_pkl)
     except ValueError as ve:
         help_print_arg(f"Could not convert {str(fpath)} with reason {str(ve)}")
         # If problem validating dataframe, write dataframe to gz
