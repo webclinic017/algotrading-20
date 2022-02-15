@@ -81,6 +81,10 @@ def write_to_parquet(df, fpath, combine=False, drop_duplicates=False, **kwargs):
 
     df = dataTypes(df, parquet=True).df
     fpath = Path(fpath)
+    # If parent directory doesn't exist, make it
+    if not fpath.parent.exists():
+        fpath.parent.mkdir(mode=0o777, parents=True)
+        fpath.parent.chmod(mode=0o777)
     # Combine with existing dataframe if combine=True
     if combine & fpath.exists():
         df_old = pd.read_parquet(fpath)
@@ -94,7 +98,6 @@ def write_to_parquet(df, fpath, combine=False, drop_duplicates=False, **kwargs):
                 df.drop_duplicates(subset=cols, inplace=True)
             else:
                 df.drop_duplicates(inplace=True)
-
     try:
         df.to_parquet(fpath, allow_truncated_timestamps=True)
     except (FileNotFoundError, OSError):
