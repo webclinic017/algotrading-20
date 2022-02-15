@@ -106,8 +106,11 @@ def write_to_parquet(df, fpath, combine=False, drop_duplicates=False, **kwargs):
         write_to_parquet(df, fpath)
     except TypeError:  # For dask use cases
         df.to_parquet(fpath)
-    except ArrowInvalid:
+    except ArrowInvalid:  # Then write to pkl
         fpath_pkl = fpath.parent.joinpath(f"{fpath.stem}.pickle")
+        if fpath_pkl.exists():
+            df_pk = pd.read_pickle(fpath_pkl)
+            df = pd.concat([df, df_pk])
         df.to_pickle(fpath_pkl)
     except ValueError as ve:
         help_print_arg(f"Could not convert {str(fpath)} with reason {str(ve)}")
