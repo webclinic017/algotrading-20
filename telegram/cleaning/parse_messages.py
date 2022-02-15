@@ -88,6 +88,7 @@ class TelegramParseMsgs():
         df_others = pd.DataFrame.from_dict(ok_vals, orient='index').T
         df_all = df_others.join(df_conc)
         df_all['update_id'] = df['update_id'].iloc[0]
+        df_all['date'] = pd.to_datetime(df_all['date'], unit='s')
 
         vc_ui = df['update_id'].value_counts()
         if len(vc_ui.index) != 1:
