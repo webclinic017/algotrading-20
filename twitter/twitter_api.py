@@ -44,10 +44,6 @@ class TwitterAPI():
         self.method, self.user_id = method, user_id
         self.df = self._call_twitter_methods(self, self.get, method, user_id)
 
-    def __call__(self):
-        self.df = (self._call_twitter_methods(self, self.get,
-                                              self.method, self.user_id))
-
     @staticmethod
     def tweet_max_hist(username):
         """Get twitter max historical tweets for a username."""
