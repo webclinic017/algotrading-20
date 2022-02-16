@@ -35,8 +35,8 @@ def get_most_recent_messages_per_user(telegram=False, verbose=False, testing=Fal
         call_list = []
 
     for index, row in df_uref.iterrows():
-        start_time = getDate.tz_aware_dt_now(offset=60, iso=True)
-        end_time = getDate.tz_aware_dt_now(iso=True)
+        start_time = getDate.tz_aware_dt_now(offset=75, rfcc=True)
+        end_time = getDate.tz_aware_dt_now(rfcc=True)
 
         kwargs = ({'username': row['username'],
                    'params': {'max_results': 5,  # smallest val is 5

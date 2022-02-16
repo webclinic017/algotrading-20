@@ -20,20 +20,28 @@ class TwitterUserTweets():
 
     def __init__(self, rep, method, fpath, user_id, **kwargs):
         df = self._convert_data(self, rep, user_id)
-        new_tweets = self._check_if_new_tweets(self, df, **kwargs)
-        if new_tweets:
-            df = self._add_rt_info(self, df)
-            df = self._add_calls_puts(self, df)
-            df = self._start_creating_cols(self, df)
-            df = self._clean_strike_prices(self, df)
-            self.df = self._drop_and_write(self, df, fpath)
+        if isinstance(df, pd.DataFrame):
+            new_tweets = self._check_if_new_tweets(self, df, **kwargs)
+            if new_tweets:
+                df = self._add_rt_info(self, df)
+                df = self._add_calls_puts(self, df)
+                df = self._start_creating_cols(self, df)
+                df = self._clean_strike_prices(self, df)
+                self.df = self._drop_and_write(self, df, fpath)
+        else:
+            self.df = pd.DataFrame()
 
     @classmethod
     def _convert_data(cls, self, rep, user_id):
         """Convert json to dataframe."""
-        df = pd.DataFrame(rep.json()['data'])
-        df['author_id'] = user_id
-        return df
+        rjson = rep.json()
+        if 'data' in rjson.keys():
+            df = pd.DataFrame(rjson['data'])
+            df['author_id'] = user_id
+            return df
+        else:
+            help_print_arg(f"TwitterUserTweets: _convert_data {str(rjson)}")
+            return None
 
     @classmethod
     def _check_if_new_tweets(cls, self, df, **kwargs):
