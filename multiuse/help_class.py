@@ -22,6 +22,8 @@ import datetime
 import pytz
 import time
 from gzip import BadGzipFile
+import zoneinfo
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 from pandas.tseries.offsets import BusinessDay
@@ -85,19 +87,24 @@ def write_to_parquet(df, fpath, combine=False, drop_duplicates=False, **kwargs):
     if not fpath.parent.exists():
         fpath.parent.mkdir(mode=0o777, parents=True)
         fpath.parent.chmod(mode=0o777)
+
     # Combine with existing dataframe if combine=True
     if combine & fpath.exists():
         df_old = pd.read_parquet(fpath)
         df = pd.concat([df_old, df]).copy()
 
-        if isinstance(df.index, pd.RangeIndex):
-            df = df.reset_index(drop=True)
         if drop_duplicates or 'cols_to_drop' in kwargs.keys():
             if 'cols_to_drop' in kwargs.keys():
                 cols = kwargs['cols_to_drop']
                 df.drop_duplicates(subset=cols, inplace=True)
+            elif 'cols_subset' in kwargs.keys():
+                cols = kwargs['cols_subset']
+                df.drop_duplicates(subset=cols, inplace=True)
             else:
                 df.drop_duplicates(inplace=True)
+        if df.index.is_numeric():
+            df = df.reset_index(drop=True)
+
     try:
         df.to_parquet(fpath, allow_truncated_timestamps=True)
     except (FileNotFoundError, OSError):
@@ -399,6 +406,15 @@ class getDate():
                    axis=1
                   ))
         return dt_list.values
+
+    @staticmethod
+    def tz_aware_dt_now():
+        """Get timezone aware datetime.now object."""
+        from datetime import datetime
+        tzinfo = ZoneInfo('US/Eastern')
+        # zoneinfo.available_timezones()
+        dt = datetime.now(tzinfo)
+        return dt
 
     @staticmethod
     def get_bus_days(testing=False, this_year=False, cutoff=None, start_dt=None):

@@ -6,11 +6,13 @@ import pandas as pd
 try:
     from scripts.dev.multiuse.help_class import getDate, write_to_parquet
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
-    from scripts.dev.twitter.methods.user_tweets import TwitterUserTweets
+    from scripts.dev.twitter.user_tweets.part1_get_process import TwitterUserTweets
+    from scripts.dev.twitter.user_tweets.part2_clean_extract import TwitterUserExtract
 except ModuleNotFoundError:
     from multiuse.help_class import getDate, write_to_parquet
     from twitter.methods.helpers import TwitterHelpers
-    from twitter.methods.user_tweets import TwitterUserTweets
+    from twitter.user_tweets.part1_get_process import TwitterUserTweets
+    from twitter.user_tweets.part2_clean_extract import TwitterUserExtract
 
 # %% codecell
 
@@ -19,11 +21,11 @@ class TwitterMethods():
     """Handling data from twitter API."""
     # Assumed get response object with status_code == 200
 
-    def __init__(self, rep, method, user_id):
+    def __init__(self, rep, method, user_id, **kwargs):
         if not method:
             method = self._determine_method(self, rep)
         self.fpath = TwitterHelpers.twitter_fpaths(method, user_id=user_id)
-        self.df = self._call_matching_func(self, rep, method)
+        self.df = self._call_matching_func(self, rep, method, user_id, **kwargs)
 
     @classmethod
     def _determine_method(cls, self, rep):
@@ -36,18 +38,22 @@ class TwitterMethods():
                 return key
 
     @classmethod
-    def _call_matching_func(cls, self, rep, method):
+    def _call_matching_func(cls, self, rep, method, user_id, **kwargs):
         """Call matching function for storing data."""
         mdict = ({'user_ref': self._user_lookup,
-                  'user_tweets': TwitterUserTweets
+                  'user_tweets': [TwitterUserTweets, TwitterUserExtract],
+                  'tweet_by_id': self._tweet_by_id
                   })
-        if method == 'user_ref':
-            return mdict[method](self, rep, method, self.fpath)
+        if method in ('user_ref', 'tweet_by_id'):
+            return mdict[method](self, rep, method, self.fpath, user_id)
         elif method == 'user_tweets':
-            return mdict[method](rep, method, self.fpath).df
+            df1 = mdict[method][0](rep, method, self.fpath, user_id, **kwargs)
+            tue = mdict[method][1](user_id, **kwargs)
+            df, df_view = tue.df, tue.df_view
+            return df_view
 
     @classmethod
-    def _user_lookup(cls, self, rep, method, fpath):
+    def _user_lookup(cls, self, rep, method, fpath, user_id):
         """Look up user ID based on username. Store locally."""
         data = rep.json()['data']
         # Add timestamp on results (in case user changes username)
@@ -66,5 +72,17 @@ class TwitterMethods():
 
         write_to_parquet(df, fpath, combine=True, drop_duplicates=True)
         return df
+
+    @classmethod
+    def _tweet_by_id(cls, self, rep, method, fpath, user_id):
+        """Store tweets + metadata in local file."""
+        df = pd.DataFrame.from_dict(rep.json()['data'])
+        df['created_at'] = pd.to_datetime(df['created_at'])
+        # For now just drop the entities column
+        df.reset_index(drop=True, inplace=True)
+        df.drop(columns=['entities'], inplace=True, errors='ignore')
+
+        kwargs = dict([('cols_to_drop', 'id')])
+        write_to_parquet(df, fpath, combine=True, **kwargs)
 
 # %% codecell

@@ -6,38 +6,60 @@ import pandas as pd
 
 try:
     from scripts.dev.multiuse.help_class import write_to_parquet, help_print_arg
+    from scripts.dev.twitter.methods.helpers import TwitterHelpers
 except ModuleNotFoundError:
     from multiuse.help_class import write_to_parquet, help_print_arg
+    from twitter.methods.helpers import TwitterHelpers
 
 # %% codecell
 
 
 class TwitterUserTweets():
     """Extract relevant info from Twitter Users' Tweets."""
+    # Part 1 of user tweets
 
-    def __init__(self, rep, method, fpath):
-        df = self._convert_data(self, rep)
-        df = self._add_rt_info(self, df)
-        df = self._add_calls_puts(self, df)
-        df = self._start_creating_cols(self, df)
-        df = self._clean_strike_prices(self, df)
-        self.df = self._drop_and_write(self, df, fpath)
+    def __init__(self, rep, method, fpath, user_id, **kwargs):
+        df = self._convert_data(self, rep, user_id)
+        new_tweets = self._check_if_new_tweets(self, df, **kwargs)
+        if new_tweets:
+            df = self._add_rt_info(self, df)
+            df = self._add_calls_puts(self, df)
+            df = self._start_creating_cols(self, df)
+            df = self._clean_strike_prices(self, df)
+            self.df = self._drop_and_write(self, df, fpath)
 
     @classmethod
-    def _convert_data(cls, self, rep):
+    def _convert_data(cls, self, rep, user_id):
         """Convert json to dataframe."""
         df = pd.DataFrame(rep.json()['data'])
+        df['author_id'] = user_id
         return df
+
+    @classmethod
+    def _check_if_new_tweets(cls, self, df, **kwargs):
+        """Check for any new tweets (intraday polling)."""
+        # This should probably just be default.
+        fpath_all = TwitterHelpers.twitter_fpaths('all_hist')
+        # If combined all file doensn't exist, create it
+        if not fpath_all.exists():
+            TwitterHelpers.combine_twitter_all()
+
+        if not fpath_all.exists():
+            return False
+        else:
+            df_ids = pd.read_parquet(fpath_all, columns=['id'])
+            df_new = df[~df['id'].isin(df_ids['id'].tolist())]
+            # If no new tweets, don't bother processing
+            if df_new.empty:
+                return False
+            else:
+                return True
 
     @classmethod
     def _add_rt_info(cls, self, df):
         """Add retweet information from text."""
-        df['RT'] = df['text'].str.contains('RT ')
-        df['RT_From'] = (np.where(
-            df['RT'],
-            df['text'].str.split('@').str[1].str.split(':').str[0],
-            np.NaN
-        ))
+        df['RT'] = df['text'].str.contains('^RT ', regex=True)
+        df['RT_From'] = df['text'].str.extract(r'( @[\w]+:)')
         return df.copy()
 
     @classmethod
@@ -54,7 +76,7 @@ class TwitterUserTweets():
         # Symbol
         cdict = {'regex': '[^\b$A-Za-z\b]+', 'spc_char': '$', 'col_pre': 'sym_'}
         df = self._convert_symbols_into_cols(self, df, cdict)
-
+        # Hashtag
         cdict = {'regex': '[^\b#a-zA-Z\b]+', 'spc_char': '#', 'col_pre': 'hash_'}
         df = self._convert_symbols_into_cols(self, df, cdict)
         # Strike price
@@ -93,11 +115,11 @@ class TwitterUserTweets():
         new_cols = df.columns[df.columns.str.contains(cdict['col_pre'])]
         for col in new_cols:
             try:  # Get rid of single strings
-                df[col] = df[col].str.replace(cdict['spc_char'], '')
-                df[col] = df[col].str.replace('', np.NaN)
+                df[col] = df[col].str.replace(cdict['spc_char'], '', regex=False)
+                df[col] = df[col].str.replace('', np.NaN, regex=False)
             except TypeError:
-                df[col] = df[col].replace(cdict['spc_char'], '')
-                df[col] = df[col].replace('', np.NaN)
+                df[col] = df[col].replace(cdict['spc_char'], '', regex=False)
+                df[col] = df[col].replace('', np.NaN, regex=False)
         # Drop columns where there aren't any non nan values
         df.dropna(axis=1, how='all', inplace=True)
 
