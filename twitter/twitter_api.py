@@ -127,6 +127,7 @@ class TwitterAPI():
             print(f"{str(get.status_code)} {str(get.text)} {get.url}")
             if get.status_code == 429:
                 help_print_arg('TwitterAPI: Slow down!')
+                time.sleep(5)
 
         return get
 
