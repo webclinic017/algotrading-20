@@ -408,7 +408,7 @@ class getDate():
         return dt_list.values
 
     @staticmethod
-    def tz_aware_dt_now(offset=None, iso=False):
+    def tz_aware_dt_now(offset=None, iso=False, rfcc=False):
         """Get timezone aware datetime.now object."""
         from datetime import datetime
         tzinfo = ZoneInfo('US/Eastern')
@@ -417,8 +417,10 @@ class getDate():
         if offset:  # Offset is measured in seconds
             dt = dt - timedelta(seconds=offset)
         if iso:
-            dt = dt.isoformat()
-            
+            dt = dt.isoformat('T')
+        if rfcc:
+            dt = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+
         return dt
 
     @staticmethod
