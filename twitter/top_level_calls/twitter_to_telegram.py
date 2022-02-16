@@ -147,7 +147,7 @@ def send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs):
     user_dir = TwitterHelpers.twitter_fpaths('user_dir', user_id)
     fpath_tgrams = user_dir.joinpath('_telegram_msgs.parquet')
 
-    fpath_reft = TwitterHelpers.twitter_fpaths('tweet_by_id', user_id)
+    fpath_reft = TwitterHelpers.tf('tweet_by_id', user_id)
     df_reft = pd.read_parquet(fpath_reft).reset_index(drop=True)
 
     if 'telegram_sent' not in df_reft.columns:
