@@ -10,7 +10,7 @@ from tqdm import tqdm
 import talib
 import yfinance as yf
 
-from multiuse.help_class import baseDir, getDate, write_to_parquet, dataTypes, check_nan
+from multiuse.help_class import baseDir, getDate, write_to_parquet, dataTypes
 from multiuse.path_helpers import get_most_recent_fpath
 from multiuse.pd_funcs import mask, chained_isin
 
