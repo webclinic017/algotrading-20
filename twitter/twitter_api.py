@@ -143,7 +143,9 @@ class TwitterAPI():
             msg1 = f"TwitterAPI._call_twitter_methods: {method} {type(e)} "
             msg2 = f"{str(e)} {str(traceback.format_exc())}"
             help_print_arg(f"{msg1} {msg2}")
-            help_print_arg(f"{str(get.json())}")
+
+            if method != 'user_tweets':
+                help_print_arg(f"{str(get.json())}")
 
             f_errors = Path(baseDir().path, 'errors', 'twitter.parquet')
             df_errors = pd.DataFrame()
