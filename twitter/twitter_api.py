@@ -2,16 +2,16 @@
 # %% codecell
 from pathlib import Path
 import time
-
+import traceback
 import os
 import requests
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir
+    from scripts.dev.multiuse.help_class import baseDir, help_print_arg
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
     from scripts.dev.twitter.methods.methods import TwitterMethods
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir
+    from multiuse.help_class import baseDir, help_print_arg
     from twitter.methods.helpers import TwitterHelpers
     from twitter.methods.methods import TwitterMethods
 
@@ -47,6 +47,28 @@ class TwitterAPI():
         self.df = (self._call_twitter_methods(self, self.get,
                                               self.method, self.user_id))
 
+    @staticmethod
+    def tweet_max_hist(username):
+        """Get twitter max historical tweets for a username."""
+        kwargs = ({'username': username,
+                   'params': {'max_results': 100,
+                              'exclude': 'replies'}})
+        # First call gets the first round of results - includes pag token
+        call = TwitterAPI(method='user_tweets', **kwargs)
+        next_token = call.get.json()['meta']['next_token']
+
+        for n in range(31):
+            try:
+                kwargs['params']['pagination_token'] = next_token
+                call = TwitterAPI(method='user_tweets', **kwargs)
+                next_token = call.get.json()['meta']['next_token']
+            except KeyError:
+                msg1 = "TwitterAPI.tweet_max_hist: "
+                msg2 = "encountered KeyError. Breaking"
+                help_print_arg(f"{msg1}{msg2}")
+                help_print_arg(f"{str(call.get.json()['meta'])}")
+                break
+
     @classmethod
     def _get_class_vars(cls, self):
         """Get class variables."""
@@ -67,10 +89,15 @@ class TwitterAPI():
 
             return user_id
 
+        elif 'author_id' in kwargs.keys():
+            return kwargs['author_id']
+
     @classmethod
     def _check_for_params(cls, self, method, **kwargs):
         """Check for passed parameters in kwargs."""
         if method == 'user_tweets' and 'params' in kwargs.keys():
+            return kwargs['params']
+        elif method == 'tweet_by_id' and 'params' in kwargs.keys():
             return kwargs['params']
         else:
             return {}
@@ -79,14 +106,16 @@ class TwitterAPI():
     def _construct_url(cls, self, method, user_id, **kwargs):
         """Construct url to use for the get request."""
         udict = ({'user_ref': f"{self.burl}/2/users/by/username",
-                  'user_tweets': f"{self.burl}/2/users/{str(user_id)}/tweets"
-                  })
+                  'user_tweets': f"{self.burl}/2/users/{str(user_id)}/tweets",
+                  'tweet_by_id': f"{self.burl}/2/tweets"})
 
         if method == 'user_ref' and 'username' in kwargs.keys():
             username = kwargs['username']
             return f"{udict[method]}/{username}"
         elif method == 'user_tweets' and user_id:
             return udict[method]
+        elif method == 'tweet_by_id' and 'tweet_id' in kwargs.keys():
+            return f"{udict[method]}/{str(kwargs['tweet_id'])}"
         else:
             msg1 = "TwitterAPI no methods matched for _construct_url. "
             msg2 = f"method: {str(method)}"
@@ -108,7 +137,9 @@ class TwitterAPI():
         try:
             return TwitterMethods(get, method, user_id).df
         except Exception as e:
-            print(f"TwitterAPI._call_twitter_methods: {method} {type(e)} {str(e)}")
+            msg1 = f"TwitterAPI._call_twitter_methods: {method} {type(e)} "
+            msg2 = f"{str(e)} {str(traceback.format_exc())}"
+            help_print_arg(f"{msg1} {msg2}")
 
 
 # %% codecell
