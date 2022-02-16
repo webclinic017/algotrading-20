@@ -144,7 +144,7 @@ def make_tradeable_messages(user_id, tids=None):
 
 def send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs):
     """Send / test send messages for telegram."""
-    user_dir = TwitterHelpers.twitter_fpaths('user_dir', user_id)
+    user_dir = TwitterHelpers.tf('user_dir', user_id)
     fpath_tgrams = user_dir.joinpath('_telegram_msgs.parquet')
 
     fpath_reft = TwitterHelpers.tf('tweet_by_id', user_id)
