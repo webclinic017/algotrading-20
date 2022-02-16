@@ -9,11 +9,11 @@ import numpy as np
 try:
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
     from scripts.dev.multiuse.df_helpers import DfHelpers
-    from scripts.dev.multiuse.help_class import baseDir, write_to_parquet
+    from scripts.dev.multiuse.help_class import baseDir, write_to_parquet, help_print_arg
 except ModuleNotFoundError:
     from twitter.methods.helpers import TwitterHelpers
     from multiuse.df_helpers import DfHelpers
-    from multiuse.help_class import baseDir, write_to_parquet
+    from multiuse.help_class import baseDir, write_to_parquet, help_print_arg
 
 
 # %% codecell
@@ -44,7 +44,13 @@ class TwitterUserExtract():
 
         bpath = Path(baseDir().path, 'social', 'twitter', 'users')
         fpath = bpath.joinpath(str(user_id), '_hist_tweets.parquet')
-        df = pd.read_parquet(fpath)
+        df = None
+        
+        if fpath.exists():
+            df = pd.read_parquet(fpath)
+            df.drop_duplicates(subset='id', inplace=True)
+        else:
+            help_print_arg(f"_load_filter_tweet_df: _hist_tweets.parquet does not exist")
         # print(f"Duplicated rows: {str(df['id'].duplicated().sum())}")
 
         if non_rt:
@@ -56,9 +62,7 @@ class TwitterUserExtract():
             df_ref = pd.read_parquet(fpath_ref).drop(columns='text')
             df = pd.merge(df, df_ref, on='id', how='left')
             df = DfHelpers.combine_duplicate_columns(df)
-
-        df.drop_duplicates(subset='id', inplace=True)
-        df.reset_index(drop=True, inplace=True)
+            df.reset_index(drop=True, inplace=True)
 
         return df
 
