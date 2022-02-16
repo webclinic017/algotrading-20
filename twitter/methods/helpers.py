@@ -95,12 +95,13 @@ class TwitterHelpers():
                 paths_to_concat.append(strpath)
 
         # cols = ['id', 'author_id']
-        dfs = (pd.concat(
-            [pd.read_parquet(path) for path in paths_to_concat]
-            ).drop_duplicates(subset='id'))
+        if len(paths_to_concat) > 0:
+            dfs = (pd.concat(
+                [pd.read_parquet(path) for path in paths_to_concat]
+                ).drop_duplicates(subset='id'))
 
-        fpath_all = fdir_users.parent.joinpath('tweets', fname)
-        write_to_parquet(dfs, fpath_all)
+            fpath_all = fdir_users.parent.joinpath('tweets', fname)
+            write_to_parquet(dfs, fpath_all)
 
 
 # %% codecell
