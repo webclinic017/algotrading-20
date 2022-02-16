@@ -113,8 +113,14 @@ class TwitterUserExtract():
             df['strike'] = np.NaN
             df['side'] = np.NaN
         # Unpack list, assign strike prices to index
-        df.loc[m1.index, 'strike'] = m1.apply(lambda row: row[0][0])
-        df.loc[m1.index, 'side'] = m1.apply(lambda row: row[0][1])
+        try:
+            df.loc[m1.index, 'strike'] = m1.apply(lambda row: row[0][0])
+            df.loc[m1.index, 'side'] = m1.apply(lambda row: row[0][1])
+        except TypeError:
+            df['strike'] = df['strike'].astype(str)
+            df['side'] = df['side'].astype(str)
+            df.loc[m1.index, 'strike'] = m1.apply(lambda row: row[0][0])
+            df.loc[m1.index, 'side'] = m1.apply(lambda row: row[0][1])
 
         # df contains
         dtsc = df['text'].str.contains
