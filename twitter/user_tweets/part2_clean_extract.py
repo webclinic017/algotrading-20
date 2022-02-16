@@ -45,7 +45,7 @@ class TwitterUserExtract():
         bpath = Path(baseDir().path, 'social', 'twitter', 'users')
         fpath = bpath.joinpath(str(user_id), '_hist_tweets.parquet')
         df = None
-        
+
         if fpath.exists():
             df = pd.read_parquet(fpath)
             df.drop_duplicates(subset='id', inplace=True)

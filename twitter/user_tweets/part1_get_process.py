@@ -45,7 +45,7 @@ class TwitterUserTweets():
             TwitterHelpers.combine_twitter_all()
 
         if not fpath_all.exists():
-            return False
+            return True
         else:
             df_ids = pd.read_parquet(fpath_all, columns=['id'])
             df_new = df[~df['id'].isin(df_ids['id'].tolist())]
