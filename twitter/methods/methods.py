@@ -1,6 +1,6 @@
 """Twitter Methods Class."""
 # %% codecell
-
+import time
 import pandas as pd
 
 try:
@@ -76,13 +76,18 @@ class TwitterMethods():
     @classmethod
     def _tweet_by_id(cls, self, rep, method, fpath, user_id):
         """Store tweets + metadata in local file."""
-        df = pd.DataFrame.from_dict(rep.json()['data'])
-        df['created_at'] = pd.to_datetime(df['created_at'])
-        # For now just drop the entities column
-        df.reset_index(drop=True, inplace=True)
-        df.drop(columns=['entities'], inplace=True, errors='ignore')
+        try:
+            df = pd.DataFrame.from_dict(rep.json()['data'])
+            df['created_at'] = pd.to_datetime(df['created_at'])
+            # For now just drop the entities column
+            df.reset_index(drop=True, inplace=True)
+            df.drop(columns=['entities'], inplace=True, errors='ignore')
 
-        kwargs = dict([('cols_to_drop', 'id')])
-        write_to_parquet(df, fpath, combine=True, **kwargs)
+            kwargs = dict([('cols_to_drop', 'id')])
+            write_to_parquet(df, fpath, combine=True, **kwargs)
+        except KeyError:
+            # If KeyError, sleep for 10 minutes
+            # time.sleep(600)
+            pass
 
 # %% codecell

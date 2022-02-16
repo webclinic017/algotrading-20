@@ -16,10 +16,11 @@ except ModuleNotFoundError:
 class GetTimestampsForEachRelTweet():
     """Get timestamps for any relevant tweets."""
 
-    def __init__(self, user_id):
-        df_to_get = self._get_relevant_tweets(self, user_id)
-        if not df_to_get.empty:
-            self._call_tweets_by_id(self, df_to_get)
+    # .df = df_to_get
+    def __init__(self, user_id, testing=False):
+        self.df = self._get_relevant_tweets(self, user_id)
+        if not self.df.empty and not testing:
+            self._call_tweets_by_id(self, self.df)
 
     @classmethod
     def _get_relevant_tweets(cls, self, user_id):
