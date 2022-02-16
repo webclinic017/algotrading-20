@@ -5,13 +5,14 @@ import time
 import traceback
 import os
 import requests
+import pandas as pd
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, help_print_arg
+    from scripts.dev.multiuse.help_class import baseDir, help_print_arg, write_to_parquet
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
     from scripts.dev.twitter.methods.methods import TwitterMethods
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, help_print_arg
+    from multiuse.help_class import baseDir, help_print_arg, write_to_parquet
     from twitter.methods.helpers import TwitterHelpers
     from twitter.methods.methods import TwitterMethods
 
@@ -140,6 +141,15 @@ class TwitterAPI():
             msg1 = f"TwitterAPI._call_twitter_methods: {method} {type(e)} "
             msg2 = f"{str(e)} {str(traceback.format_exc())}"
             help_print_arg(f"{msg1} {msg2}")
+
+            f_errors = Path(baseDir().path, 'errors', 'twitter.parquet')
+            df_errors = pd.DataFrame()
+            df_errors['method'] = method
+            df_errors['user_id'] = user_id
+            df_errors['type'] = type(e)
+            df_errors['error'] = str(e)
+            df_errors['traceback'] = str(traceback.format_exc())
+            write_to_parquet(df_errors, f_errors, combine=True)
 
 
 # %% codecell

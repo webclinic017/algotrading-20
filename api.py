@@ -133,7 +133,10 @@ class serverAPI():
 
         elif which == 'twitter_get_max' and 'username' in kwargs.keys():
             username = kwargs['username']
-            self.url_dict[which] = f"{self.url_dict[which]}/{username}"
+            if username in self.url_dict[which]:
+                pass
+            else:
+                self.url_dict[which] = f"{self.url_dict[which]}/{username}"
 
     @classmethod
     def get_data(cls, self, which):
