@@ -81,6 +81,7 @@ def make_url_dict():
         'st_trend_today': '/stocktwits/trending/today/explore',
         'st_watch': '/stocktwits/watchlist',
         'twitter_get_max': '/redo/twitter/max_hist',
+        'twitter_errors': '/data/twitter/errors',
         'redo': ''
     })
 

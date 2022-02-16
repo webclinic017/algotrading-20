@@ -43,6 +43,8 @@ class TwitterUserTweets():
         # If combined all file doensn't exist, create it
         if not fpath_all.exists():
             TwitterHelpers.combine_twitter_all()
+            # Get all trade signals combined for easy access
+            TwitterHelpers.combine_twitter_all(trade_signal=True)
 
         if not fpath_all.exists():
             return True
