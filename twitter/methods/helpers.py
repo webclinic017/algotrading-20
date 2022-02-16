@@ -45,11 +45,16 @@ class TwitterHelpers():
     @staticmethod
     def twitter_lookup_id(username):
         """Lookup twitter id based on username."""
-        df_users = pd.read_parquet(TwitterHelpers.twitter_fpaths())
-        user_row = df_users[df_users['username'] == username]
+        f_user_ref = TwitterHelpers.twitter_fpaths('user_ref')
+        if f_user_ref.exists():
+            df_users = pd.read_parquet(TwitterHelpers.twitter_fpaths())
+            user_row = df_users[df_users['username'] == username]
 
-        if not user_row.empty:
-            return user_row['id'].iloc[0]
+            if not user_row.empty:
+                return user_row['id'].iloc[0]
+        else:
+            return None
+
 
         """
         else:

@@ -80,6 +80,7 @@ def make_url_dict():
         'st_trend_all': '/stocktwits/trending/all',
         'st_trend_today': '/stocktwits/trending/today/explore',
         'st_watch': '/stocktwits/watchlist',
+        'twitter_get_max': '/redo/twitter/max_hist',
         'redo': ''
     })
 
@@ -129,6 +130,10 @@ class serverAPI():
         elif which in ('stock_data', 'yoptions_stock') and 'symbol' in kwargs.keys():
             symbol = kwargs['symbol']
             self.url_dict[which] = f"{self.url_dict[which]}/{symbol}"
+
+        elif which == 'twitter_get_max' and 'username' in kwargs.keys():
+            username = kwargs['username']
+            self.url_dict[which] = f"{self.url_dict[which]}/{username}"
 
     @classmethod
     def get_data(cls, self, which):
