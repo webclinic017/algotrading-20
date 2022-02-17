@@ -828,30 +828,6 @@ ref_df[ref_df['symbol'] == 'AAAAAAAAAAA'].copy().to_parquet(path)
 # %% codecell
 
 
-# %% codecell
-
-nord_url = 'https://nordvpn.com/api/server'
-get = requests.get(nord_url)
-
-server_list = pd.DataFrame(get.json())
-col_list = list(server_list['features'].iloc[0].keys())
-server_list[col_list] = server_list.features.apply(lambda row: pd.Series(row))
-socks_df = server_list[server_list['socks'] == True].copy()
-
-nord_pass = 'YNGWqBf2zHaLSV6'
-purl = f"edwardtomasso@gmail.com:{nord_pass}@"
-socks_df['socksp'] = socks_df.apply(lambda row:
-                                    {'http': f"socks5://{purl}{row.domain}:1080",
-                                     'https': f"socks5://{purl}{row.domain}:1080"},
-                                    axis=1)
-
-
-nord_df['p_test'].iloc[0]
-
-nord_df['p_test'].iloc[10]
-# %% codecell
-int(sym_list.shape[0] / (socks_df.shape[0] - 1))
-
 
 # %% codecell
 
