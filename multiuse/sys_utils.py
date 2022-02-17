@@ -17,3 +17,5 @@ def get_memory_usage():
         return False
     else:
         return True
+
+# %% codecell
