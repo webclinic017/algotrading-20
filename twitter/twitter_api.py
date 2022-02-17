@@ -148,6 +148,7 @@ class TwitterAPI():
         rt_left = heads['x-rate-limit-remaining']
         rt_reset = (pd.to_datetime(heads['x-rate-limit-reset'], unit='s')
                     - timedelta(hours=5))
+
         help_print_arg(f"{rt_left} {rt_reset}", isp=isp)
 
         headers = {key: val for key, val in heads.items()}

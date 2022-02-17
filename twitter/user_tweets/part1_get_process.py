@@ -20,16 +20,14 @@ class TwitterUserTweets():
 
     def __init__(self, rep, method, fpath, user_id, **kwargs):
         df = self._convert_data(self, rep, user_id)
-        if isinstance(df, pd.DataFrame):
-            new_tweets = self._check_if_new_tweets(self, df, **kwargs)
-            if new_tweets:
-                df = self._add_rt_info(self, df)
-                df = self._add_calls_puts(self, df)
-                df = self._start_creating_cols(self, df)
-                df = self._clean_strike_prices(self, df)
-                self.df = self._drop_and_write(self, df, fpath)
-        else:
-            self.df = pd.DataFrame()
+        # if isinstance(df, pd.DataFrame):
+        # new_tweets = self._check_if_new_tweets(self, df, user_id)
+        # if new_tweets:
+        df = self._add_rt_info(self, df)
+        df = self._add_calls_puts(self, df)
+        df = self._start_creating_cols(self, df)
+        df = self._clean_strike_prices(self, df)
+        self.df = self._drop_and_write(self, df, fpath)
 
     @classmethod
     def _convert_data(cls, self, rep, user_id):
@@ -44,10 +42,10 @@ class TwitterUserTweets():
             return None
 
     @classmethod
-    def _check_if_new_tweets(cls, self, df, **kwargs):
+    def _check_if_new_tweets(cls, self, df):
         """Check for any new tweets (intraday polling)."""
         # This should probably just be default.
-        fpath_all = TwitterHelpers.twitter_fpaths('all_hist')
+        fpath_all = TwitterHelpers.tf('all_hist')
         # If combined all file doensn't exist, create it
         if not fpath_all.exists():
             TwitterHelpers.combine_twitter_all()

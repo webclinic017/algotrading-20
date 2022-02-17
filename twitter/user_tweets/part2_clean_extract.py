@@ -2,6 +2,7 @@
 # %% codecell
 from pathlib import Path
 import warnings
+import inspect
 
 import pandas as pd
 import numpy as np
@@ -30,11 +31,12 @@ class TwitterUserExtract():
         df_put = self._match_put_calls(self, df_call, put=True)
         self.df = df_put.copy()
         self.df_view = self._filter_sort_df(self, self.df, dropcols)
-        self._update_tweet_by_id_df(self, self.df_view, user_id)
+        # self._update_tweet_by_id_df(self, self.df_view, user_id)
 
     @classmethod
     def _load_filter_tweet_df(cls, self, user_id, non_rt=False, **kwargs):
         """Load dataframe of tweets for user by username."""
+        isp = inspect.stack()
         if 'non_rt' in kwargs.keys():
             non_rt = kwargs['non_rt']
 
@@ -42,27 +44,25 @@ class TwitterUserExtract():
             username = kwargs['username']
             user_id = TwitterHelpers.twitter_lookup_id(username)
 
-        bpath = Path(baseDir().path, 'social', 'twitter', 'users')
-        fpath = bpath.joinpath(str(user_id), '_hist_tweets.parquet')
-        df = None
+        df = TwitterHelpers.tf('user_tweets', user_id, return_df=True)
 
-        if fpath.exists():
-            df = pd.read_parquet(fpath)
-            df.drop_duplicates(subset='id', inplace=True)
-        else:
-            help_print_arg(f"_load_filter_tweet_df: _hist_tweets.parquet does not exist")
+        if not isinstance(df, pd.DataFrame):
+            msg = "_hist_tweets.parquet does not exist"
+            help_print_arg(msg, isp=isp)
         # print(f"Duplicated rows: {str(df['id'].duplicated().sum())}")
+        # if non_rt:
+        #    df = df[~df['RT']].copy()
 
-        if non_rt:
-            df = df[~df['RT']].copy()
+        fpath_ref = (TwitterHelpers.tf('tweet_by_id', user_id=user_id))
 
-        fpath_ref = (TwitterHelpers.twitter_fpaths('tweet_by_id',
-                                                   user_id=user_id))
         if fpath_ref.exists():
-            df_ref = pd.read_parquet(fpath_ref).drop(columns='text')
-            df = pd.merge(df, df_ref, on='id', how='left')
-            df = DfHelpers.combine_duplicate_columns(df)
-            df.reset_index(drop=True, inplace=True)
+            df_ref = (pd.read_parquet(fpath_ref)
+                        .drop(columns='text')
+                        .dropna(subset='created_at'))
+            if not df_ref.empty:
+                df = pd.merge(df, df_ref, on='id', how='left')
+                df = DfHelpers.combine_duplicate_columns(df)
+                df.reset_index(drop=True, inplace=True)
 
         return df
 
@@ -188,7 +188,6 @@ class TwitterUserExtract():
 
         if upath.exists():
             df_uref = pd.read_parquet(upath)
-
             cols_to_keep = ['text', 'author_id', 'id']
             # ids not in utweets
             df_pos = df[cols_to_keep].copy()
