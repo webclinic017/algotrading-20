@@ -23,11 +23,12 @@ class TwitterUserTweets():
         # if isinstance(df, pd.DataFrame):
         # new_tweets = self._check_if_new_tweets(self, df, user_id)
         # if new_tweets:
-        df = self._add_rt_info(self, df)
-        df = self._add_calls_puts(self, df)
-        df = self._start_creating_cols(self, df)
-        df = self._clean_strike_prices(self, df)
-        self.df = self._drop_and_write(self, df, fpath)
+        if isinstance(df, pd.DataFrame):
+            df = self._add_rt_info(self, df)
+            df = self._add_calls_puts(self, df)
+            df = self._start_creating_cols(self, df)
+            df = self._clean_strike_prices(self, df)
+            self.df = self._drop_and_write(self, df, fpath)
 
     @classmethod
     def _convert_data(cls, self, rep, user_id):
