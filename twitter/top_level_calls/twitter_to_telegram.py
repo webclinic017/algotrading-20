@@ -1,6 +1,8 @@
 """Flow process from Twitter to Telegram."""
 # %% codecell
-
+import time
+import inspect
+from inspect import signature
 from datetime import timedelta
 
 import pandas as pd
@@ -26,6 +28,7 @@ except ModuleNotFoundError:
 
 def get_most_recent_messages_per_user(telegram=False, verbose=False, testing=False):
     """Get messages within the last 30 seconds."""
+    isp = inspect.stack()
     # telegram keyword arg will then start the process of making a
     # user poll that sends to telegram
     th = TwitterHelpers.twitter_fpaths
@@ -38,40 +41,51 @@ def get_most_recent_messages_per_user(telegram=False, verbose=False, testing=Fal
         start_time = getDate.tz_aware_dt_now(offset=75, rfcc=True)
         end_time = getDate.tz_aware_dt_now(rfcc=True)
 
-        kwargs = ({'username': row['username'],
+        params = ({'username': row['username'],
                    'params': {'max_results': 5,  # smallest val is 5
                               'start_time': start_time,
                               'end_time': end_time,
-                              'exclude': 'retweets,replies'}})
+                              'exclude': 'retweets'}})
         # First call gets the first round of results - includes pag token
-        call = TwitterAPI(method='user_tweets', **kwargs)
-        # Should return df_view - most likely to be empty
+        call = TwitterAPI(method='user_tweets', **params)
+        time.sleep(1)
+        # Returns a twitter API object - not df_view
         df_view = call.df
 
-        if isinstance(df_view, pd.DataFrame):
-            GetTimestampsForEachRelTweet(row['id'])
-            if not df_view.empty and telegram:  # See if already recorded
-                check_for_unsent_telegram_messages(row['username'], **kwargs)
-
         if verbose:
+            crh = call.get.raw.getheaders()
+            msg = f"Twitter calls remaining {crh['x-rate-limit-remaining']}"
+            help_print_arg(msg)
             call_list.append(call)
 
-    if verbose:
+        if isinstance(df_view, pd.DataFrame):
+            if not df_view.empty:  # id is user_id, from df_uref
+                gte_df = GetTimestampsForEachRelTweet(row['id'], testing=False).df
+                if verbose:
+                    msg = f"there are {str(gte_df.shape[0])} timestamps needed"
+                    help_print_arg(msg, isp)
+                if telegram:  # See if already recorded - default no
+                    check_for_unsent_telegram_messages(user_id=row['id'], verbose=True, testing=True)
+
+    if testing:
         return call_list
 
-# %% codcell
+# %% codecell
 
 
-def check_for_unsent_telegram_messages(user_id=False, username=False, **kwargs):
+def check_for_unsent_telegram_messages(user_id=False, **kwargs):
     """Check if a message needs to be sent in telegram."""
-    if username and not user_id:
-        user_id = TwitterHelpers.twitter_lookup_id(username)
+    verbose = kwargs.get('verbose', False)
+    testing = kwargs.get('testing', False)
+    isp = inspect.stack()
+    # if username and not user_id:
+    #    user_id = TwitterHelpers.twitter_lookup_id(username)
 
     fpath_ref = TwitterHelpers.twitter_fpaths('tweet_by_id', user_id)
     df_reft = pd.read_parquet(fpath_ref)
     # If dataframe is empty, then exit program and return False
     if df_reft.empty:
-        if kwargs['verbose']:
+        if verbose:
             help_print_arg(f"df_uref empty for fpath {str(fpath_ref)}")
         return False
 
@@ -82,7 +96,7 @@ def check_for_unsent_telegram_messages(user_id=False, username=False, **kwargs):
     cond_sent = (df_reft['telegram_sent'] == 0)
     # Only tweets in the last 60 seconds
     dt, secs = getDate.tz_aware_dt_now(), 60
-    if kwargs['testing']:
+    if testing:
         if 'time_filter' in kwargs.keys():
             secs = kwargs['time_filter']
         else:
@@ -94,6 +108,9 @@ def check_for_unsent_telegram_messages(user_id=False, username=False, **kwargs):
     rows = df_reft[cond_sent & cond_dt]
 
     if rows.empty:
+        if verbose:
+            msg = "Rows empty"
+            help_print_arg(msg, isp=isp)
         return False
     else:
         tids = rows['id'].tolist()
@@ -101,7 +118,7 @@ def check_for_unsent_telegram_messages(user_id=False, username=False, **kwargs):
         if not df_all.empty:
             send_telegram_trade_record_msg_sent(user_id, df_all, **kwargs)
 
-        if kwargs['testing']:
+        if kwargs.get('testing', None):
             return {'rows': rows, 'trade_messages': df_all}
 
 # %% codecell

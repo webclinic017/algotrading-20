@@ -13,6 +13,7 @@ uint32: Unsigned integer (0 to 4294967295)
 # %% codecell
 ###############################################################################
 from dotenv import load_dotenv
+import inspect
 import glob
 import os
 import json
@@ -38,8 +39,17 @@ from pyarrow.lib import ArrowInvalid
 ###############################################################################
 
 
-def help_print_arg(arg):
+def help_print_arg(arg, isp=False):
     """Print arg on local or server side."""
+    if not isinstance(arg, str):
+        arg = str(arg)
+
+    if isp:
+        if isp[1][3] != '<module>':
+            arg = f"{isp[1][3]} {isp[0][3]} {arg}"
+        else:
+            arg = f"{isp[0][3]} {arg}"
+
     try:
         from app.tasks_test import print_arg_test
         print_arg_test.delay(arg)

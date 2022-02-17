@@ -1,5 +1,7 @@
 """Get timestamps for each relevant tweet."""
 # %% codecell
+import time
+from inspect import signature
 
 try:
     from scripts.dev.twitter.user_tweets.part2_clean_extract import TwitterUserExtract
@@ -17,8 +19,10 @@ class GetTimestampsForEachRelTweet():
     """Get timestamps for any relevant tweets."""
 
     # .df = df_to_get
-    def __init__(self, user_id, testing=False):
+    def __init__(self, user_id, **kwargs):
+        testing = kwargs.get('testing', False)
         self.df = self._get_relevant_tweets(self, user_id)
+
         if not self.df.empty and not testing:
             self._call_tweets_by_id(self, self.df)
 
@@ -49,6 +53,7 @@ class GetTimestampsForEachRelTweet():
             kwargs['params']['tweet.fields'] = payload
             try:  # If there's an error, break the loop
                 ta = TwitterAPI(method=method, **kwargs)
+                time.sleep(1)
             except Exception as e:
                 msg = (f"GetTimestampsForEachRelTweet Error: {type(e)}"
                        f" {str(e)} Breaking for loop")
