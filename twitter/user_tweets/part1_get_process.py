@@ -40,7 +40,7 @@ class TwitterUserTweets():
             df['author_id'] = user_id
             return df
         else:
-            help_print_arg(f"TwitterUserTweets: _convert_data {str(rjson)}")
+            # help_print_arg(f"TwitterUserTweets: _convert_data {str(rjson)}")
             return None
 
     @classmethod
