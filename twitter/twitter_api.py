@@ -124,10 +124,9 @@ class TwitterAPI():
         get = requests.get(url, auth=_get_auth_headers, params=params)
 
         if get.status_code != 200:
-            print(f"{str(get.status_code)} {str(get.text)} {get.url}")
+            help_print_arg(f"{str(get.status_code)} {str(get.text)} {get.url}")
             if get.status_code == 429:
                 help_print_arg('TwitterAPI: Slow down!')
-                time.sleep(5)
 
         return get
 
