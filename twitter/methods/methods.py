@@ -82,9 +82,8 @@ class TwitterMethods():
             # For now just drop the entities column
             df.reset_index(drop=True, inplace=True)
             df.drop(columns=['entities'], inplace=True, errors='ignore')
-
-            kwargs = dict([('cols_to_drop', 'id')])
-            write_to_parquet(df, fpath, combine=True, **kwargs)
+            # kwargs = dict([('cols_to_drop', 'id')])
+            write_to_parquet(df, fpath, combine=True)
         except KeyError:
             # If KeyError, sleep for 10 minutes
             # time.sleep(600)

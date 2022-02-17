@@ -27,6 +27,9 @@ class TwitterHelpers():
             method = 'user_ref'
         if method == 'tweets_by_id' and not user_id:
             print('TwitterHelpers.twitter_fpaths: need to pass in user_id')
+        if not user_id and 'username' in kwargs.keys():
+            username = kwargs.keys('username')
+            user_id = TwitterHelpers.twitter_lookup_id(username)
 
         bpath = Path(baseDir().path, 'social', 'twitter')
         pdict = ({'user_ref': bpath.joinpath('users', 'user_ref.parquet'),
