@@ -6,6 +6,8 @@ import traceback
 import os
 import requests
 import pandas as pd
+from datetime import timedelta
+import inspect
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, help_print_arg, write_to_parquet
@@ -22,7 +24,6 @@ except ModuleNotFoundError:
 def _get_auth_headers(r):
     """Get twitter auth headers."""
     r.headers['Authorization'] = f"Bearer {os.environ.get('twitter_bear')}"
-    r.headers['User-Agent'] = "v2UserLookupPython"
 
     return r
 
@@ -36,12 +37,16 @@ class TwitterAPI():
     # Implied that the user_id is known, but will check anyway
 
     def __init__(self, method, **kwargs):
+        if 'verbose' in kwargs.keys():
+            if kwargs['verbose']:
+                help_print_arg(kwargs)
+
         self._get_class_vars(self)
         user_id = self._username_check(self, method, **kwargs)
         params = self._check_for_params(self, method, **kwargs)
         url = self._construct_url(self, method, user_id, **kwargs)
-        self.get = self._call_twitter_api(self, url, params)
         self.method, self.user_id = method, user_id
+        self.get = self._call_twitter_api(self, url, params)
         self.df = self._call_twitter_methods(self, self.get, method, user_id)
 
     @staticmethod
@@ -79,6 +84,8 @@ class TwitterAPI():
             username = kwargs['username']
             user_id = TwitterHelpers.twitter_lookup_id(username)
             if not user_id:
+                if kwargs['verbose']:
+                    help_print_arg(f"TwitterAPI._username_check - could not find user_id")
                 kwargs['exclude_params'] = True
                 TwitterAPI(method='user_ref', **kwargs)
                 time.sleep(2)
@@ -121,14 +128,38 @@ class TwitterAPI():
     @classmethod
     def _call_twitter_api(cls, self, url, params):
         """Get tweets by a specific user."""
+        isp = inspect.stack()
         get = requests.get(url, auth=_get_auth_headers, params=params)
+
+        self._record_twitter_calls(self, get, params, isp)
 
         if get.status_code != 200:
             help_print_arg(f"{str(get.status_code)} {str(get.text)} {get.url}")
             if get.status_code == 429:
+                heads = get.raw.getheaders()
                 help_print_arg('TwitterAPI: Slow down!')
 
         return get
+
+    @classmethod
+    def _record_twitter_calls(cls, self, get, params, isp):
+        """Records twitter calls."""
+        heads = get.raw.getheaders()
+        rt_left = heads['x-rate-limit-remaining']
+        rt_reset = (pd.to_datetime(heads['x-rate-limit-reset'], unit='s')
+                    - timedelta(hours=5))
+        help_print_arg(f"{rt_left} {rt_reset}", isp=isp)
+
+        headers = {key: val for key, val in heads.items()}
+        df = pd.Series(headers).to_frame().T
+        df['method'] = self.method
+        df['user_id'] = self.user_id
+        df['status_code'] = get.status_code
+        df['url'] = get.url
+        df['reason'] = get.reason
+
+        fpath = Path(baseDir().path, 'logs', 'twitter', 'api_calls.parquet')
+        write_to_parquet(df, fpath, combine=True)
 
     @classmethod
     def _call_twitter_methods(cls, self, get, method, user_id):
@@ -144,12 +175,13 @@ class TwitterAPI():
                 help_print_arg(f"{str(get.json())}")
 
             f_errors = Path(baseDir().path, 'errors', 'twitter.parquet')
-            df_errors = pd.DataFrame()
+            df_errors = {}
             df_errors['method'] = method
             df_errors['user_id'] = user_id
             df_errors['type'] = type(e)
             df_errors['error'] = str(e)
             df_errors['traceback'] = str(traceback.format_exc())
+            df_errors = pd.Series(df_errors).to_frame().T
             write_to_parquet(df_errors, f_errors, combine=True)
 
 
