@@ -56,9 +56,8 @@ class TwitterUserExtract():
         fpath_ref = (TwitterHelpers.tf('tweet_by_id', user_id=user_id))
 
         if fpath_ref.exists():
-            df_ref = (pd.read_parquet(fpath_ref)
-                        .drop(columns='text')
-                        .dropna(subset='created_at'))
+            df_ref = pd.read_parquet(fpath_ref).drop(columns='text')
+            # .dropna(subset='created_at'))
             if not df_ref.empty:
                 df = pd.merge(df, df_ref, on='id', how='left')
                 df = DfHelpers.combine_duplicate_columns(df)

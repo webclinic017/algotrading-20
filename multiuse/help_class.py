@@ -418,10 +418,12 @@ class getDate():
         return dt_list.values
 
     @staticmethod
-    def tz_aware_dt_now(offset=None, iso=False, rfcc=False):
+    def tz_aware_dt_now(offset=None, iso=False, rfcc=False, utc=False):
         """Get timezone aware datetime.now object."""
         from datetime import datetime
         tzinfo = ZoneInfo('US/Eastern')
+        if utc:
+            tzinfo = ZoneInfo('UTC')
         # zoneinfo.available_timezones()
         dt = datetime.now(tzinfo)
         if offset:  # Offset is measured in seconds
