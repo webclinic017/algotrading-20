@@ -28,7 +28,7 @@ class TwitterHelpers():
         if method == 'tweets_by_id' and not user_id:
             print('TwitterHelpers.twitter_fpaths: need to pass in user_id')
         if not user_id and 'username' in kwargs.keys():
-            username = kwargs.keys('username')
+            username = kwargs.get('username', None)
             user_id = TwitterHelpers.twitter_lookup_id(username)
 
         bpath = Path(baseDir().path, 'social', 'twitter')
@@ -80,7 +80,7 @@ class TwitterHelpers():
                 write_to_parquet(df, fpath)
 
     @staticmethod
-    def combine_twitter_all(trade_signal=False):
+    def combine_twitter_all(trade_signal=False, tgrams=False):
         """Combine all historical tweets."""
         fpath_uref = TwitterHelpers.twitter_fpaths('user_ref')
         fdir_users = fpath_uref.parent
@@ -92,6 +92,9 @@ class TwitterHelpers():
         if trade_signal:
             pattern = '_tweet_ref.parquet'
             fname = '_trade_tweets_all.parquet'
+        elif tgrams:
+            pattern = '_telegram_msgs.parquet'
+            fname = '_telegram_msgs_all.parquet'
 
         for strpath in fpaths_str:
             if re.search(pattern, str(strpath)):

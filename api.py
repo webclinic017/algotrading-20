@@ -82,6 +82,10 @@ def make_url_dict():
         'st_watch': '/stocktwits/watchlist',
         'twitter_get_max': '/redo/twitter/max_hist',
         'twitter_errors': '/data/twitter/errors',
+        'twitter_trades_all': '/data/twitter/trade_signal/all',
+        'twitter_user_ref': '/data/twitter/user_ref',
+        'twitter_logs': '/data/twitter/logs',
+        'telegram_polls': '/data/telegram/polls',
         'redo': ''
     })
 
