@@ -31,7 +31,7 @@ except ModuleNotFoundError:
 ################################################
 
 
-def sec_sym_list():
+def sec_sym_list(return_df=False):
     """Get list of symbols from SEC."""
     # Symbol, Name CIK string
     sec_cp_url = 'https://www.sec.gov/files/company_tickers.json'
@@ -43,6 +43,9 @@ def sec_sym_list():
     ss_path = bpath.joinpath('sec_syms.parquet')
 
     write_to_parquet(sec_syms, ss_path, combine=True, drop_duplicates=True)
+
+    if return_df:
+        return sec_syms
 
 
 def form_4(get=False, url=False):

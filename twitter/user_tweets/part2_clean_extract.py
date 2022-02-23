@@ -150,7 +150,7 @@ class TwitterUserExtract():
         # Define regex vars
         entry = '(entry|bought)'
         lotto = '(lotto|lotto-|risk)'
-        exit = '(up|/%|all out|sell|sold|trim)'
+        out = '(up|/%|all out|sell|sold|trim)'
 
         strc = df_m4['text'].str.contains
         # Disable string extract warning
@@ -158,7 +158,7 @@ class TwitterUserExtract():
             warnings.simplefilter("ignore")
             df_m4['entry'] = strc(entry, regex=True, case=False)
             df_m4['lotto'] = strc(lotto, regex=True, case=False)
-            df_m4['exit'] = strc(exit, regex=True, case=False)
+            df_m4['exit'] = strc(out, regex=True, case=False)
             df_m4['uw'] = strc('unusual_whales', regex=True, case=False)
 
         # callM or putM with more than 2 strike prices are often recaps

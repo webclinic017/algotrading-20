@@ -1,4 +1,5 @@
 """Bulk download of yfinance historical data."""
+# Also gets the missing historical values
 # %% codecell
 
 from pathlib import Path
@@ -36,7 +37,7 @@ class YfMaxHistorical():
         bpath = Path(baseDir().path, 'historical/each_sym_all')
         self.bpath = bpath
         info_path = bpath.joinpath('info', 'info.parquet')
-        
+
         if info_path.exists():
             sym_df = pd.read_parquet(info_path)
         else:
