@@ -5,17 +5,69 @@ import time
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 
 import pandas as pd
 import requests
 
 try:
-    from scripts.dev.multiuse.help_class import help_print_arg
+    from scripts.dev.multiuse.help_class import baseDir, help_print_arg, write_to_parquet
 except ModuleNotFoundError:
-    from multiuse.help_class import help_print_arg
+    from multiuse.help_class import baseDir, help_print_arg, write_to_parquet
 
 # %% codecell
 #################################
+
+
+class RecordAPICalls():
+    """Record API calls."""
+
+    def __init__(self, rep, name, **kwargs):
+        self.fpath = self._get_fpath(self, name)
+        self.df = self._base_parse_response(self, rep, name, **kwargs)
+        self._write_to_file(self, self.df, self.fpath, name, **kwargs)
+
+    @classmethod
+    def _get_fpath(cls, self, name):
+        """Get fpath from dict of log_name."""
+        bpath = Path(baseDir().path, 'logs')
+        fdict = ({
+            'twitter': 'twitter/api_calls.parquet',
+            'celery': 'celery/api_calls.parquet',
+            'etrade': 'etrade/api_calls.parquet'
+        })
+
+        fpath = bpath.joinpath(fdict[name])
+        return fpath
+
+    @classmethod
+    def _base_parse_response(cls, self, rep, name, **kwargs):
+        """Construct df around response object - base method."""
+        heads = rep.raw.getheaders()
+        headers = {key: val for key, val in heads.items()}
+        df = pd.Series(headers).to_frame().T
+        df['name'] = name
+        # Check if method passed
+        if 'method' in kwargs.keys():
+            df['method'] = kwargs['method']
+
+        df['status_code'] = rep.status_code
+        df['url'] = rep.url
+        df['reason'] = rep.reason
+
+        return df
+
+    @classmethod
+    def _write_to_file(cls, self, df, fpath, name, **kwargs):
+        """Write df to local parquet file."""
+        verbose = kwargs.get('verbose', None)
+        if verbose:
+            help_print_arg(f"RecordAPICalls: {name}: {str(fpath)}")
+
+        write_to_parquet(df, fpath, combine=True)
+
+
+# %% codecell
 
 
 def get_sock5_nord_proxies(full_df=False):

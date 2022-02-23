@@ -31,6 +31,12 @@ class GetIntradayIexData():
     self.df_errors
     """
 
+    cols_floats = (['marketHigh', 'marketLow', 'marketAverage',
+                    'marketVolume', 'marketNotional',
+                    'marketNumberOfTrades', 'marketOpen',
+                    'marketClose', 'marketChangeOverTime'])
+    float_dict = {val: 'float32' for val in cols_floats}
+
     def __init__(self, sym_list=[], dt=False, verbose=False, ntests=False):
         if not sym_list:
             self._get_syms(self)
@@ -105,16 +111,23 @@ class GetIntradayIexData():
 
         # Get data with requested url
         df_ud = urlData(url).df
-        df_ud['dtime'] = (pd.to_datetime(df_ud['date'] + df_ud['minute'],
-                          format='%Y-%m-%d%H:%M'))
-        df_ud['date'] = pd.to_datetime(df_ud['date'], format='%Y-%m-%d')
+
+        # Insert symbol, drop extraneous columns
         df_ud.insert(0, 'symbol', sym)
-        # Write to parquet and exit function
-        df_ud['symbol'] = df_ud['symbol'].astype('category')
         (df_ud.drop(columns=['minute', 'exchangeType'],
                     inplace=True, errors="ignore"))
 
-        write_to_parquet(df_ud, fpath, combine=True)
+        # Specify data types
+        ##################################################################
+        df_ud['symbol'] = df_ud['symbol'].astype('category')
+        df_ud['dtime'] = (pd.to_datetime(df_ud['date'] + df_ud['minute'],
+                          format='%Y-%m-%d%H:%M'))
+        df_ud['date'] = pd.to_datetime(df_ud['date'], format='%Y-%m-%d')
+        df_ud = df_ud.astype(self.float_dict)
+        ##################################################################
+
+        df = df_ud.dropna(subset=['marketVolume']).reset_index(drop=True)
+        write_to_parquet(df, fpath, combine=True)
 
     @classmethod
     def _error_handling(cls, self, error_dict, bpath):

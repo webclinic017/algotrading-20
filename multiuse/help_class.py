@@ -84,6 +84,28 @@ def round_cols(df, cols=False, decimals=3):
     return df
 
 
+def write_to_pickle(df, fpath, combine=False):
+    """Write dataframe to picklel with optional combine param."""
+    df = dataTypes(df).df
+
+    if not isinstance(fpath, Path):
+        fpath = Path(fpath)
+    if 'pkl' not in str(fpath) and 'pickle' not in str(fpath):
+        help_print_arg(f"write_to_pickle: {str(fpath)} not a pickle file")
+        raise OSError
+    # If parent directory doesn't exist, make it
+    if not fpath.parent.exists():
+        fpath.parent.mkdir(mode=0o777, parents=True)
+        fpath.parent.chmod(mode=0o777)
+
+    if combine:
+        if fpath.exists():
+            df_old = pd.read_pickle(fpath)
+            df = pd.concat([df_old, df])
+
+    df.to_pickle(fpath)
+
+
 def write_to_parquet(df, fpath, combine=False, drop_duplicates=False, **kwargs):
     """Writing to parquet with error exceptions."""
     cols = df.columns
