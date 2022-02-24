@@ -49,6 +49,7 @@ def make_url_dict():
         'yoptions_unfin': '/data/yfinance/derivs/unfinished',
         'yoptions_stock': '/data/yfinance/derivs/stock',
         'e_fix_intraday_dataframes': '/data/errors/fix_intraday_dataframes',
+        'errors_iex_intraday_1min': '/data/errors/clean_iex_1min',
         'yinfo_all': '/data/yfinance/info/all',
         'iex_quotes_raw': '/prices/eod/all',
         'iex_comb_today': f"/prices/combined/{getDate.query('cboe')}",
@@ -58,6 +59,7 @@ def make_url_dict():
         'missing_dates_less': '/data/hist/missing_dates/less_than_20',
         'missing_dates_all': '/data/hist/missing_dates/all',
         'missing_dates_null': '/data/hist/missing_dates/null',
+        'ml_training': '/data/ml/subset',
         'new_syms_today': '/symbols/new/today',
         'new_syms_all': '/symbols/new/all',
         'stock_data': '/symbols/data',
@@ -156,6 +158,8 @@ class serverAPI():
                 get_json = get.json()
             except UnicodeDecodeError:
                 df = pd.read_parquet(BytesIO(get.content))
+            except OSError:
+                df = pd.read_pickle(BytesIO(get.content))
         else:
             msg = f"Status code failed {get.status_code} with url {url}"
             help_print_arg(msg)
@@ -282,3 +286,36 @@ class serverAPI():
 
 # %% codecell
 ####################################
+
+
+class GetTrainingData():
+    """Get training data from api."""
+    baseUrl = 'https://algotrading.ventures/api/v1/data/ml'
+
+    def __init__(self):
+        self.rep_training = self._get_data(self, 'training')
+        self.rep_ref = self._get_data(self, 'ref')
+
+        self.df = self._convert_to_df(self, self.rep_training)
+        self.df_ref = self._convert_to_df(self, self.rep_ref)
+
+    @classmethod
+    def _get_data(cls, self, method):
+        """Get training data."""
+        if method == "training":
+            url = f"{self.baseUrl}/subset"
+        elif method == "ref":
+            url = f"{self.baseUrl}/subset_ref"
+
+        get = requests.get(url)
+        get.raise_for_status()
+        return get
+
+    @classmethod
+    def _convert_to_df(cls, self, rep):
+        """Convert to df, return dataframe."""
+        df = pd.read_parquet(BytesIO(rep.content))
+        return df
+
+
+# %% codecell
