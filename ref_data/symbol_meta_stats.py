@@ -28,7 +28,7 @@ class SymbolRefMetaInfo():
         self.df = self._join_dataframes(self)
 
         if isinstance(df_all, pd.DataFrame):
-            self.df_all, df_all = self._combine_for_ml(self, df_all, self.df)
+            self.df_all = self._combine_for_ml(self, df_all, self.df)
 
     @classmethod
     def _call_stock_meta_info(cls, self):
