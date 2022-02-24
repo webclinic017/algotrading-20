@@ -6,19 +6,22 @@ import pandas as pd
 
 try:
     from scripts.dev.multiuse.help_class import write_to_parquet, help_print_arg
+    from scripts.dev.multiuse.class_methods import ClsHelp
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
 except ModuleNotFoundError:
     from multiuse.help_class import write_to_parquet, help_print_arg
+    from multiuse.class_methods import ClsHelp
     from twitter.methods.helpers import TwitterHelpers
 
 # %% codecell
 
 
-class TwitterUserTweets():
+class TwitterUserTweets(ClsHelp):
     """Extract relevant info from Twitter Users' Tweets."""
     # Part 1 of user tweets
 
     def __init__(self, rep, method, fpath, user_id, **kwargs):
+        self.verbose = kwargs.get('verbose', False)
         df = self._convert_data(self, rep, user_id)
         # if isinstance(df, pd.DataFrame):
         # new_tweets = self._check_if_new_tweets(self, df, user_id)
@@ -26,7 +29,7 @@ class TwitterUserTweets():
         if isinstance(df, pd.DataFrame):
             df = self._add_rt_info(self, df)
             df = self._add_calls_puts(self, df)
-            df = self._start_creating_cols(self, df)
+            df = self._start_creating_cols(self, df, **kwargs)
             df = self._clean_strike_prices(self, df)
             self.df = self._drop_and_write(self, df, fpath)
 
@@ -80,22 +83,22 @@ class TwitterUserTweets():
         return df.copy()
 
     @classmethod
-    def _start_creating_cols(cls, self, df):
+    def _start_creating_cols(cls, self, df, **kwargs):
         """Start converting columns with special characters specified."""
         # Symbol
         cdict = {'regex': '[^\b$A-Za-z\b]+', 'spc_char': '$', 'col_pre': 'sym_'}
-        df = self._convert_symbols_into_cols(self, df, cdict)
+        df = self._convert_symbols_into_cols(self, df, cdict, **kwargs)
         # Hashtag
         cdict = {'regex': '[^\b#a-zA-Z\b]+', 'spc_char': '#', 'col_pre': 'hash_'}
-        df = self._convert_symbols_into_cols(self, df, cdict)
+        df = self._convert_symbols_into_cols(self, df, cdict, **kwargs)
         # Strike price
         cdict = {'regex': '[^\b0-9.%\b]+', 'spc_char': '$', 'col_pre': 'val_'}
-        df = self._convert_symbols_into_cols(self, df, cdict)
+        df = self._convert_symbols_into_cols(self, df, cdict, **kwargs)
 
         return df
 
     @classmethod
-    def _convert_symbols_into_cols(cls, self, df, cdict):
+    def _convert_symbols_into_cols(cls, self, df, cdict, **kwargs):
         """Find all symbols in tweets. Make new cols for each sym."""
         slist = []
         splits = df['text'].str.split(cdict['regex'], regex=True)
@@ -107,7 +110,9 @@ class TwitterUserTweets():
 
         try:
             max_len = max([len(sp) for sp in slist if isinstance(sp, list)])
-        except ValueError:
+        except ValueError as ve:
+            if self.verbose:
+                self.elog(self, ve)
             return df
 
         for n in range(max_len):
@@ -150,9 +155,8 @@ class TwitterUserTweets():
             try:
                 df[col] = df[col].astype(np.float64)
             except ValueError as ve:
-                msg1 = 'TwitterUserTweets._clean_strike_prices'
-                msg2 = f" {type(ve)} {str(ve)}"
-                help_print_arg(f"{msg1}{msg2}")
+                if self.verbose:
+                    self.elog(self, ve)
                 col_excludes.append(col)
 
         for col in val_cols:
@@ -169,7 +173,7 @@ class TwitterUserTweets():
     @classmethod
     def _drop_and_write(cls, self, df, fpath):
         """Drop duplicates and write to local file."""
-        df.drop_duplicates(subset=['id'], inplace=True)
+        # Can't drop duplicates since this isn't the hist_df
         write_to_parquet(df, fpath, combine=True)
 
         return df

@@ -35,6 +35,7 @@ except ModuleNotFoundError:
 importlib.reload(sys.modules['workbooks_fib.fib_funcs_master'])
 importlib.reload(sys.modules['workbooks_fib.fib_funcs_clean_analysis'])
 importlib.reload(sys.modules['studies.ta_lib_studies'])
+importlib.reload(sys.modules['ref_data.symbol_meta_stats'])
 importlib.reload(sys.modules['workbooks_ml.ml_funcs_data_summary'])
 importlib.reload(sys.modules['pre_process_data.transform_dt_cat'])
 # %% codecell
@@ -52,7 +53,12 @@ df_all = fib_all_clean_combine_write(dt=dt)
 df_peak_troughs = add_fib_peaks_troughs_diffs(read=False).copy()
 df_cleaned = fib_pp_cleaned(read=False, drop=False).copy()
 
+# %% codecell
+
 df_sectors = SymbolRefMetaInfo(df_all=df_cleaned).df_all
+
+# %% codecell
+
 df_studies = add_ta_lib_studies(df_sectors).copy()
 df_studies = make_emas(df_studies).copy()
 sec_df = get_collect_prep_sec_data(df=df_studies)
