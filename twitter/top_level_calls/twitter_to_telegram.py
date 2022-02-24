@@ -26,7 +26,7 @@ except ModuleNotFoundError:
 # %% codecell
 
 
-def get_most_recent_messages_per_user(telegram=False, verbose=False, testing=False):
+def get_most_recent_messages_per_user(telegram=False, **kwargs):
     """Get messages within the last 30 seconds."""
     isp = inspect.stack()
     # telegram keyword arg will then start the process of making a
@@ -34,18 +34,23 @@ def get_most_recent_messages_per_user(telegram=False, verbose=False, testing=Fal
     th = TwitterHelpers.twitter_fpaths
     df_uref = pd.read_parquet(th('user_ref'))
 
+    testing = kwargs.get('testing', False)
+    verbose = kwargs.get('verbose', False)
+    max_results = kwargs.get('max_results', 5)
+    offset = kwargs.get('offset', 75)
+
     if verbose:
         call_list = []
 
     for index, row in df_uref.iterrows():
-        start_time = getDate.tz_aware_dt_now(offset=75, rfcc=True, utc=True)
+        start_time = getDate.tz_aware_dt_now(offset=offset, rfcc=True, utc=True)
         end_time = getDate.tz_aware_dt_now(rfcc=True, utc=True)
 
         params = ({'username': row['username'],
-                   'params': {'max_results': 5,  # smallest val is 5
+                   'params': {'max_results': max_results,  # smallest val is 5
                               'start_time': start_time,
                               'end_time': end_time,
-                              'exclude': 'retweets'}})
+                              'exclude': 'retweets,replies'}})
         # First call gets the first round of results - includes pag token
         call = TwitterAPI(method='user_tweets', **params)
         time.sleep(1)
@@ -54,7 +59,7 @@ def get_most_recent_messages_per_user(telegram=False, verbose=False, testing=Fal
 
         if verbose:
             crh = call.get.raw.getheaders()
-            msg = f"Twitter calls remaining {crh['x-rate-limit-remaining']}"
+            msg = f"{row['username']} Twitter calls remaining {crh['x-rate-limit-remaining']}"
             help_print_arg(msg)
             call_list.append(call)
 
@@ -171,6 +176,13 @@ def send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs):
         df_reft['telegram_sent'] = 0
 
     for index, row in df_msgs.iterrows():
+        # Check if this message has already been sent
+        if fpath_tgrams.exists():
+            df_old_tgrams = pd.read_parquet(fpath_tgrams)
+            # twitter_tweet_id = row['id']
+            if row['id'] in df_old_tgrams['twitter_tweet_id'].tolist():
+                continue
+
         # result = telegram_push_message(text=row['message'])
         result = telegram_push_poll(tid=row['id'], text=row['message'], **kwargs)
         if result:

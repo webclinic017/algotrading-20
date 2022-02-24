@@ -10,10 +10,12 @@ import numpy as np
 try:
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
     from scripts.dev.multiuse.df_helpers import DfHelpers
+    from scripts.dev.multiuse.class_methods import ClsHelp
     from scripts.dev.multiuse.help_class import baseDir, write_to_parquet, help_print_arg
 except ModuleNotFoundError:
     from twitter.methods.helpers import TwitterHelpers
     from multiuse.df_helpers import DfHelpers
+    from multiuse.class_methods import ClsHelp
     from multiuse.help_class import baseDir, write_to_parquet, help_print_arg
 
 
@@ -25,11 +27,11 @@ class TwitterUserExtract():
     # Part 2 of user tweets
 
     def __init__(self, user_id, dropcols=False, **kwargs):
+        self.verbose = kwargs.get('verbose', False)
         df = self._load_filter_tweet_df(self, user_id, **kwargs)
         df_nan = self._remove_cols_with_all_nans(self, df, **kwargs)
         df_call = self._match_put_calls(self, df_nan, call=True)
-        df_put = self._match_put_calls(self, df_call, put=True)
-        self.df = df_put.copy()
+        self.df = self._match_put_calls(self, df_call, put=True)
         self.df_view = self._filter_sort_df(self, self.df, dropcols)
         # self._update_tweet_by_id_df(self, self.df_view, user_id)
 
@@ -49,15 +51,11 @@ class TwitterUserExtract():
         if not isinstance(df, pd.DataFrame):
             msg = "_hist_tweets.parquet does not exist"
             help_print_arg(msg, isp=isp)
-        # print(f"Duplicated rows: {str(df['id'].duplicated().sum())}")
-        # if non_rt:
-        #    df = df[~df['RT']].copy()
 
         fpath_ref = (TwitterHelpers.tf('tweet_by_id', user_id=user_id))
 
         if fpath_ref.exists():
             df_ref = pd.read_parquet(fpath_ref).drop(columns='text')
-            # .dropna(subset='created_at'))
             if not df_ref.empty:
                 df = pd.merge(df, df_ref, on='id', how='left')
                 df = DfHelpers.combine_duplicate_columns(df)
@@ -111,24 +109,19 @@ class TwitterUserExtract():
         if 'strike' not in df.columns:
             df['strike'] = np.NaN
             df['side'] = np.NaN
+
         # Unpack list, assign strike prices to index
-        try:
-            df.loc[m1.index, 'strike'] = m1.apply(lambda row: row[0][0])
-            df.loc[m1.index, 'side'] = m1.apply(lambda row: row[0][1])
-        except TypeError:
-            df['strike'] = df['strike'].astype(str)
-            df['side'] = df['side'].astype(str)
-            df.loc[m1.index, 'strike'] = m1.apply(lambda row: row[0][0])
-            df.loc[m1.index, 'side'] = m1.apply(lambda row: row[0][1])
+        df['strike'] = df['strike'].astype(str)
+        df['side'] = df['side'].astype(str)
+        df.loc[m1.index, 'strike'] = m1.apply(lambda row: row[0][0])
+        df.loc[m1.index, 'side'] = m1.apply(lambda row: row[0][1])
 
         # df contains
         dtsc = df['text'].str.contains
         # Add a column for unusual whales
-        uw = 'unusual_whales'
-        df['uw'] = dtsc(uw, regex=True, case=False)
+        df['uw'] = dtsc('unusual_whales', regex=True, case=False)
         # Add a column for watchlist
-        uw = 'watch'
-        df['watch'] = dtsc(uw, regex=True, case=False)
+        df['watch'] = dtsc('watch', regex=True, case=False)
 
         return df
 
