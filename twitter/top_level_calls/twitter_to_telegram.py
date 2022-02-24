@@ -97,10 +97,8 @@ def check_for_unsent_telegram_messages(user_id=False, **kwargs):
     if 'telegram_sent' not in df_reft.columns:
         df_reft['telegram_sent'] = 0  # 1 if sent
 
-    # Only messages that haven't been sent
-    cond_sent = (df_reft['telegram_sent'] == 0)
     # Only tweets in the last 60 seconds
-    dt, secs = getDate.tz_aware_dt_now(), 60
+    dt, secs = getDate.tz_aware_dt_now(), 75
     if testing:
         if 'time_filter' in kwargs.keys():
             secs = kwargs['time_filter']
@@ -109,8 +107,10 @@ def check_for_unsent_telegram_messages(user_id=False, **kwargs):
 
     cond_dt = (df_reft['created_at'].dt.to_pydatetime() >
                (dt - timedelta(seconds=secs)))
+    # Only messages that haven't been sent
+    cond_sent = (df_reft['telegram_sent'] == 0)
 
-    rows = df_reft[cond_sent & cond_dt]
+    rows = df_reft[cond_dt & cond_sent]
 
     if rows.empty:
         if verbose:
@@ -118,21 +118,23 @@ def check_for_unsent_telegram_messages(user_id=False, **kwargs):
             help_print_arg(msg, isp=isp)
         return False
     else:
+        # Convert all tweet ids to list
         tids = rows['id'].tolist()
-        df_all = make_tradeable_messages(user_id, tids)
-        if not df_all.empty:
-            send_telegram_trade_record_msg_sent(user_id, df_all, **kwargs)
+        df_msgs = make_tradeable_messages(user_id, tids)
+        if not df_msgs.empty:
+            send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs)
 
         if kwargs.get('testing', None):
-            return {'rows': rows, 'trade_messages': df_all}
+            return {'rows': rows, 'trade_messages': df_msgs}
 
 # %% codecell
 
 
-def make_tradeable_messages(user_id, tids=None):
+def make_tradeable_messages(user_id, tids=None, df=None):
     """Make tradeable messages that can be sent to telegram chat."""
-    # Ignore all this for the time being
-    df = TwitterUserExtract(user_id).df_view
+    if df is None:
+        # Ignore all this for the time being
+        df = TwitterUserExtract(user_id).df_view
 
     cols_to_keep = (['entry', 'exit', 'sym_0', 'strike', 'side',
                      'text', 'id', 'author_id', 'created_at'])
@@ -142,6 +144,7 @@ def make_tradeable_messages(user_id, tids=None):
                     ['side']
                     .str.replace('p', 'put', regex=False)
                     .str.replace('c', 'call', regex=False))
+
     df_t1.loc[s_to_replace.index, 'side'] = s_to_replace
 
     df_buys = df_t1[df_t1['entry']].copy()
@@ -156,7 +159,7 @@ def make_tradeable_messages(user_id, tids=None):
 
     df_all = pd.concat([df_buys, df_sells])
 
-    if tids:  # If list of twitter ids
+    if tids:  # If list of twitter ids, keep only rows with recent tids
         df_all = df_all[df_all['id'].isin(tids)]
 
     return df_all
@@ -166,15 +169,18 @@ def make_tradeable_messages(user_id, tids=None):
 
 def send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs):
     """Send / test send messages for telegram."""
+    # All messages sent to Telegram
     user_dir = TwitterHelpers.tf('user_dir', user_id)
     fpath_tgrams = user_dir.joinpath('_telegram_msgs.parquet')
 
+    # All tweets that match "trade" tweets
     fpath_reft = TwitterHelpers.tf('tweet_by_id', user_id)
     df_reft = pd.read_parquet(fpath_reft).reset_index(drop=True)
-
+    # If column not in the "trade df", add it and set value = 0
     if 'telegram_sent' not in df_reft.columns:
         df_reft['telegram_sent'] = 0
 
+    # Iterate through messages to be sent
     for index, row in df_msgs.iterrows():
         # Check if this message has already been sent
         if fpath_tgrams.exists():
@@ -183,17 +189,19 @@ def send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs):
             if row['id'] in df_old_tgrams['twitter_tweet_id'].tolist():
                 continue
 
-        # result = telegram_push_message(text=row['message'])
         result = telegram_push_poll(tid=row['id'], text=row['message'], **kwargs)
         if result:
+            # Set the "df trade" position to 1, meaning sent
             df_reft.loc[index, 'telegram_sent'] = 1
+            write_to_parquet(df_reft, fpath_reft, combine=True)
 
+            # Parse json data, convert to df
             df_tgrams = pd.json_normalize(result.json()['result'])
             df_tgrams['twitter_author_id'] = row['author_id']
             df_tgrams['twitter_tweet_id'] = row['id']
             df_tgrams.drop(columns='entities', inplace=True, errors='ignore')
             df_tgrams['date'] = pd.to_datetime(df_tgrams['date'], unit='s')
-
+            # Combine with local file, if it exists
             write_to_parquet(df_tgrams, fpath_tgrams, combine=True)
 
         if kwargs['testing']:
