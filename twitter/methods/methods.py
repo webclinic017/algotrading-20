@@ -5,11 +5,13 @@ import pandas as pd
 
 try:
     from scripts.dev.multiuse.help_class import getDate, write_to_parquet
+    from scripts.dev.multiuse.class_methods import ClsHelp
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
     from scripts.dev.twitter.user_tweets.part1_get_process import TwitterUserTweets
     from scripts.dev.twitter.user_tweets.part2_clean_extract import TwitterUserExtract
 except ModuleNotFoundError:
     from multiuse.help_class import getDate, write_to_parquet
+    from multiuse.class_methods import ClsHelp
     from twitter.methods.helpers import TwitterHelpers
     from twitter.user_tweets.part1_get_process import TwitterUserTweets
     from twitter.user_tweets.part2_clean_extract import TwitterUserExtract
@@ -17,7 +19,7 @@ except ModuleNotFoundError:
 # %% codecell
 
 
-class TwitterMethods():
+class TwitterMethods(ClsHelp):
     """Handling data from twitter API."""
     # Assumed get response object with status_code == 200
 
@@ -82,11 +84,11 @@ class TwitterMethods():
             # For now just drop the entities column
             df.reset_index(drop=True, inplace=True)
             df.drop(columns=['entities'], inplace=True, errors='ignore')
-            # kwargs = dict([('cols_to_drop', 'id')])
-            write_to_parquet(df, fpath, combine=True)
-        except KeyError:
-            # If KeyError, sleep for 10 minutes
-            # time.sleep(600)
+            # Combine, but drop duplicate tweets by id
+            kwargs = {'cols_to_drop': ['id']}
+            write_to_parquet(df, fpath, combine=True, **kwargs)
+        except KeyError as ke:
+            self.elog(self, ke)
             pass
 
 # %% codecell
