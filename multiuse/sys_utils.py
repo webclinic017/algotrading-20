@@ -13,7 +13,7 @@ def get_memory_usage():
     swapp = psutil.swap_memory()[3]
     # THRESHOLD = 3000 * 1024 * 1024  # 3GB
     # Then write all data to local file. Then delete other files
-    if (vmp > .95) and (swapp > .50):
+    if (vmp > .95) or (swapp > .50):
         return False
     else:
         return True
