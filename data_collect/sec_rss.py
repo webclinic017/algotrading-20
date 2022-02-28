@@ -10,12 +10,14 @@ try:
     from scripts.dev.multiuse.symbol_ref_funcs import get_all_symbol_ref
     from scripts.dev.multiuse.create_file_struct import make_yearly_dir
     from scripts.dev.multiuse.comms import send_twilio_message
+    from scripts.dev.telegram.methods.push import telegram_push_message
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, write_to_parquet
     from multiuse.symbol_ref_funcs import get_all_symbol_ref
     from multiuse.create_file_struct import make_yearly_dir
     from multiuse.comms import send_twilio_message
+    from telegram.methods.push import telegram_push_message
     from api import serverAPI
 # %% codecell
 
@@ -80,7 +82,7 @@ class SecRssFeed():
             help_print_arg(f"SEC RSS CIK Error: {str(e)}")
 
         df['dt'] = pd.to_datetime(df['pubDate'])
-        prev_15 = (datetime.now() - timedelta(minutes=60)).time()
+        prev_15 = (datetime.now() - timedelta(minutes=11)).time()
         sec_df = (df[(df['dt'].dt.time > prev_15)
                   & (df['dt'].dt.date == date.today())]
                   .copy())
@@ -190,7 +192,7 @@ class AnalyzeSecRss():
         if (df_inv.shape[0] == 0) and self.testing:
             help_print_arg("AnalyzeSecRss: no matching stocks for rss feed")
 
-        forms_to_watch = ['8-K', '3', '4']
+        # forms_to_watch = ['8-K', '3', '4']
         # df_forms = df_inv[df_inv['form'].isin(forms_to_watch)]
 
         msg_dict = {sym: [] for sym in inv_list}
@@ -207,7 +209,8 @@ class AnalyzeSecRss():
         """Send text messages to myself with relevant data."""
         for key, msg in self.msg_dict.items():
             if msg:
-                send_twilio_message(msg=msg)
+                # send_twilio_message(msg=msg)
+                telegram_push_message(text=msg, sec_forms=True)
             elif self.testing:
                 help_print_arg("AnalyzeSecRss: testing msg send func")
                 help_print_arg(str(msg))
