@@ -1,14 +1,16 @@
 """Telegram Helpers."""
 # %% codecell
 import os
-import requests
+from pathlib import Path
 
+import requests
+import pandas as pd
 from dotenv import load_dotenv
 
 try:
-    from scripts.dev.multiuse.help_class import help_print_arg
+    from scripts.dev.multiuse.help_class import help_print_arg, baseDir, write_to_parquet
 except ModuleNotFoundError:
-    from multiuse.help_class import help_print_arg
+    from multiuse.help_class import help_print_arg, baseDir, write_to_parquet
 
 # %% codecell
 
@@ -47,5 +49,14 @@ class TelegramHelpers():
         get = requests.get(url)
 
         return get
+
+    @staticmethod
+    def write_sec_msg_log(rep):
+        """Write sec messages to log."""
+        bdir = Path(baseDir().path, 'social', 'telegram', 'messages')
+        fpath = bdir.joinpath('_sec_forms.parquet')
+
+        df = pd.json_normalize(rep.json())
+        write_to_parquet(df, fpath, combine=True)
 
 # %% codecell
