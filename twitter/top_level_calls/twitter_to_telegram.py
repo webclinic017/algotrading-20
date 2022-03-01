@@ -53,7 +53,7 @@ def get_most_recent_messages_per_user(telegram=False, **kwargs):
                               'exclude': 'retweets,replies'}})
         # First call gets the first round of results - includes pag token
         call = TwitterAPI(method='user_tweets', **params)
-        time.sleep(1)
+        time.sleep(.5)
         # Returns a twitter API object - not df_view
         df_view = call.df
 
@@ -136,7 +136,7 @@ def make_tradeable_messages(user_id, tids=None, df=None):
         # Ignore all this for the time being
         df = TwitterUserExtract(user_id).df_view
 
-    cols_to_keep = (['entry', 'exit', 'sym_0', 'strike', 'side',
+    cols_to_keep = (['entry', 'exit', 'sym_0', 'strike', 'side', 'tcode',
                      'text', 'id', 'author_id', 'created_at'])
     df_t1 = df[cols_to_keep].copy()
 
@@ -172,6 +172,10 @@ def send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs):
     # All messages sent to Telegram
     user_dir = TwitterHelpers.tf('user_dir', user_id)
     fpath_tgrams = user_dir.joinpath('_telegram_msgs.parquet')
+    tgram_msgs = []
+    if fpath_tgrams.exists():
+        df_old_tgrams = pd.read_parquet(fpath_tgrams)
+        tgram_msgs = df_old_tgrams['twitter_tweet_id'].tolist()
 
     # All tweets that match "trade" tweets
     fpath_reft = TwitterHelpers.tf('tweet_by_id', user_id)
@@ -179,15 +183,20 @@ def send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs):
     # If column not in the "trade df", add it and set value = 0
     if 'telegram_sent' not in df_reft.columns:
         df_reft['telegram_sent'] = 0
+    # Load all trades
+    df_trades = TwitterHelpers.tf('user_trades', user_id, return_df=True)
+    if isinstance(df_trades, pd.DataFrame):
+        tcode_idx = df_trades.index
+    else:
+        tcode_idx = []
 
     # Iterate through messages to be sent
     for index, row in df_msgs.iterrows():
-        # Check if this message has already been sent
-        if fpath_tgrams.exists():
-            df_old_tgrams = pd.read_parquet(fpath_tgrams)
-            # twitter_tweet_id = row['id']
-            if row['id'] in df_old_tgrams['twitter_tweet_id'].tolist():
-                continue
+        # twitter_tweet_id = row['id']
+        if row['id'] in tgram_msgs:
+            continue  # Check if this message has already been sent
+        elif row['tcode'] not in tcode_idx and row['exit']:
+            continue  # Check if this is a sell msg, but buy was missed
 
         result = telegram_push_poll(tid=row['id'], text=row['message'], **kwargs)
         if result:

@@ -31,8 +31,10 @@ class TwitterUserExtract():
         df = self._load_filter_tweet_df(self, user_id, **kwargs)
         df_nan = self._remove_cols_with_all_nans(self, df, **kwargs)
         df_call = self._match_put_calls(self, df_nan, call=True)
-        self.df = self._match_put_calls(self, df_call, put=True)
-        self.df_view = self._filter_sort_df(self, self.df, dropcols)
+        df_puts = self._match_put_calls(self, df_call, put=True)
+        self.df = self._filter_entry_exit_cols(self, df_puts, dropcols)
+        self.df_view = self._add_tcode(self, self.df)
+        self._update_tweet_ref_with_tcode(self, self.df_view, user_id, **kwargs)
         # self._update_tweet_by_id_df(self, self.df_view, user_id)
 
     @classmethod
@@ -94,11 +96,14 @@ class TwitterUserExtract():
     def _match_put_calls(cls, self, df, call=False, put=False):
         """Create columns for put/call match."""
         regf, col = ' (\d\d\d|\d\d|\d)', ''
+        # regf, col = '([0-9\.]+)', ''
         if call:
-            regf = regf + '(c| call|call)'
+            # regf = regf + '(c[a\b]+|call)'
+            regf = regf + '(c |\s?call)'
             col = 'call'
         elif put:
-            regf = regf + '(p| put|put)'
+            # regf = regf + '(p[u\b]+|put)'
+            regf = regf + '(p |\s?put)'
             col = 'put'
 
         match = df['text'].str.findall(regf)
@@ -126,7 +131,7 @@ class TwitterUserExtract():
         return df
 
     @classmethod
-    def _filter_sort_df(cls, self, df, dropcols):
+    def _filter_entry_exit_cols(cls, self, df, dropcols):
         """Filter df for viewing."""
         df = df.copy()
         cond1 = df['callM'].dropna()
@@ -171,6 +176,42 @@ class TwitterUserExtract():
         df_m4 = df_m4.copy()
 
         return df_m4
+
+    @classmethod
+    def _add_tcode(cls, self, df):
+        """Construct and add tcode to dataframe."""
+        # Find the next expiration date (assume Friday)
+        df['next_exp'] = (df['created_at']
+                          + pd.offsets.Week(n=0, weekday=6)
+                          - pd.DateOffset(2))
+        df['next_exp'] = pd.to_datetime(df['next_exp'].dt.date)
+
+        # Replace 'put' with 'p', 'call' with 'c', and 'nan' with np.NaN
+        repl_dict = {'put': 'p', 'call': 'c', 'nan': np.NaN}
+        df['side_abv'] = (df['side'].replace(repl_dict,
+                                             regex=True)
+                                    .str.strip()
+                                    .dropna())
+        # Create tcode separated by underscore
+        df['tcode'] = (df['sym_0'] + '_'
+                       + df['side_abv'].astype('str') + '_'
+                       + df['next_exp'].dt.strftime('%Y%m%d') + '_'
+                       + df['strike'].astype('str'))
+        return df
+
+    @classmethod
+    def _update_tweet_ref_with_tcode(cls, self, df, user_id, **kwargs):
+        """Update the local user_ref tweets with tcodes."""
+        skip_write = kwargs.get('skip_write', False)
+        df_v1 = df[['id', 'tcode']].drop_duplicates(subset=['id']).copy()
+        f_tref = TwitterHelpers.tf('tweet_by_id', user_id)
+
+        df_tref = (pd.read_parquet(f_tref)
+                     .drop(columns='tcode', errors='ignore'))
+        df_tref2 = (df_tref.join(df_v1.set_index('id'), on='id', how='left')
+                           .reset_index(drop=True))
+        if not skip_write:
+            write_to_parquet(df_tref2, f_tref)
 
     @classmethod
     def _update_tweet_by_id_df(cls, self, df, user_id):
