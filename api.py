@@ -157,9 +157,10 @@ class serverAPI():
             except JSONDecodeError:
                 get_json = get.json()
             except UnicodeDecodeError:
-                df = pd.read_parquet(BytesIO(get.content))
-            except OSError:
-                df = pd.read_pickle(BytesIO(get.content))
+                try:
+                    df = pd.read_parquet(BytesIO(get.content))
+                except OSError:
+                    df = pd.read_pickle(BytesIO(get.content))
         else:
             msg = f"Status code failed {get.status_code} with url {url}"
             help_print_arg(msg)
