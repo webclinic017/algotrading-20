@@ -66,10 +66,3 @@ class GetTMDADailyOptions():
                 continue
 
         return all_sym_list
-
-
-# %% codecell
-
-
-
-# %% codecell
