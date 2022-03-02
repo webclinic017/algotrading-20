@@ -5,12 +5,12 @@ from datetime import datetime, timedelta
 from tqdm import tqdm
 
 try:
-    from scripts.dev.tmda.tdma_api.td_api import TD_API
+    from scripts.dev.tdma.tdma_api.td_api import TD_API
     from scripts.dev.multiuse.symbol_ref_funcs import remove_funds_spacs
     from scripts.dev.multiuse.help_class import getDate
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
-    from tmda.tdma_api.td_api import TD_API
+    from tdma.tdma_api.td_api import TD_API
     from multiuse.symbol_ref_funcs import remove_funds_spacs
     from multiuse.help_class import getDate
     from api import serverAPI
