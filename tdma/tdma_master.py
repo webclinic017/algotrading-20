@@ -12,7 +12,7 @@ except ModuleNotFoundError:
 # %% codecell
 
 
-class TDMA(TD_API):
+class TdmaMaster(TD_API):
     """TDMA API Top Level."""
 
     batch_dict = {'daily_opts': GetTMDADailyOptions}
