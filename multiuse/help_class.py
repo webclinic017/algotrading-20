@@ -125,7 +125,7 @@ def write_to_parquet(df, fpath, combine=False, drop_duplicates=False, **kwargs):
         df_old = pd.read_parquet(fpath)
         df = pd.concat([df_old, df]).copy()
 
-        if drop_duplicates or 'cols_to_drop' in kwargs.keys():
+        if drop_duplicates or 'cols_to_drop' in kwargs.keys() or 'cols_subset' in kwargs.keys():
             if 'cols_to_drop' in kwargs.keys():
                 cols = kwargs['cols_to_drop']
                 df.drop_duplicates(subset=cols, inplace=True)

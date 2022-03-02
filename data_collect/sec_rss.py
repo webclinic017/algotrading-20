@@ -36,7 +36,7 @@ class SecRssFeed():
         self.get_params(self)
         self.get_rss_feed(self)
         self.clean_data(self)
-        self.write_to_parquet(self)
+        self._write_to_parquet(self)
 
     @classmethod
     def get_params(cls, self):
@@ -94,7 +94,7 @@ class SecRssFeed():
             help_print_arg(f"SecRss: AnalyzeSecRss Error {str(e)}")
 
     @classmethod
-    def write_to_parquet(cls, self):
+    def _write_to_parquet(cls, self):
         """Read existing if exists - and/or write."""
         dt = getDate.query('sec_rss')
 
@@ -211,6 +211,7 @@ class AnalyzeSecRss():
             if msg:
                 # send_twilio_message(msg=msg)
                 telegram_push_message(text=msg, sec_forms=True)
+                help_print_arg(f"Sec RSS send message: {str(msg)}")
             elif self.testing:
                 help_print_arg("AnalyzeSecRss: testing msg send func")
                 help_print_arg(str(msg))

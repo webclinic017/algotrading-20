@@ -34,7 +34,8 @@ class RecordAPICalls():
         fdict = ({
             'twitter': 'twitter/api_calls.parquet',
             'celery': 'celery/api_calls.parquet',
-            'etrade': 'etrade/api_calls.parquet'
+            'etrade': 'etrade/api_calls.parquet',
+            'tdma': 'tdma/api_calls.parquet'
         })
 
         fpath = bpath.joinpath(fdict[name])
