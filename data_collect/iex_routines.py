@@ -241,6 +241,17 @@ def write_combined():
 ##############################################
 
 
+def sector_perf_1min():
+    """Run sector perf function once every minute."""
+    iex_df = urlData("/stock/market/sector-performance").df
+    iex_df['lastUpdated'] = pd.to_datetime(iex_df['lastUpdated'], unit='ms')
+
+    dt = getDate.query('mkt_open')
+    bpath = Path(baseDir().path, 'tickers', 'sector_perf')
+    fpath = bpath.joinpath(f"_{dt}.parquet")
+    write_to_parquet(iex_df, fpath, combine=True)
+
+
 def get_sector_performance(drop_dup=False):
     """Run each business day, every 60 minutes, from market open."""
 

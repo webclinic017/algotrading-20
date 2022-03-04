@@ -16,7 +16,7 @@ except ModuleNotFoundError:
 # %% codecell
 
 
-def remove_funds_spacs(query='symbol not in @exclude_list'):
+def remove_funds_spacs(query='symbol not in @exclude_list', unique_syms=False):
     """Remove funds and other non-common stock symbols."""
     all_syms = serverAPI('all_symbols').df
     cond_str = all_syms['name'].str.lower().str
@@ -42,6 +42,9 @@ def remove_funds_spacs(query='symbol not in @exclude_list'):
 
     exclude_list = pd.concat([val['symbol'] for val in edict.values()])
     result = all_syms.query(query).reset_index(drop=True)
+
+    if unique_syms:
+        result = result['symbol'].unique()
 
     return result
 

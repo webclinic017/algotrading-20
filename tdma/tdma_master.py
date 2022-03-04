@@ -26,7 +26,7 @@ class TdmaMaster(TD_API):
     @classmethod
     def _call_td_api(cls, self, api_val, **kwargs):
         """TD API with api_val."""
-        self.result = self.TD_API.__init__(api_val, **kwargs)
+        TD_API.__init__(self, api_val=api_val, **kwargs)
 
     @classmethod
     def _call_batch_method(cls, self, batch_method, **kwargs):
