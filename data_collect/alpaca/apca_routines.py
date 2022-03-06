@@ -10,10 +10,10 @@ import pandas as pd
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, help_print_arg, write_to_parquet
-    from scripts.dev.multiuse.pathClasses.construct_paths import PathConstructs
+    # from scripts.dev.multiuse.pathClasses.construct_paths import PathConstructs
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, dataTypes, getDate, help_print_arg, write_to_parquet
-    from multiuse.pathClasses.construct_paths import PathConstructs
+    # from multiuse.pathClasses.construct_paths import PathConstructs
 
 # %% codecell
 ########################################
@@ -108,9 +108,11 @@ class ApcaHist():
     @classmethod
     def construct_fpath(cls, self, sym):
         """Construct local fpath to store data."""
-        fpath = PathConstructs.hist_sym_fpath(sym, self.bpath)
+        # fpath = PathConstructs.hist_sym_fpath(sym, self.bpath)
+        dt = getDate.query('iex_close')
+        fsuf = f"{sym.lower()[0]}/_{sym}.parquet"
+        fpath = self.bpath.joinpath(str(dt.year), fsuf)
         return fpath
-
 
     @classmethod
     def construct_params(cls, self, sym):
