@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
 from pathlib import Path
-
 import pandas as pd
 import requests
 
@@ -31,12 +30,20 @@ class RecordAPICalls():
     def _get_fpath(cls, self, name):
         """Get fpath from dict of log_name."""
         bpath = Path(baseDir().path, 'logs')
+
+        def def_key_val(key):
+            return f"{key}/api_calls.parquet"
+
         fdict = ({
             'twitter': 'twitter/api_calls.parquet',
             'celery': 'celery/api_calls.parquet',
             'etrade': 'etrade/api_calls.parquet',
-            'tdma': 'tdma/api_calls.parquet'
+            'tdma': 'tdma/api_calls.parquet',
+            'stocktwits_trend': 'stocktwits/trend_api_calls.parquet'
         })
+
+        if name not in fdict.keys():
+            fdict[name] = f"{name}/api_calls.parquet"
 
         fpath = bpath.joinpath(fdict[name])
         return fpath
