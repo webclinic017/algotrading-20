@@ -26,8 +26,8 @@ def make_url_dict():
     """Make the url dict."""
     url_dict = ({
         'apca_all': '/data/apca/all',
-        'analyst_recs_all': '/data/company_stats/analyst_recs/all',
-        'analyst_recs_mr': '/data/company_stats/analyst_recs/most_recent',
+        'analyst_recs_all': '/data/company_stats/analyst_recs/all',  # Obsolete
+        'analyst_recs_mr': '/data/company_stats/analyst_recs/most_recent',  # Obsolete
         'analyst_recs_scraped': '/data/company_stats/analyst_recs/scraped',
         'analyst_ests_all': '/data/company_stats/analyst_ests/all',
         'treasuries': '/econ/treasuries',
@@ -88,6 +88,7 @@ def make_url_dict():
         'twitter_user_ref': '/data/twitter/user_ref',
         'twitter_logs': '/data/twitter/logs',
         'telegram_polls': '/data/telegram/polls',
+        'tdma_movers': '/data/tdma/movers',
         'redo': ''
     })
 
