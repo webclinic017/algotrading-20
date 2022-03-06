@@ -4,7 +4,7 @@
 import requests
 
 try:
-    from scripts.dev.multiuse.api_calls import RecordAPICalls
+    from scripts.dev.multiuse.api_helpers import RecordAPICalls
 except ModuleNotFoundError:
     from multiuse.api_helpers import RecordAPICalls
 
