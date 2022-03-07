@@ -593,7 +593,8 @@ class dataTypes():
                 try:
                     self.df[col] = self.df[col].astype('category')
                 except Exception as e:
-                    help_print_arg(f"Object column {col} with error: {str(e)}")
+                    if self.explicit:
+                        help_print_arg(f"Object column {col} with error: {str(e)}")
 
         self.df[date_cols] = self.df[date_cols].astype('str')
 
