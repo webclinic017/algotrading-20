@@ -12,60 +12,10 @@ from dotenv import load_dotenv
 
 try:
     from scripts.dev.multiuse.help_class import getDate, baseDir, write_to_parquet, help_print_arg
+    from scripts.dev.multiuse.api_helpers import RecordAPICalls
 except ModuleNotFoundError:
     from multiuse.help_class import getDate, baseDir, write_to_parquet, help_print_arg
-
-# %% codecell
-
-
-def scraped_ee_dates(verbose=False, hist=False, current_year=True):
-    """Start for loop of dates to get future/past analyst estimates."""
-    dt = getDate.query('iex_eod')
-    bdays, pos_days = None, None
-
-    if (365 - dt.timetuple().tm_yday) > 15:
-        bdays = getDate.get_bus_days(this_year=True)
-    else:
-        bdays = getDate.get_bus_days(this_year=False)
-        bdays = bdays[bdays['date'].dt.year >= dt.year].copy()
-
-    bdays['current_date'] = pd.to_datetime(getDate.query('iex_close'))
-    bdays['bday_diff'] = (getDate.get_bus_day_diff(
-                          bdays, 'current_date', 'date'))
-
-    if hist and not current_year:
-        pos_days = bdays[bdays['bday_diff'] < 15].copy()
-    elif hist and current_year:
-        cond1 = (bdays['bday_diff'] < 15)
-        cond2 = (bdays['date'].dt.year == dt.year)
-        pos_days = bdays[cond1 & cond2].copy()
-    else:
-        pos_days = bdays[bdays['bday_diff'].between(0, 15)].copy()
-
-    bpath = Path(baseDir().path, 'economic_data', 'analyst_earnings')
-    fpath_dir = bpath.joinpath(f"_{str(dt.year)}")
-
-    pos_days['fpath'] = (pos_days.apply(lambda row:
-                         f"{fpath_dir}/_{str(row['date'].date())}.parquet",
-                                        axis=1))
-
-    pos_days['fpath_exists'] = (pos_days['fpath'].astype(str)
-                                .map(os.path.exists))
-    dt_need = pos_days[~pos_days['fpath_exists']]
-
-    dt_list = []
-
-    for dt in dt_need['date']:
-        try:
-            ScrapedEE(dt=dt.date())
-            sleep(randint(5, 15))
-            dt_list.append(dt.date())
-        except Exception as e:
-            help_print_arg(f"scraped_ee_dates {type(e)} {str(e)}")
-
-    if verbose:
-        help_print_arg(str(dt_list))
-
+    from multiuse.api_helpers import RecordAPICalls
 
 # %% codecell
 
@@ -85,7 +35,8 @@ class ScrapedEE():
     def __init__(self, dt=None):
         self._define_fpath(self, dt)
         self._build_headers_url_params(self)
-        self._request_data_and_store(self)
+        self.get = self._request_data_and_store(self)
+        self.df = self._clean_return_dataframe(self, self.get)
 
     @classmethod
     def _define_fpath(cls, self, dt):
@@ -133,18 +84,23 @@ class ScrapedEE():
         get = (requests.get(self.url,
                             headers=self.headers,
                             params=self.payload))
+        # Record the call in local log
+        RecordAPICalls(get, name='analyst_prices')
+        return get
 
+    @classmethod
+    def _clean_return_dataframe(cls, self, get):
+        """Process response object, clean and return dataframe."""
         if get.status_code < 400:
             df = pd.DataFrame(get.json()['data']['rows'])
             df['date'] = self.dt
-            self.df = df
-            CleanScrapedEE(df, self.fpath)
-            # write_to_parquet(df, self.fpath)
+            df = CleanScrapedEE(df, self.fpath).df
+            return df
         else:
             msg = f"Scraped EE failed with msg {str(get.content)}"
             help_print_arg(msg)
+            return None
 
-        self.get = get
 
 # %% codecell
 
@@ -155,7 +111,7 @@ class CleanScrapedEE():
     def __init__(self, df, fpath):
         cleaned_df = self._clean_convert_nans(self, df)
         convert_df = self._convert_cols(self, cleaned_df)
-        self._write_dataframes(self, convert_df, fpath)
+        self.df = self._write_dataframes(self, convert_df, fpath)
 
     @classmethod
     def _clean_convert_nans(cls, self, df):
@@ -233,3 +189,5 @@ class CleanScrapedEE():
                 write_to_parquet(df, fpath)
         else:
             write_to_parquet(df, fpath)
+
+        return df
