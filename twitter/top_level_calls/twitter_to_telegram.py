@@ -201,7 +201,7 @@ def send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs):
         result = telegram_push_poll(tid=row['id'], text=row['message'], **kwargs)
         if result:
             # Set the "df trade" position to 1, meaning sent
-            df_reft.loc[index, 'telegram_sent'] = 1
+            df_reft.at[index, 'telegram_sent'] = 1
             write_to_parquet(df_reft, fpath_reft, combine=True)
 
             # Parse json data, convert to df
