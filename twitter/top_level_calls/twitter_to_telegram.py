@@ -96,6 +96,8 @@ def check_for_unsent_telegram_messages(user_id=False, **kwargs):
 
     if 'telegram_sent' not in df_reft.columns:
         df_reft['telegram_sent'] = 0  # 1 if sent
+    # Fill nas if applicable
+    df_reft['telegram_sent'].fillna(0, inplace=True)
 
     # Only tweets in the last 60 seconds
     dt, secs = getDate.tz_aware_dt_now(), 75
