@@ -4,10 +4,10 @@ from pathlib import Path
 
 try:
     from scripts.dev.multiuse.help_class import getDate
-    from scripts.dev.multiuse.path_helpers.most_recent_fpath import get_most_recent_fpath
+    from scripts.dev.multiuse.path_helpers import get_most_recent_fpath
 except ModuleNotFoundError:
     from multiuse.help_class import getDate
-    from multiuse.path_helpers.most_recent_fpath import get_most_recent_fpath
+    from multiuse.path_helpers import get_most_recent_fpath
 
 # %% codecell
 
