@@ -55,11 +55,12 @@ class ApcaNewsStream(ApcaAuth):
     @classmethod
     def _start_news_streaming(cls, self):
         """instantiate news streaming function."""
-        loop = asyncio.get_running_loop()
-        if loop and loop.is_running():
-            print('Loop is running')
-            tsk = loop.create_task(self._news_streaming(self))
-        else:
+        try:
+            loop = asyncio.get_running_loop()
+            if loop and loop.is_running():
+                print('Loop is running')
+                tsk = loop.create_task(self._news_streaming(self))
+        except RuntimeError:
             asyncio.run(self._news_streaming(self))
 
     @classmethod
