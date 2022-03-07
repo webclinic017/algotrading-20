@@ -23,7 +23,6 @@ def get_sizes(gz=False, parquet=True):
 
     path_list = list(Path(baseDir().path).glob(f'**/*{file_ext}'))
 
-
     for fpath in tqdm(path_list):
         size = os.path.getsize(str(fpath)) / 1000000
         if size > 100:  # If size is greater than 100 mbs
@@ -38,19 +37,6 @@ def get_sizes(gz=False, parquet=True):
     df_sizes.to_parquet(path_tw)
 
 # %% codecell
-
-
-def path_or_yr_direct(bdir):
-    """Pass a directory in, see if any directories match."""
-    r15 = range(15)
-    dt = getDate.query('iex_close')
-    neg_yr_list = [f"_{str(dt.year - n)}" for n in r15]
-    pos_yr_list = [f"_{str(dt.year + n)}" for n in r15]
-    yr_dir_list = neg_yr_list + pos_yr_list
-
-    dirs = [f for f in list(bdir.iterdir()) if f.name in yr_dir_list]
-
-    return dirs
 
 
 def paths_combine_dataframes(dirs, cb_path='', cb_all_path='', verbose=False):
@@ -73,84 +59,6 @@ def paths_combine_dataframes(dirs, cb_path='', cb_all_path='', verbose=False):
     write_to_parquet(df_cb, cb_path)
     write_to_parquet(df_all, cb_all_path)
 
-
-def get_most_recent_fpath(fpath_dir, f_pre='', f_suf='', dt='', this_year=True, second=False):
-    """Get the most recent fpath in a directory."""
-    path_to_return = False
-    if not dt:  # If no date passed, default to iex_eod
-        dt = getDate.query('iex_close')
-
-    dt_list = getDate.get_bus_days(this_year=this_year)
-    date_list = (dt_list[dt_list['date'].dt.date <= dt]
-                 .sort_values(by=['date'], ascending=False))
-
-
-    date_list['fpath'] = (date_list.apply(lambda row:
-                                          f"_{row['date'].date()}",
-                                          axis=1))
-
-    date_list['fpath_yr'] = (date_list.apply(lambda row:
-                                             f"_{row['date'].year}",
-                                             axis=1))
-    date_list['fpath_fmt'] = (date_list.apply(lambda row:
-                                              f"_{row['date'].date().strftime('%Y%m%d')}",
-                                              axis=1))
-
-    # Iterate through dataframe to find the most recent
-    for index, row in date_list.iterrows():
-        tpath = Path(fpath_dir, f"{f_pre}{row['fpath']}{f_suf}.parquet")
-        if tpath.exists():
-            return tpath
-
-    # Iterate through dataframe to find the most recent
-    for index, row in date_list.iterrows():
-        tpath = Path(fpath_dir, f"{f_pre}{row['fpath_yr']}{f_suf}.parquet")
-        if tpath.exists():
-            return tpath
-
-    # Iterate through dataframe to find the most recent
-    for index, row in date_list.iterrows():
-        tpath = Path(fpath_dir, f"{f_pre}{row['fpath_fmt']}{f_suf}.parquet")
-        if tpath.exists():
-            return tpath
-
-    """
-    if not f_pre and not f_suf:
-        for index, row in date_list.iterrows():
-            if Path(fpath_dir, f"{row['fpath']}.parquet").exists():
-                path_to_return = Path(fpath_dir, f"{row['fpath']}.parquet")
-                return path_to_return
-    elif f_pre and not f_suf:
-        for index, row in date_list.iterrows():
-            if Path(fpath_dir, f"{f_pre}{row['fpath']}.parquet").exists():
-                path_to_return = Path(fpath_dir, f"{f_pre}{row['fpath']}.parquet")
-                return path_to_return
-    elif not f_pre and f_suf:
-        for index, row in date_list.iterrows():
-            if Path(fpath_dir, f"{row['fpath']}{f_suf}.parquet").exists():
-                path_to_return = Path(fpath_dir, f"{row['fpath']}{f_suf}.parquet")
-                return path_to_return
-    elif f_pre and f_suf:
-        for index, row in date_list.iterrows():
-            if Path(fpath_dir, f"{f_pre}{row['fpath']}{f_suf}.parquet").exists():
-                path_to_return = Path(fpath_dir, f"{f_pre}{row['fpath']}{f_suf}.parquet")
-                return path_to_return
-    """
-    if not path_to_return and not second:
-        path_to_return = get_most_recent_fpath(fpath_dir, this_year=False, second=True)
-        if path_to_return:
-            help_print_arg(f"get_most_recent_fpath: first failed. Returning {str(path_to_return)}")
-            return path_to_return
-
-    if not path_to_return:
-        msg_1 = "Directory empty or path doesn't follow format '_dt.parquet'. Returning first path"
-        msg_2 = f": {fpath_dir}"
-        help_print_arg(f"{msg_1} {msg_2}")
-
-        paths = list(Path(fpath_dir).glob('*.parquet'))
-        if paths:
-            path_to_return = paths[-1]
-            return path_to_return
 
 # %% codecell
 
@@ -182,5 +90,61 @@ def concat_and_or_write(df_all, path, path_parq=True, path_gz=False, to_parq=Tru
 
 
 # %% codecell
+
+
+def get_most_recent_fpath(fpath_dir, f_pre='', f_suf='', dt='', this_year=True, second=False):
+    """Get the most recent fpath in a directory."""
+    path_to_return = False
+    if not dt:  # If no date passed, default to iex_eod
+        dt = getDate.query('iex_close')
+
+    dt_list = getDate.get_bus_days(this_year=this_year)
+    date_list = (dt_list[dt_list['date'].dt.date <= dt]
+                 .sort_values(by=['date'], ascending=False))
+
+    date_list['fpath'] = (date_list.apply(lambda row:
+                                          f"_{row['date'].date()}",
+                                          axis=1))
+
+    date_list['fpath_yr'] = (date_list.apply(lambda row:
+                                             f"_{row['date'].year}",
+                                             axis=1))
+    date_list['fpath_fmt'] = (date_list.apply(lambda row:
+                                              f"_{row['date'].date().strftime('%Y%m%d')}",
+                                              axis=1))
+
+    # Iterate through dataframe to find the most recent
+    for index, row in date_list.iterrows():
+        tpath = Path(fpath_dir, f"{f_pre}{row['fpath']}{f_suf}.parquet")
+        if tpath.exists():
+            return tpath
+
+    # Iterate through dataframe to find the most recent
+    for index, row in date_list.iterrows():
+        tpath = Path(fpath_dir, f"{f_pre}{row['fpath_yr']}{f_suf}.parquet")
+        if tpath.exists():
+            return tpath
+
+    # Iterate through dataframe to find the most recent
+    for index, row in date_list.iterrows():
+        tpath = Path(fpath_dir, f"{f_pre}{row['fpath_fmt']}{f_suf}.parquet")
+        if tpath.exists():
+            return tpath
+
+    if not path_to_return and not second:
+        path_to_return = get_most_recent_fpath(fpath_dir, this_year=False, second=True)
+        if path_to_return:
+            help_print_arg(f"get_most_recent_fpath: first failed. Returning {str(path_to_return)}")
+            return path_to_return
+
+    if not path_to_return:
+        msg_1 = "Directory empty or path doesn't follow format '_dt.parquet'. Returning first path"
+        msg_2 = f": {fpath_dir}"
+        help_print_arg(f"{msg_1} {msg_2}")
+
+        paths = list(Path(fpath_dir).glob('*.parquet'))
+        if paths:
+            path_to_return = paths[-1]
+            return path_to_return
 
 # %% codecell
