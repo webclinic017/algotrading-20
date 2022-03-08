@@ -9,10 +9,10 @@ import pandas as pd
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, write_to_parquet
-    from scripts.dev.data_collect.alpaca.apca_auth import ApcaAuth
+    from scripts.dev.data_collect.alpaca.api_calls.apca_auth import ApcaAuth
 except ModuleNotFoundError:
-    from data_collect.alpaca.apca_auth import ApcaAuth
     from multiuse.help_class import baseDir, getDate, write_to_parquet
+    from data_collect.alpaca.api_calls.apca_auth import ApcaAuth
 
 
 # %% codecell
