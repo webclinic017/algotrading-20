@@ -26,6 +26,7 @@ def make_url_dict():
     """Make the url dict."""
     url_dict = ({
         'apca_all': '/data/apca/all',
+        'apca_news_realtime': '/data/apca/news/realtime',
         'analyst_recs_all': '/data/company_stats/analyst_recs/all',  # Obsolete
         'analyst_recs_mr': '/data/company_stats/analyst_recs/most_recent',  # Obsolete
         'analyst_recs_scraped': '/data/company_stats/analyst_recs/scraped',
@@ -48,9 +49,9 @@ def make_url_dict():
         'yoptions_temp': '/data/yfinance/derivs/temp',
         'yoptions_unfin': '/data/yfinance/derivs/unfinished',
         'yoptions_stock': '/data/yfinance/derivs/stock',
+        'yinfo_all': '/data/yfinance/info/all',
         'e_fix_intraday_dataframes': '/data/errors/fix_intraday_dataframes',
         'errors_iex_intraday_1min': '/data/errors/clean_iex_1min',
-        'yinfo_all': '/data/yfinance/info/all',
         'iex_quotes_raw': '/prices/eod/all',
         'iex_comb_today': f"/prices/combined/{getDate.query('cboe')}",
         'iex_intraday_m1': '/data/hist/intraday/minute_1/all',
@@ -188,6 +189,8 @@ class serverAPI():
         elif which == 'iex_intraday_m1':
             # df = self._iex_intraday_m1(self, df)
             pass
+        elif which == 'apca_news_realtime':
+            df = self._clean_apca_news(self, df)
         else:
             # Convert to dataframe
             df = pd.DataFrame(df)
@@ -276,6 +279,20 @@ class serverAPI():
             cboe_dict[key].reset_index(inplace=True, drop=True)
 
         return cboe_dict
+
+    @classmethod
+    def _clean_apca_news(cls, self, df):
+        """Clean apca news and return dataframe."""
+        df['crypto'] = (df['headline'].str.contains(
+                               'crypto', regex=True, case=False))
+
+        df['created_at'] = (pd.to_datetime(df['created_at'])
+                              .dt.tz_convert('US/Eastern'))
+        df['updated_at'] = (pd.to_datetime(df['updated_at'])
+                              .dt.tz_convert('US/Eastern'))
+        df.drop(columns=['T'], inplace=True)
+
+        return df
 
 
 
