@@ -28,6 +28,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 from pandas.tseries.offsets import BusinessDay
+from pandas.tseries.offsets import CustomBusinessDay
 from pandas.api.types import infer_dtype
 import numpy as np
 import dask.dataframe as dd
@@ -368,29 +369,37 @@ class getDate():
         if date.today().weekday() in (5, 6):
             weekend = True
 
+        # df_cal = ApcaPaths(api_val='calendar', return_df=True).df
+        bd1, bd2 = BusinessDay(n=1), BusinessDay(n=2)
+        fpath = Path(baseDir().path, 'alpaca', 'calendar', '_market_days.parquet')
+        if fpath.exists():
+            df_cal = pd.read_parquet(fpath)
+            bd1 = CustomBusinessDay(calendar=df_cal['date'], n=1)
+            bd2 = CustomBusinessDay(calendar=df_cal['date'], n=2)
+
         if site in ('cboe', 'occ'):
             if getDate.time_cutoff(cutoff_hm=16.15) or weekend:
-                query_date = (date.today() - BusinessDay(n=1)).date()
+                query_date = (date.today() - bd1).date()
         elif site in ('sec_rss'):  # 6 am start
             if getDate.time_cutoff(cutoff_hm=6.0) or weekend:
-                query_date = (date.today() - BusinessDay(n=1)).date()
+                query_date = (date.today() - bd1).date()
         elif site in ('iex_close'):
             if weekend:
-                query_date = (date.today() - BusinessDay(n=1)).date()
+                query_date = (date.today() - bd1).date()
         elif site in ('mkt_open'):
             if getDate.time_cutoff(cutoff_hm=9.0) or weekend:
-                query_date = (date.today() - BusinessDay(n=1)).date()
+                query_date = (date.today() - bd1).date()
         elif site in ('iex_eod'):
             if getDate.time_cutoff(cutoff_hm=16.15) or weekend:
-                query_date = (date.today() - BusinessDay(n=1)).date()
+                query_date = (date.today() - bd1).date()
         elif site in ('sec_master'):
             if getDate.time_cutoff(cutoff_hm=22.35) or weekend:
-                query_date = (date.today() - BusinessDay(n=1)).date()
+                query_date = (date.today() - bd1).date()
         elif site in ('iex_previous'):
             if getDate.time_cutoff(cutoff_hm=5.50) or weekend:
-                query_date = (date.today() - BusinessDay(n=2)).date()
+                query_date = (date.today() - bd2).date()
             else:
-                query_date = (date.today() - BusinessDay(n=1)).date()
+                query_date = (date.today() - bd1).date()
         elif site in ('last_syms'):
             pass
 

@@ -42,12 +42,13 @@ class ApcaPaths():
                                 f"_{self.year}.parquet")),
             'mergers':   (bdir.joinpath('corporate_actions',
                           "_mergers.parquet")),
-            'dividends':   (bdir.joinpath('corporate_actions',
-                            "_dividends.parquet")),
+            'dividends': (bdir.joinpath('corporate_actions',
+                          "_dividends.parquet")),
             'splits':   (bdir.joinpath('corporate_actions',
                          "_splits.parquet")),
             'spinoffs':   (bdir.joinpath('corporate_actions',
-                           "_spinoffs.parquet"))
+                           "_spinoffs.parquet")),
+            'calendar': (bdir.joinpath('calendar', '_market_days.parquet'))
         }
 
         return fdict
@@ -56,7 +57,7 @@ class ApcaPaths():
     def _get_fpath(cls, self, api_val, **kwargs):
         """Get fpath from fdict."""
         fpath = self.fdict.get(api_val, None)
-        sub_method = kwargs.get('params').get('ca_types')
+        sub_method = kwargs.get('params', {}).get('ca_types')
         if isinstance(sub_method, list):
             sub_method = sub_method[0].lower() + 's'  # Get the first value
             fpath = self.fdict.get(sub_method, None)

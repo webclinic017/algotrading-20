@@ -91,6 +91,8 @@ class ApcaAPI(ApcaPaths, ApcaAuth, ApcaParams, ClsHelp):
             self.df = result.df
             self.next_page_token = result.next_page_token
             return result
+        except AttributeError:
+            return None
         except Exception as e:
             self.elog(self, e)
             return None

@@ -9,9 +9,11 @@ import pandas as pd
 try:
     from scripts.dev.data_collect.alpaca.news.historical import ApcaNewsHistorical
     from scripts.dev.data_collect.alpaca.methods.announcements import ApcaAnnouncements
+    from scripts.dev.data_collect.alpaca.methods.calendar import ApcaCalendar
 except ModuleNotFoundError:
     from data_collect.alpaca.news.historical import ApcaNewsHistorical
     from data_collect.alpaca.methods.announcements import ApcaAnnouncements
+    from data_collect.alpaca.methods.calendar import ApcaCalendar
 
 # %% codecell
 
@@ -34,7 +36,8 @@ class ApcaParams():
 
         apca_endpoints = ({
             'news_historical': 'https://data.alpaca.markets/v1beta1/news',
-            'announcements': f'{self.burl_api}/corporate_actions/announcements'
+            'announcements': f'{self.burl_api}/corporate_actions/announcements',
+            'calendar': f"{self.burl_api}/calendar"
         })
 
         self.apca_endpoints = apca_endpoints
@@ -73,7 +76,8 @@ class ApcaParams():
         # Add methods as needed
         apca_clean_dict = ({
             'news_historical': ApcaNewsHistorical,
-            'announcements': ApcaAnnouncements
+            'announcements': ApcaAnnouncements,
+            'calendar': ApcaCalendar
         })
 
         def default_func():
