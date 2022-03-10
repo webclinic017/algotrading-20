@@ -102,14 +102,9 @@ class SecRssFeed():
         df['dt'] = df['pubDate'].apply(lambda x: x.timestamp())
         df['dt'] = pd.to_datetime(df['dt'])
 
-        prev_15 = (datetime.now() - timedelta(minutes=11)).time()
-        sec_df = (df[(df['dt'].dt.time > prev_15)
-                  & (df['dt'].dt.date == date.today())]
-                  .copy())
-
         self.df = df.copy()
         try:
-            AnalyzeSecRss(latest=True, sec_df=sec_df)
+            AnalyzeSecRss(latest=True, df=self.df)
         except Exception as e:
             help_print_arg(f"SecRss: AnalyzeSecRss Error {str(e)}")
 
