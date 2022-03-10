@@ -208,7 +208,7 @@ class AnalyzeSecRss():
             for index, row in self.my_sec.iterrows():
                 if row['cik']:
                     msg1 = f"{row['symbol']} filed form {row['description']} "
-                    msg = f"{msg1}"" at {str(row['dt'])}"
+                    msg = f"{msg1} at {str(row['dt'])}"
                     (msg_list.append((row['symbol'], row['dt'],
                                       row['cik'], msg, row['description'])))
 
