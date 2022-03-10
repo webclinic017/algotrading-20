@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 
 from authlib.integrations.requests_client import OAuth2Session
+import dotenv
 from dotenv import load_dotenv
 
 try:
@@ -62,11 +63,17 @@ class TD_Auth():
         tokens = (client.refresh_token(self.token_endpoint,
                   refresh_token=self.refresh_token,
                   client_id=self.client_full))
-
-        help_print_arg(f"TD_AUTH: Getting new access token")
+        # Print to console that we're getting a new auth token
+        help_print_arg("TD_AUTH: Getting new access token")
 
         os.environ['tdma_access_token'] = tokens['access_token']
         os.environ['tdma_access_expires_at'] = (str(datetime.fromtimestamp(
                                                 tokens['expires_at'])))
+        # Write changes to local .env file
+        dotenv_file = dotenv.find_dotenv()
+        (dotenv.set_key(dotenv_file, "tdma_access_token",
+                        os.environ["tdma_access_token"]))
+        (dotenv.set_key(dotenv_file, "tdma_access_expires_at",
+                        os.environ["tdma_access_expires_at"]))
 
 # %% codecell
