@@ -112,7 +112,8 @@ class SecRssFeed():
     def _write_to_parquet(cls, self):
         """Read existing if exists - and/or write."""
         self.df['pubDate'] = self.df['pubDate'].dt.to_pydatetime()
-        write_to_parquet(self.df, self.fpath, combine=True)
+        kwargs = {'cols_to_drop': 'guid'}
+        write_to_parquet(self.df, self.fpath, combine=True, **kwargs)
 
 
 # %% codecell
