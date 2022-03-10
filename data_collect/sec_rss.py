@@ -32,11 +32,20 @@ class SecRssFeed():
     """Collect rss feed from sec every 10 minutes."""
     "These feeds are updated every ten minutes Monday through Friday, 6am – 10pm EST"
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        self.fpath = self._get_fpath(self)
         self.get_params(self)
         self.get_rss_feed(self)
         self.clean_data(self)
         self._write_to_parquet(self)
+
+    @classmethod
+    def _get_fpath(cls, self):
+        """Get fpath to use."""
+        dt = getDate.query('sec_rss')
+        f_suf = f"_{dt}.parquet"
+        fpath = Path(baseDir().path, 'sec/rss', str(dt.year), f_suf)
+        return fpath
 
     @classmethod
     def get_params(cls, self):
@@ -96,18 +105,7 @@ class SecRssFeed():
     @classmethod
     def _write_to_parquet(cls, self):
         """Read existing if exists - and/or write."""
-        dt = getDate.query('sec_rss')
-
-        f_suf = f"_{dt}.parquet"
-        path = Path(baseDir().path, 'sec/rss', str(dt.year), f_suf)
-
-        if path.exists():
-            df_old = pd.read_parquet(path)
-            df_all = pd.concat([df_old, self.df]).reset_index(drop=True)
-            df_all.drop_duplicates(inplace=True)
-            df_all.to_parquet(path)
-        else:
-            self.df.to_parquet(path)
+        write_to_parquet(self.df, self.fpath, combine=True)
 
 
 # %% codecell
