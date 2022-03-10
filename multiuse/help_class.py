@@ -114,9 +114,9 @@ def write_to_parquet(df, fpath, combine=False, drop_duplicates=False, **kwargs):
         if infer_dtype(col) in ['mixed', 'mixed-integer']:
             df[col] = df[col].astype('str')
         elif isinstance(df[col], pd.Timestamp):
-            df[col] = df[col].dt.to_pydatetime()
+            df[col] = df[col].apply(lambda x: x.value)
         elif infer_dtype(col) in 'datetime64':
-            df[col] = df[col].dt.to_pydatetime()
+            df[col] = df[col].apply(lambda x: x.value)
 
     df = dataTypes(df, parquet=True).df
     fpath = Path(fpath)
