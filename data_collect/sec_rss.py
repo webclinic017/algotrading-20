@@ -116,6 +116,7 @@ class SecRssFeed():
     @classmethod
     def _write_to_parquet(cls, self):
         """Read existing if exists - and/or write."""
+        self.df['pubDate'] = self.df['pubDate'].astype('str')
         write_to_parquet(self.df, self.fpath, combine=True)
 
 
