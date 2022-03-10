@@ -33,11 +33,12 @@ class SecRssFeed():
     "These feeds are updated every ten minutes Monday through Friday, 6am – 10pm EST"
 
     def __init__(self, **kwargs):
+        self.testing = kwargs.get('testing', False)
         self.fpath = self._get_fpath(self)
         self.get_params(self)
         self.get_rss_feed(self)
         self.clean_data(self)
-        self._write_to_parquet(self)
+        # self._write_to_parquet(self)
 
     @classmethod
     def _get_fpath(cls, self):
@@ -100,13 +101,16 @@ class SecRssFeed():
                          df['pubDate'], format=pdFormat, utc=True))
         # Convert to timestamp
         df['dt'] = df['pubDate'].apply(lambda x: x.timestamp())
-        df['dt'] = pd.to_datetime(df['dt'])
+        df['dt'] = pd.to_datetime(df['dt'], unit='s')
 
         self.df = df.copy()
-        try:
+        if self.testing:
             AnalyzeSecRss(latest=True, df=self.df)
-        except Exception as e:
-            help_print_arg(f"SecRss: AnalyzeSecRss Error {str(e)}")
+        else:
+            try:
+                AnalyzeSecRss(latest=True, df=self.df)
+            except Exception as e:
+                help_print_arg(f"SecRss: AnalyzeSecRss Error {str(e)}")
 
     @classmethod
     def _write_to_parquet(cls, self):
@@ -191,7 +195,7 @@ class AnalyzeSecRss():
                         .copy()))
 
         if my_sec_today.empty:
-            return None
+            return pd.DataFrame()
         else:
             return my_sec_today
 
