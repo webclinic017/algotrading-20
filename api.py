@@ -61,6 +61,7 @@ def make_url_dict():
         'missing_dates_all': '/data/hist/missing_dates/all',
         'missing_dates_null': '/data/hist/missing_dates/null',
         'ml_training': '/data/ml/subset',
+        'my_symbols': '/data/my/symbols',
         'new_syms_today': '/symbols/new/today',
         'new_syms_all': '/symbols/new/all',
         'stock_data': '/symbols/data',
@@ -191,6 +192,10 @@ class serverAPI():
             pass
         elif which == 'apca_news_realtime':
             df = self._clean_apca_news(self, df)
+        elif which == 'sec_rss_all':
+            df = self._clean_sec_rss_all(self, df)
+        elif which == 'sec_ref':
+            df = self._get_clean_sec_ref(self, df)
         else:
             # Convert to dataframe
             df = pd.DataFrame(df)
@@ -293,6 +298,46 @@ class serverAPI():
         df.drop(columns=['T'], inplace=True)
 
         return df
+
+    @classmethod
+    def _clean_sec_rss_all(cls, self, df):
+        """Clean and return sec_rss_all df."""
+        if isinstance(df, list):
+            df = pd.DataFrame(df).copy()
+
+        try:
+            print(f"Original columns are {str(df.columns)}")
+        except AttributeError:
+            print(type(df))
+
+        df.drop(columns=['index'], inplace=True)
+        df.rename(columns={'CIK': 'cik'}, inplace=True)
+
+        dtmap = {'EST': 'US/Eastern', 'EDT': 'US/Central'}
+        df['pubDate'] = (df['pubDate'].str.replace(',+', '', regex=True)
+                                      .replace(dtmap, regex=True)
+                                      .str.strip())
+        pdFormat = '%a %d %b %Y %H:%M:%S %Z'
+        df['pubDate'] = (pd.to_datetime(
+                         df['pubDate'], format=pdFormat, utc=True))
+        # Convert to timestamp
+        df['dt'] = df['pubDate'].apply(lambda x: x.timestamp())
+
+        return df
+
+    @classmethod
+    def _get_clean_sec_ref(cls, self, df):
+        """Get and clean sec reference data."""
+        if isinstance(df, list):
+            df = pd.DataFrame(df).copy()
+
+        df['cik'] = (df['CIK'].astype('str')
+                     .str.zfill(10).astype('category'))
+        df.drop(columns=['CIK'], inplace=True)
+
+        return df
+
+
 
 
 

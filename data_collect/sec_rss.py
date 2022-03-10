@@ -91,6 +91,17 @@ class SecRssFeed():
             help_print_arg(f"SEC RSS CIK Error: {str(e)}")
 
         df['dt'] = pd.to_datetime(df['pubDate'])
+        dtmap = {'EST': 'US/Eastern', 'EDT': 'US/Central'}
+        df['pubDate'] = (df['pubDate'].str.replace(',+', '', regex=True)
+                                      .replace(dtmap, regex=True)
+                                      .str.strip())
+        pdFormat = '%a %d %b %Y %H:%M:%S %Z'
+        df['pubDate'] = (pd.to_datetime(
+                         df['pubDate'], format=pdFormat, utc=True))
+        # Convert to timestamp
+        df['dt'] = df['pubDate'].apply(lambda x: x.timestamp())
+        df['dt'] = pd.to_datetime(df['dt'])
+
         prev_15 = (datetime.now() - timedelta(minutes=11)).time()
         sec_df = (df[(df['dt'].dt.time > prev_15)
                   & (df['dt'].dt.date == date.today())]
@@ -112,6 +123,149 @@ class SecRssFeed():
 
 
 class AnalyzeSecRss():
+    """Analyze sec rss latest 200 symbols."""
+
+    def __init__(self, df=None, **kwargs):
+        self._get_class_vars(self, **kwargs)
+        self.df = self._get_sec_df(self, df, **kwargs)
+        self.df_clean = self._get_merge_ref_data(self, self.df, **kwargs)
+        self.my_sec = self._get_df_today_my_symbols(self, **kwargs)
+        self.df_msgs = self._get_pos_msgs_today(self, **kwargs)
+        self.df_new = self._confirm_msg_to_send(self, self.df_msgs, **kwargs)
+        # Only fire off new messages not already sent
+        if isinstance(self.df_new, pd.DataFrame):
+            self.df_new_sent = self._iterate_send_msgs(self, **kwargs)
+
+    @classmethod
+    def _get_class_vars(cls, self, **kwargs):
+        """Get class variables."""
+        bdir = Path(baseDir().path, 'telegram', 'sec', 'rss')
+        self.fpath = bdir.joinpath('_sec_rss_sent.parquet')
+
+        self.dt = kwargs.get('dt', getDate.query('iex_close'))
+        # If we want to skip writing locally
+        self.skip_write = kwargs.get('skip_write', False)
+        # If we want to print
+        self.verbose = kwargs.get('verbose', False)
+
+    @classmethod
+    def _get_sec_df(cls, self, df, **kwargs):
+        """Check if sec_df is dataframe, if not, get it."""
+        if not isinstance(df, pd.DataFrame):
+            df = serverAPI('sec_rss_latest').df
+
+        if 'CIK' in df.columns:
+            df.rename(columns={'CIK': 'cik'}, inplace=True)
+        # if df['pubDate'] is not datetime
+        return df
+
+    @classmethod
+    def _get_merge_ref_data(cls, self, df, **kwargs):
+        """Get reference data."""
+        # Make sure that the df passed isn't already combined
+        if 'type' not in df.columns:
+            sec_ref = serverAPI('sec_ref').df
+            # Get all symbols (IEX ref)
+            all_syms = serverAPI('all_symbols').df
+            all_syms.drop_duplicates(subset='cik', inplace=True)
+            df_ref = (sec_ref.merge(
+                      all_syms[['symbol', 'cik', 'type']],  on='cik'))
+
+            if self.verbose:
+                print(str(df_ref.columns))
+                print(str(df.columns))
+            sec_all = df.merge(df_ref, on='cik')
+            return sec_all
+        else:  # It's not assumed that the sec data is from most recent day
+            return df
+
+    @classmethod
+    def _get_df_today_my_symbols(cls, self, **kwargs):
+        """Reduce to my symbols, to only most recent rss list."""
+        my_symbols = kwargs.get('my_symbols', False)
+        if not my_symbols:
+            my_stocks = ['CVS', 'MKTW']
+
+        df_my_sec = (self.df_clean[self.df_clean['symbol']
+                     .isin(my_stocks)].copy())
+
+        my_sec_today = (df_my_sec[df_my_sec['dt'].dt.date == self.dt]
+                        .drop_duplicates(subset=['link', 'description']
+                        .copy()))
+
+        if my_sec_today.empty:
+            return None
+        else:
+            return my_sec_today
+
+    @classmethod
+    def _get_pos_msgs_today(cls, self, **kwargs):
+        """Get possible messages today to send."""
+        msg_list = []
+        cols = ['symbol', 'dt', 'cik', 'msg', 'form']
+
+        if not self.my_sec.empty:
+            for index, row in self.my_sec.iterrows():
+                if row['cik']:
+                    msg1 = f"{row['symbol']} filed form {row['description']} "
+                    msg = f"{msg1}"" at {str(row['dt'])}"
+                    (msg_list.append((row['symbol'], row['dt'],
+                                      row['cik'], msg, row['description'])))
+
+        df_msgs = pd.DataFrame(msg_list, columns=cols)
+        return df_msgs
+
+    @classmethod
+    def _confirm_msg_to_send(cls, self, df_msgs, **kwargs):
+        """Check for file of sent messages else send all."""
+        cols_merge = ['cik', 'dt', 'msg']
+        if self.fpath.exists():
+            df_msgs_all = pd.read_parquet(self.fpath)
+            # Get only the sent messages from today
+            df_msgs_all[df_msgs_all['dt'].dt.date == self.dt]
+            # Merge to get the messages already sent, for today
+            df_comb = (df_msgs_all.merge(df_msgs[cols_merge],
+                                         on=cols_merge, indicator=True))
+            # Return all msgs not in msg sent df
+            if not df_comb.empty:
+                new_idx = (df_comb['indicator'] == 'right_only').index
+                df_new_msgs = (df_msgs[
+                               df_msgs.index.intersection(new_idx)].copy())
+                return df_new_msgs
+            # Nothing to sort through here - nothing in common.
+            elif df_comb.empty:
+                return None
+        else:  # So we can send all messages since none have been sent
+            return self.df_msgs
+
+    @classmethod
+    def _iterate_send_msgs(cls, self, **kwargs):
+        """Send each message to telegram."""
+        # It's assumed that all messages are ready to send at this point
+        # No duplicates exist, nothing has already been sent
+        tmsg_list = []
+        for index, row in self.df_new.iterrows():
+            tmsg = telegram_push_message(row['msg'], sec_forms=True)
+            tmsg_list.append(tmsg.json()['result'])
+
+        # Index should be fine
+        df_new_sent = self.df_new.join(pd.json_normalize(tmsg_list))
+        cols_to_drop = (['text', 'chat.type',
+                         'chat.all_members_are_administrators'])
+        df_new_sent.drop(columns=cols_to_drop, inplace=True, errors='ignore')
+
+        cols_to_drop = ['cik', 'dt']
+        if not self.skip_write:
+            (write_to_parquet(df_new_sent, self.fpath, combine=True,
+                              cols_to_drop=cols_to_drop, **kwargs))
+
+        return df_new_sent
+
+
+# %% codecell
+
+
+class SecAnalyzeRss():  # Deprecated
     """Analyze sec rss feed for stocks already invested."""
 
     def __init__(self, latest=True, sec_df=None, testing=False):
