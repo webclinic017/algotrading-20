@@ -19,6 +19,8 @@ except ModuleNotFoundError:
     from multiuse.comms import send_twilio_message
     from telegram.methods.push import telegram_push_message
     from api import serverAPI
+
+
 # %% codecell
 
 # base_path = Path(baseDir().path, 'sec/rss')
@@ -153,7 +155,7 @@ class AnalyzeSecRss():
         # If we want to print
         self.verbose = kwargs.get('verbose', False)
         # If we want to test only
-        self.tesitng = kwargs.get('testing', False)
+        self.testing = kwargs.get('testing', False)
 
     @classmethod
     def _get_sec_df(cls, self, df, **kwargs):
@@ -230,7 +232,7 @@ class AnalyzeSecRss():
         if self.fpath.exists():
             df_msgs_all = pd.read_parquet(self.fpath)
             # Get only the sent messages from today
-            df_msgs_all[df_msgs_all['dt'].dt.date == self.dt]
+            df_msgs_all = df_msgs_all[df_msgs_all['dt'].dt.date == self.dt]
             # Convert both df_msgs and df_msg_all to same timezone
             tz = 'US/Eastern'
             df_msgs['dt'] = df_msgs['dt'].dt.tz_localize(tz)
@@ -243,7 +245,7 @@ class AnalyzeSecRss():
                                          on=cols_merge, indicator=True))
             # Return all msgs not in msg sent df
             if not df_comb.empty:
-                new_idx = (df_comb['_merge'] == 'right_only').index
+                new_idx = df_comb[df_comb['_merge'] == 'right_only'].index
                 df_new_msgs = (df_msgs.loc[
                                df_msgs.index.intersection(new_idx)].copy())
                 return df_new_msgs
