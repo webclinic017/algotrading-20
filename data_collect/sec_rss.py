@@ -116,10 +116,10 @@ class SecRssFeed():
     def _call_analyze_rss(cls, self, **kwargs):
         """Call analyze sec rss, send to telegram if matching companies."""
         if self.testing:
-            AnalyzeSecRss(df=self.df)
+            AnalyzeSecRss(df=self.df, **kwargs)
         else:
             try:
-                AnalyzeSecRss(df=self.df)
+                AnalyzeSecRss(df=self.df, **kwargs)
             except Exception as e:
                 help_print_arg(f"SecRss: AnalyzeSecRss Error {str(e)}")
 
