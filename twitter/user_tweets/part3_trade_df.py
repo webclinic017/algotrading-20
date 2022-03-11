@@ -23,8 +23,8 @@ class CreateTradeRef(TwitterHelpers):
         self.verbose = kwargs.get('verbose', False)
         df, fpath = self._get_df(self, user_id, **kwargs)
         df_tcode = self._process_for_tcode(self, df)
-        df_starts = self._add_trade_starts(self, df_tcode)
-        self.df_trades = self._make_trade_df(self, df_starts)
+        self.df_starts = self._add_trade_starts(self, df_tcode)
+        self.df_trades = self._make_trade_df(self, self.df_starts, user_id)
         self._write_to_file(self, self.df_trades, fpath)
 
     @classmethod
@@ -73,7 +73,7 @@ class CreateTradeRef(TwitterHelpers):
         return df3
 
     @classmethod
-    def _make_trade_df(cls, self, df, **kwargs):
+    def _make_trade_df(cls, self, df, user_id, **kwargs):
         """Make trade df."""
         # Get subset for all rows where entry is true
         cols_to_keep = ['tcode', 'created_at', 'sym_0', 'id']
@@ -98,6 +98,8 @@ class CreateTradeRef(TwitterHelpers):
         df_exits.drop(columns='text', inplace=True)
         # Combine entries, exits, and minimum expected return from that trade
         df_trades = df_entries.join(df_exits).join(min_return)
+        df_trades['author_id'] = user_id
+
         return df_trades
 
     @classmethod

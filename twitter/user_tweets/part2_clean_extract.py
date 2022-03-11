@@ -34,7 +34,7 @@ class TwitterUserExtract():
         df_puts = self._match_put_calls(self, df_call, put=True)
         self.df = self._filter_entry_exit_cols(self, df_puts, dropcols)
         self.df_view = self._add_tcode(self, self.df)
-        self._update_tweet_ref_with_tcode(self, self.df_view, user_id, **kwargs)
+        self.df_reft = self._update_tweet_ref_with_tcode(self, self.df_view, user_id, **kwargs)
         # self._update_tweet_by_id_df(self, self.df_view, user_id)
 
     @classmethod
@@ -209,9 +209,14 @@ class TwitterUserExtract():
         df_tref = (pd.read_parquet(f_tref)
                      .drop(columns='tcode', errors='ignore'))
         df_tref2 = (df_tref.join(df_v1.set_index('id'), on='id', how='left')
-                           .reset_index(drop=True))
+                           .reset_index(drop=True)
+                           .dropna(subset='text'))
+        if 'telegram_sent' in df_tref2.columns:
+            df_tref2['telegram_sent'] = df_tref2['telegram_sent'].fillna(0)
         if not skip_write:
             write_to_parquet(df_tref2, f_tref)
+
+        return df_tref2
 
     @classmethod
     def _update_tweet_by_id_df(cls, self, df, user_id):
