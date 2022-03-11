@@ -144,7 +144,7 @@ class AnalyzeSecRss():
     @classmethod
     def _get_class_vars(cls, self, **kwargs):
         """Get class variables."""
-        bdir = Path(baseDir().path, 'telegram', 'sec', 'rss')
+        bdir = Path(baseDir().path, 'social', 'telegram', 'sec')
         self.fpath = bdir.joinpath('_sec_rss_sent.parquet')
 
         self.dt = kwargs.get('dt', getDate.query('iex_close'))
