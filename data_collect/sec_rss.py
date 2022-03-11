@@ -38,7 +38,7 @@ class SecRssFeed():
         self.get_params(self)
         self.get_rss_feed(self)
         self.clean_data(self)
-        # self._write_to_parquet(self)
+        self._write_to_parquet(self)
 
     @classmethod
     def _get_fpath(cls, self):
