@@ -6,22 +6,21 @@ from dotenv import load_dotenv
 try:
     from scripts.dev.multiuse.help_class import help_print_arg
     from scripts.dev.telegram.methods.helpers import TelegramHelpers
+    from scripts.dev.telegram.telegram_keys import return_telegram_keys
 except ModuleNotFoundError:
     from multiuse.help_class import help_print_arg
     from telegram.methods.helpers import TelegramHelpers
+    from telegram.telegram_keys import return_telegram_keys
 # %% codecell
 
 
-def telegram_push_message(text, sec_forms=False, testing=False):
+def telegram_push_message(text, sec_forms=False, testing=False, **kwargs):
     """Push message to telegram chat."""
-    load_dotenv()
-    bot_api, chat_id = None, None
+    method = kwargs.get('method', None)
     if sec_forms:
-        bot_api = os.environ.get('telegram_sec_bot')
-        chat_id = os.environ.get('telegram_sec_chat_id')
-    else:
-        bot_api = os.environ.get('telegram_trade_bot')
-        chat_id = os.environ.get('telegram_chat_of_id')
+        method = 'sec_forms'
+
+    bot_api, chat_id = return_telegram_keys(method=method, **kwargs)
 
     if not text:
         print('Text needs to be supplied to the function')
