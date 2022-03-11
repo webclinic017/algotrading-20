@@ -1,7 +1,7 @@
 """Authentication for TD Ameritrade API."""
 # %% codecell
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from authlib.integrations.requests_client import OAuth2Session
 import dotenv
@@ -28,14 +28,14 @@ class TD_Auth():
     """
 
     def __init__(self):
+        self.dt_now = datetime.now()
         try:
             self._load_params(self)
         except KeyError:
             self._refresh_access_token(self)
             self._load_params(self)
 
-        if datetime.now() > self.refresh_expiry:
-            help_print_arg(f"TDMA refresh expiry: {str(self.refresh_expiry)}")
+        if self.dt_now > self.refresh_expiry:
             self._refresh_access_token(self)
             self._load_params(self)
 
@@ -46,16 +46,16 @@ class TD_Auth():
         self.token_endpoint = 'https://api.tdameritrade.com/v1/oauth2/token'
         self.client_full = os.environ.get('tdma_client_id', False)
         self.refresh_token = os.environ.get('tdma_refresh_token', False)
+        self.access_token = os.environ['tdma_access_token']
+        self.refresh_expiry = (datetime.strptime(
+                               os.environ['tdma_access_expires_at'],
+                               '%Y-%m-%d %H:%M:%S'))
         # If either of the above are false, request from AWS
         if not self.client_full or not self.refresh_token:
             secrets = get_secret()
             self.client_full = secrets['tdma_client_id']
             self.refresh_token = secrets['tdma_refresh_token']
-
-        self.access_token = os.environ['tdma_access_token']
-        self.refresh_expiry = (datetime.strptime(
-                               os.environ['tdma_access_expires_at'],
-                               '%Y-%m-%d %H:%M:%S'))
+            self.refresh_expiry = self.dt_now + timedelta(minutes=30)
 
     @classmethod
     def _refresh_access_token(cls, self):
@@ -66,6 +66,7 @@ class TD_Auth():
                   client_id=self.client_full))
         # Print to console that we're getting a new auth token
         help_print_arg("TD_AUTH: Getting new access token")
+        help_print_arg(f"TDMA refresh expiry: {str(self.refresh_expiry)}")
 
         os.environ['tdma_access_token'] = tokens['access_token']
         os.environ['tdma_access_expires_at'] = (str(datetime.fromtimestamp(
