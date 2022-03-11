@@ -81,8 +81,12 @@ class TwitterHelpers():
                 write_to_parquet(df, fpath)
 
     @staticmethod
-    def combine_twitter_all(trade_signal=False, tgrams=False):
+    def combine_twitter_all(**kwargs):
         """Combine all historical tweets."""
+        trade_signal = kwargs.get('trade_signal', False)
+        tgrams = kwargs.get('tgrams', False)
+        trades = kwargs.get('trades', False)
+
         fpath_uref = TwitterHelpers.twitter_fpaths('user_ref')
         fdir_users = fpath_uref.parent
         fpaths_str = list(fdir_users.rglob('*.parquet'))
@@ -96,6 +100,9 @@ class TwitterHelpers():
         elif tgrams:
             pattern = '_telegram_msgs.parquet'
             fname = '_telegram_msgs_all.parquet'
+        elif trades:
+            pattern = '_trades.parquet'
+            fname = '_trade_tweets_all.parquet'
 
         for strpath in fpaths_str:
             if re.search(pattern, str(strpath)):
@@ -105,7 +112,10 @@ class TwitterHelpers():
         if len(paths_to_concat) > 0:
             dfs = (pd.concat(
                 [pd.read_parquet(path) for path in paths_to_concat]
-                ).drop_duplicates(subset='id'))
+                ))
+
+            if 'id' in dfs.columns:
+                dfs.drop_duplicates(subset='id', inplace=True)
 
             fpath_all = fdir_users.parent.joinpath('tweets', fname)
             write_to_parquet(dfs, fpath_all)
