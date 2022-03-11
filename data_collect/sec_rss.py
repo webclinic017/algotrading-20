@@ -37,8 +37,9 @@ class SecRssFeed():
         self.fpath = self._get_fpath(self)
         self.get_params(self)
         self.get_rss_feed(self)
-        self.clean_data(self)
+        self.df = self.clean_data(self)
         self._write_to_parquet(self)
+        self._call_analyze_rss(self, **kwargs)
 
     @classmethod
     def _get_fpath(cls, self):
@@ -102,15 +103,7 @@ class SecRssFeed():
         # Convert to timestamp
         df['dt'] = df['pubDate'].apply(lambda x: x.timestamp())
         df['dt'] = pd.to_datetime(df['dt'], unit='s')
-
-        self.df = df.copy()
-        if self.testing:
-            AnalyzeSecRss(latest=True, df=self.df)
-        else:
-            try:
-                AnalyzeSecRss(latest=True, df=self.df)
-            except Exception as e:
-                help_print_arg(f"SecRss: AnalyzeSecRss Error {str(e)}")
+        return df
 
     @classmethod
     def _write_to_parquet(cls, self):
@@ -118,6 +111,17 @@ class SecRssFeed():
         self.df['pubDate'] = self.df['pubDate'].dt.to_pydatetime()
         kwargs = {'cols_to_drop': 'guid'}
         write_to_parquet(self.df, self.fpath, combine=True, **kwargs)
+
+    @classmethod
+    def _call_analyze_rss(cls, self, **kwargs):
+        """Call analyze sec rss, send to telegram if matching companies."""
+        if self.testing:
+            AnalyzeSecRss(df=self.df)
+        else:
+            try:
+                AnalyzeSecRss(df=self.df)
+            except Exception as e:
+                help_print_arg(f"SecRss: AnalyzeSecRss Error {str(e)}")
 
 
 # %% codecell
