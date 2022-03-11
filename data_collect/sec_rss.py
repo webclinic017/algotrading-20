@@ -153,7 +153,7 @@ class AnalyzeSecRss():
         # If we want to print
         self.verbose = kwargs.get('verbose', False)
         # If we want to test only
-        self.tesitng = kwargrs.get('testing', False)
+        self.tesitng = kwargs.get('testing', False)
 
     @classmethod
     def _get_sec_df(cls, self, df, **kwargs):
