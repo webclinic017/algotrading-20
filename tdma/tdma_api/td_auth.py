@@ -35,6 +35,7 @@ class TD_Auth():
             self._load_params(self)
 
         if datetime.now() > self.refresh_expiry:
+            help_print_arg(f"TDMA refresh expiry: {str(self.refresh_expiry)}")
             self._refresh_access_token(self)
             self._load_params(self)
 
