@@ -7,17 +7,17 @@ import requests
 
 try:
     from scripts.dev.multiuse.help_class import help_print_arg
+    from scripts.dev.telegram.telegram_keys import return_telegram_keys
 except ModuleNotFoundError:
     from multiuse.help_class import help_print_arg
+    from telegram.telegram_keys import return_telegram_keys
 
 # %% codecell
 
 
 def telegram_push_poll(tid, text, **kwargs):
     """Push message to telegram chat."""
-    bot_api = os.environ.get('telegram_trade_bot')
-    chat_id = os.environ.get('telegram_chat_of_id')
-
+    bot_api, chat_id = return_telegram_keys(method='trades', **kwargs)
     # question = 'How accurate is this trade interpretation?'
     options = ['Yeah this works', 'Close miss', 'Totally off']
 
