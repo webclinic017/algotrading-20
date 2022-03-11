@@ -243,7 +243,7 @@ class AnalyzeSecRss():
                                          on=cols_merge, indicator=True))
             # Return all msgs not in msg sent df
             if not df_comb.empty:
-                new_idx = (df_comb['indicator'] == 'right_only').index
+                new_idx = (df_comb['_merge'] == 'right_only').index
                 df_new_msgs = (df_msgs[
                                df_msgs.index.intersection(new_idx)].copy())
                 return df_new_msgs
