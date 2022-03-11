@@ -152,6 +152,8 @@ class AnalyzeSecRss():
         self.skip_write = kwargs.get('skip_write', False)
         # If we want to print
         self.verbose = kwargs.get('verbose', False)
+        # If we want to test only
+        self.tesitng = kwargrs.get('testing', False)
 
     @classmethod
     def _get_sec_df(cls, self, df, **kwargs):
@@ -188,8 +190,9 @@ class AnalyzeSecRss():
     def _get_df_today_my_symbols(cls, self, **kwargs):
         """Reduce to my symbols, to only most recent rss list."""
         my_symbols = kwargs.get('my_symbols', False)
-        if not my_symbols:
-            my_stocks = ['CVS', 'MKTW']
+        if not my_symbols or self.testing:
+            my_stocks = self.df_clean['symbol'].value_counts().index[0:3]
+            # my_stocks = ['CVS', 'MKTW']
 
         df_my_sec = (self.df_clean[self.df_clean['symbol']
                      .isin(my_stocks)].copy())
