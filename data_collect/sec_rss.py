@@ -231,6 +231,10 @@ class AnalyzeSecRss():
             df_msgs_all = pd.read_parquet(self.fpath)
             # Get only the sent messages from today
             df_msgs_all[df_msgs_all['dt'].dt.date == self.dt]
+            # Convert both df_msgs and df_msg_all to same timezone
+            tz = 'US/Eastern'
+            df_msgs['dt'] = df_msgs['dt'].dt.tz_localize(tz)
+            df_msgs_all['dt'] = df_msgs_all['dt'].dt.tz_convert(tz)
             # Merge to get the messages already sent, for today
             df_comb = (df_msgs_all.merge(df_msgs[cols_merge],
                                          on=cols_merge, indicator=True))
