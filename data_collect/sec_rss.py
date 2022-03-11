@@ -234,7 +234,10 @@ class AnalyzeSecRss():
             # Convert both df_msgs and df_msg_all to same timezone
             tz = 'US/Eastern'
             df_msgs['dt'] = df_msgs['dt'].dt.tz_localize(tz)
-            df_msgs_all['dt'] = df_msgs_all['dt'].dt.tz_convert(tz)
+            try:
+                df_msgs_all['dt'] = df_msgs_all['dt'].dt.tz_convert(tz)
+            except TypeError:
+                df_msgs_all['dt'] = df_msgs_all['dt'].dt.tz_localize(tz)
             # Merge to get the messages already sent, for today
             df_comb = (df_msgs_all.merge(df_msgs[cols_merge],
                                          on=cols_merge, indicator=True))
