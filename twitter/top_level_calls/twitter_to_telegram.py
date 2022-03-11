@@ -70,7 +70,7 @@ def get_most_recent_messages_per_user(telegram=False, **kwargs):
                     msg = f"there are {str(gte_df.shape[0])} timestamps needed"
                     help_print_arg(msg, isp)
                 if telegram:  # See if already recorded - default no
-                    check_for_unsent_telegram_messages(user_id=row['id'], verbose=True, testing=True)
+                    check_for_unsent_telegram_messages(user_id=row['id'], **kwargs)
 
     if testing:
         return call_list
