@@ -4,6 +4,7 @@ from pathlib import Path
 from datetime import datetime, timedelta, date
 import requests
 import pandas as pd
+import numpy as np
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, dataTypes, help_print_arg, write_to_parquet
@@ -118,10 +119,11 @@ class SecRssFeed():
     def _call_analyze_rss(cls, self, **kwargs):
         """Call analyze sec rss, send to telegram if matching companies."""
         if self.testing:
-            AnalyzeSecRss(df=self.df, **kwargs)
+            # AnalyzeSecRss(df=self.df, **kwargs)
+            AnalyzeSecRss(**kwargs)
         else:
             try:
-                AnalyzeSecRss(df=self.df, **kwargs)
+                AnalyzeSecRss(**kwargs)
             except Exception as e:
                 help_print_arg(f"SecRss: AnalyzeSecRss Error {str(e)}")
 
@@ -131,6 +133,8 @@ class SecRssFeed():
 
 class AnalyzeSecRss():
     """Analyze sec rss latest 200 symbols."""
+    # Gets the dataframe from latest day - no dataframe should be passed
+    # Idemptotent transaction here
 
     def __init__(self, df=None, **kwargs):
         self._get_class_vars(self, **kwargs)
@@ -163,7 +167,13 @@ class AnalyzeSecRss():
         if not isinstance(df, pd.DataFrame):
             df = serverAPI('sec_rss_latest').df
 
-        if 'CIK' in df.columns:
+        cols = df.columns
+        if ('cik' in cols) and ('CIK' in cols):
+            df['cik'] = (np.where(
+                df['CIK'], df['CIK'], df['cik']
+            ))
+            df.drop(columns=['CIK'], inplace=True)
+        elif ('CIK' in cols) and ('cik' not in cols):
             df.rename(columns={'CIK': 'cik'}, inplace=True)
         # if df['pubDate'] is not datetime
         return df

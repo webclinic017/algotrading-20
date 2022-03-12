@@ -18,7 +18,6 @@ except ModuleNotFoundError:
     from multiuse.class_methods import ClsHelp
     from multiuse.help_class import baseDir, write_to_parquet, help_print_arg
 
-
 # %% codecell
 
 
@@ -26,16 +25,18 @@ class TwitterUserExtract():
     """Clean twitter user tweets."""
     # Part 2 of user tweets
 
-    def __init__(self, user_id, dropcols=False, **kwargs):
+    reg = '((\d{1,5})( call|c ))|((\d{1,5})( put|p ))'
+    entry = '(entry|bought)'
+    lotto = '(lotto|lotto-|risk)'
+    out = '(up|/%|all out|sell|sold|trim)'
+
+    def __init__(self, user_id, **kwargs):
         self.verbose = kwargs.get('verbose', False)
         df = self._load_filter_tweet_df(self, user_id, **kwargs)
         df_nan = self._remove_cols_with_all_nans(self, df, **kwargs)
-        df_call = self._match_put_calls(self, df_nan, call=True)
-        df_puts = self._match_put_calls(self, df_call, put=True)
-        self.df = self._filter_entry_exit_cols(self, df_puts, dropcols)
+        self.df_filt = self._match_put_calls(self, df_nan)
+        self.df = self._filter_entry_exit_cols(self, self.df_filt, **kwargs)
         self.df_view = self._add_tcode(self, self.df)
-        self.df_reft = self._update_tweet_ref_with_tcode(self, self.df_view, user_id, **kwargs)
-        # self._update_tweet_by_id_df(self, self.df_view, user_id)
 
     @classmethod
     def _load_filter_tweet_df(cls, self, user_id, non_rt=False, **kwargs):
@@ -93,89 +94,53 @@ class TwitterUserExtract():
         return df
 
     @classmethod
-    def _match_put_calls(cls, self, df, call=False, put=False):
+    def _match_put_calls(cls, self, df):
         """Create columns for put/call match."""
-        regf, col = ' (\d\d\d|\d\d|\d)', ''
-        # regf, col = '([0-9\.]+)', ''
-        if call:
-            # regf = regf + '(c[a\b]+|call)'
-            regf = regf + '(c |\s?call)'
-            col = 'call'
-        elif put:
-            # regf = regf + '(p[u\b]+|put)'
-            regf = regf + '(p |\s?put)'
-            col = 'put'
+        df_cp = df[df['text'].str.contains(self.reg)].copy()
+        # Remove any rows without sym_0
+        idx1 = df_cp['sym_0'].dropna().index
+        idx2 = df_cp[df_cp['sym_1'].isna()].index
+        idx3 = df_cp[~df_cp['RT']].index
+        idx_keep = idx1.intersection(idx2).intersection(idx3)
+        # Apply conditions and only keep rows that match
+        df_kept = df_cp.loc[df_cp.index.isin(idx_keep)]
+        ex_all = df_kept['text'].str.extractall(self.reg)
+        ex_all = ex_all.loc[:, [1, 2, 4, 5]].reset_index(level=1, drop=True)
+        # Remove duplicate row nan s
+        cols = ['strike', 'side']
+        repl_dict = {'side': {'call': 'c', 'put': 'p'}}
+        ex1, ex2 = ex_all[[1, 2]], ex_all[[4, 5]]
+        ex1.columns, ex2.columns = cols, cols
+        # Combine and rejoin into historical df
+        df_all = (pd.concat([ex1, ex2])
+                    .dropna()
+                    .sort_index()
+                    .replace(repl_dict, regex=True)
+                    .copy())
+        df_all['trades'] = True
+        df_all['side'] = df_all['side'].str.strip()
+        df_filt = df.join(df_all)
 
-        match = df['text'].str.findall(regf)
-        df[f"{col}M"] = match[match.map(lambda d: len(d)) > 0]
-        df[f"{col}Len"] = df[f"{col}M"].str.len()
-        # Unpack [(strike, side)] to just strike, assign to new column
-        m1 = match[match.apply(lambda row: len(row) == 1)]
-        if 'strike' not in df.columns:
-            df['strike'] = np.NaN
-            df['side'] = np.NaN
-
-        # Unpack list, assign strike prices to index
-        df['strike'] = df['strike'].astype(str)
-        df['side'] = df['side'].astype(str)
-        df.loc[m1.index, 'strike'] = m1.apply(lambda row: row[0][0])
-        df.loc[m1.index, 'side'] = m1.apply(lambda row: row[0][1])
-
-        # df contains
-        dtsc = df['text'].str.contains
-        # Add a column for unusual whales
-        df['uw'] = dtsc('unusual_whales', regex=True, case=False)
-        # Add a column for watchlist
-        df['watch'] = dtsc('watch', regex=True, case=False)
-
-        return df
+        return df_filt
 
     @classmethod
-    def _filter_entry_exit_cols(cls, self, df, dropcols):
+    def _filter_entry_exit_cols(cls, self, df_filt, **kwargs):
         """Filter df for viewing."""
-        df = df.copy()
-        cond1 = df['callM'].dropna()
-        cond2 = df['putM'].dropna()
-        cp_indx = cond1.index.union(cond2.index)
-
-        # Assume that the relevant symbol is stored in col sym_0
-        mod2 = df.loc[cp_indx]['sym_0'].dropna()
-        df_m3 = df.loc[mod2.index]
-        # Default to non-retweet symbols
-        df_m3['RT'] = df_m3['RT'].astype('bool')
-        df_m4 = df_m3[~df_m3['RT']].copy()
-
-        # Define regex vars
-        entry = '(entry|bought)'
-        lotto = '(lotto|lotto-|risk)'
-        out = '(up|/%|all out|sell|sold|trim)'
-
-        strc = df_m4['text'].str.contains
-        # Disable string extract warning
+        dtsc = df_filt['text'].str.contains
+        df_filt['watch'] = dtsc('watch', regex=True, case=False)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            df_m4['entry'] = strc(entry, regex=True, case=False)
-            df_m4['lotto'] = strc(lotto, regex=True, case=False)
-            df_m4['exit'] = strc(out, regex=True, case=False)
-            df_m4['uw'] = strc('unusual_whales', regex=True, case=False)
+            df_filt['entry'] = dtsc(self.entry, regex=True, case=False)
+            df_filt['lotto'] = dtsc(self.lotto, regex=True, case=False)
+            df_filt['exit'] = dtsc(self.out, regex=True, case=False)
+            df_filt['uw'] = dtsc('unusual_whales', regex=True, case=False)
 
-        # callM or putM with more than 2 strike prices are often recaps
-        # When there more than 2 for each, it's definitely a recap
-        df_m4['recap'] = np.where(
-            ((df_m4['callM'].str.len() > 1)
-             & (df_m4['putM'].str.len() > 1)),
-            True, False
-        )
+        df_f2 = df_filt[['sym_1', 'sym_2']].dropna()
+        df_f2['recap'] = True
+        # Combine with df_filt
+        df_cleaned = df_filt.join(df_f2['recap']).copy()
 
-        if dropcols:
-            cols_to_view = (['callM', 'putM', 'entry', 'lotto', 'exit',
-                             'recap', 'sym_0', 'hash_0', 'text',
-                             'id', 'author_id'])
-            df_m4 = df_m4[cols_to_view]
-
-        df_m4 = df_m4.copy()
-
-        return df_m4
+        return df_cleaned
 
     @classmethod
     def _add_tcode(cls, self, df):
@@ -186,15 +151,10 @@ class TwitterUserExtract():
                           - pd.DateOffset(2))
         df['next_exp'] = pd.to_datetime(df['next_exp'].dt.date)
 
-        # Replace 'put' with 'p', 'call' with 'c', and 'nan' with np.NaN
-        repl_dict = {'put': 'p', 'call': 'c', 'nan': np.NaN}
-        df['side_abv'] = (df['side'].replace(repl_dict,
-                                             regex=True)
-                                    .str.strip()
-                                    .dropna())
+        # %% codecell
         # Create tcode separated by underscore
         df['tcode'] = (df['sym_0'] + '_'
-                       + df['side_abv'].astype('str') + '_'
+                       + df['side'].astype('str') + '_'
                        + df['next_exp'].dt.strftime('%Y%m%d') + '_'
                        + df['strike'].astype('str'))
         return df
@@ -203,6 +163,7 @@ class TwitterUserExtract():
     def _update_tweet_ref_with_tcode(cls, self, df, user_id, **kwargs):
         """Update the local user_ref tweets with tcodes."""
         skip_write = kwargs.get('skip_write', False)
+        df = df.loc[df['trades'].dropna().index].copy()
         df_v1 = df[['id', 'tcode']].drop_duplicates(subset=['id']).copy()
         f_tref = TwitterHelpers.tf('tweet_by_id', user_id)
 
@@ -217,25 +178,5 @@ class TwitterUserExtract():
             write_to_parquet(df_tref2, f_tref)
 
         return df_tref2
-
-    @classmethod
-    def _update_tweet_by_id_df(cls, self, df, user_id):
-        """Update and combine df_view with user_ref_tweets file."""
-        # Get relevant trades for the user
-        upath = TwitterHelpers.tf('tweet_by_id', user_id)
-
-        if upath.exists():
-            df_uref = pd.read_parquet(upath)
-            cols_to_keep = ['text', 'author_id', 'id']
-            # ids not in utweets
-            df_pos = df[cols_to_keep].copy()
-            df_new = df_pos[~df_pos['id'].isin(df_uref['id'])].copy()
-            # If dataframe is not empty, combine
-            if not df_new.empty:
-                df_new = pd.concat([df_new, df_uref])
-                write_to_parquet(df_new, upath)
-        else:
-            write_to_parquet(df, upath)
-
 
 # %% codecell
