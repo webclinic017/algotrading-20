@@ -140,12 +140,12 @@ class AnalyzeSecRss():
         self._get_class_vars(self, **kwargs)
         self.df = self._get_sec_df(self, df, **kwargs)
         self.df_clean = self._get_merge_ref_data(self, self.df, **kwargs)
-        self.my_sec = self._get_df_today_my_symbols(self, **kwargs)
+        self.my_sec = self._get_df_today_my_symbols(self, self.my_stocks, **kwargs)
         self.df_msgs = self._get_pos_msgs_today(self, **kwargs)
-        self.df_new = self._confirm_msg_to_send(self, self.df_msgs, **kwargs)
+        self.df_new_msgs = self._confirm_msg_to_send(self, self.df_msgs, **kwargs)
         # Only fire off new messages not already sent
-        if isinstance(self.df_new, pd.DataFrame):
-            self.df_new_sent = self._iterate_send_msgs(self, **kwargs)
+        if isinstance(self.df_new_msgs, pd.DataFrame):
+            self.df_new_sent = self._iterate_send_msgs(self, self.df_new_msgs, **kwargs)
 
     @classmethod
     def _get_class_vars(cls, self, **kwargs):
@@ -153,6 +153,12 @@ class AnalyzeSecRss():
         bdir = Path(baseDir().path, 'social', 'telegram', 'sec')
         self.fpath = bdir.joinpath('_sec_rss_sent.parquet')
 
+        self.my_stocks = False
+        # fpath for my symbols
+        f_my_syms = Path(baseDir().path, 'tickers', 'my_syms.parquet')
+        if f_my_syms.exists():
+            self.my_stocks = pd.read_parquet(f_my_syms)['symbol'].tolist()
+        # Get class date variable for most recent date
         self.dt = kwargs.get('dt', getDate.query('iex_close'))
         # If we want to skip writing locally
         self.skip_write = kwargs.get('skip_write', False)
@@ -160,6 +166,8 @@ class AnalyzeSecRss():
         self.verbose = kwargs.get('verbose', False)
         # If we want to test only
         self.testing = kwargs.get('testing', False)
+        # If we want to create symbol list from existing in sec_rss_latest
+        self.create_symbols = kwargs.get('create_symbols', False)
 
     @classmethod
     def _get_sec_df(cls, self, df, **kwargs):
@@ -199,12 +207,10 @@ class AnalyzeSecRss():
             return df
 
     @classmethod
-    def _get_df_today_my_symbols(cls, self, **kwargs):
+    def _get_df_today_my_symbols(cls, self, my_stocks, **kwargs):
         """Reduce to my symbols, to only most recent rss list."""
-        my_symbols = kwargs.get('my_symbols', False)
-        if not my_symbols or self.testing:
+        if not my_stocks or self.create_symbols:
             my_stocks = self.df_clean['symbol'].value_counts().index[0:3]
-            # my_stocks = ['CVS', 'MKTW']
 
         df_my_sec = (self.df_clean[self.df_clean['symbol']
                      .isin(my_stocks)].copy())
@@ -222,15 +228,15 @@ class AnalyzeSecRss():
     def _get_pos_msgs_today(cls, self, **kwargs):
         """Get possible messages today to send."""
         msg_list = []
-        cols = ['symbol', 'dt', 'cik', 'msg', 'form']
+        cols = ['symbol', 'pubDate', 'cik', 'msg', 'form', 'guid']
 
         if not self.my_sec.empty:
             for index, row in self.my_sec.iterrows():
                 if row['cik']:
                     msg1 = f"{row['symbol']} filed form {row['description']} "
-                    msg = f"{msg1} at {str(row['dt'])}"
-                    (msg_list.append((row['symbol'], row['dt'],
-                                      row['cik'], msg, row['description'])))
+                    msg = f"{msg1} at {str(row['pubDate'])}"
+                    (msg_list.append((row['symbol'], row['pubDate'], row['cik'],
+                                      msg, row['description'], row['guid'])))
 
         df_msgs = pd.DataFrame(msg_list, columns=cols)
         return df_msgs
@@ -238,53 +244,39 @@ class AnalyzeSecRss():
     @classmethod
     def _confirm_msg_to_send(cls, self, df_msgs, **kwargs):
         """Check for file of sent messages else send all."""
-        cols_merge = ['cik', 'dt', 'msg']
         if self.fpath.exists():
-            df_msgs_all = pd.read_parquet(self.fpath)
+            df_all = pd.read_parquet(self.fpath)
             # Get only the sent messages from today
-            df_msgs_all = df_msgs_all[df_msgs_all['dt'].dt.date == self.dt]
-            # Convert both df_msgs and df_msg_all to same timezone
-            tz = 'US/Eastern'
-            df_msgs['dt'] = df_msgs['dt'].dt.tz_localize(tz)
-            try:
-                df_msgs_all['dt'] = df_msgs_all['dt'].dt.tz_convert(tz)
-            except TypeError:
-                df_msgs_all['dt'] = df_msgs_all['dt'].dt.tz_localize(tz)
-            # Merge to get the messages already sent, for today
-            df_comb = (df_msgs_all.merge(df_msgs[cols_merge],
-                                         on=cols_merge, indicator=True))
-            # Return all msgs not in msg sent df
-            if not df_comb.empty:
-                new_idx = df_comb[df_comb['_merge'] == 'right_only'].index
-                df_new_msgs = (df_msgs.loc[
-                               df_msgs.index.intersection(new_idx)].copy())
-                return df_new_msgs
-            # Nothing to sort through here - nothing in common.
-            elif df_comb.empty:
-                return None
+            df_all = df_all[df_all['pubDate'].dt.date == self.dt]
+            df_new_msgs = (df_msgs[~df_msgs['guid']
+                           .isin(df_all.get('guid', []))]
+                           .copy())
+
+            return df_new_msgs
         else:  # So we can send all messages since none have been sent
+            if self.verbose:
+                help_print_arg('SEC _confirm_msg_to_send: Local message path does not exist.')
             return self.df_msgs
 
     @classmethod
-    def _iterate_send_msgs(cls, self, **kwargs):
+    def _iterate_send_msgs(cls, self, df_new_msgs, **kwargs):
         """Send each message to telegram."""
         # It's assumed that all messages are ready to send at this point
         # No duplicates exist, nothing has already been sent
         tmsg_list = []
-        for index, row in self.df_new.iterrows():
+        for index, row in df_new_msgs.iterrows():
             tmsg = telegram_push_message(row['msg'], sec_forms=True)
             tmsg_list.append(tmsg.json()['result'])
 
         # Index should be fine
-        df_new_sent = self.df_new.join(pd.json_normalize(tmsg_list))
+        df_new_sent = df_new_msgs.join(pd.json_normalize(tmsg_list))
         cols_to_drop = (['text', 'chat.type',
                          'chat.all_members_are_administrators'])
         df_new_sent.drop(columns=cols_to_drop, inplace=True, errors='ignore')
 
-        cols_to_drop = ['cik', 'dt']
         if not self.skip_write:
             (write_to_parquet(df_new_sent, self.fpath, combine=True,
-                              cols_to_drop=cols_to_drop, **kwargs))
+                              cols_to_drop=['guid'], **kwargs))
 
         return df_new_sent
 
