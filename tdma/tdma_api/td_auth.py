@@ -69,7 +69,6 @@ class TD_Auth():
                   refresh_token=self.refresh_token,
                   client_id=self.client_full))
 
-        help_print_arg(str(tokens))
         self.access_token = tokens['access_token']
         self.refresh_expiry = tokens['expires_at']
         # Print to console the expiry date
