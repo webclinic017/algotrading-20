@@ -31,20 +31,28 @@ class TwitterUserExtract():
     out = '(up|/%|all out|sell|sold|trim)'
 
     def __init__(self, user_id, **kwargs):
-        self.verbose = kwargs.get('verbose', False)
+        self._get_class_vars(self, user_id, **kwargs)
         df = self._load_filter_tweet_df(self, user_id, **kwargs)
         df_nan = self._remove_cols_with_all_nans(self, df, **kwargs)
         self.df_filt = self._match_put_calls(self, df_nan)
         self.df = self._filter_entry_exit_cols(self, self.df_filt, **kwargs)
         self.df_view = self._add_tcode(self, self.df)
+        # Updated dataframe for user reference tweets
+        self.df_ref = self._update_tweet_ref_with_tcode(self, user_id, self.df_view)
+
+    @classmethod
+    def _get_class_vars(cls, self, user_id, **kwargs):
+        """Unpack kwargs and assign to class variables."""
+        self.f_tweet_by_id = TwitterHelpers.tf('tweet_by_id', user_id)
+        # Unpack kwargs
+        self.verbose = kwargs.get('verbose', False)
+        self.testing = kwargs.get('testing', False)
+        self.skip_write = kwargs.get('skip_write', False)
+        self.cp_only = kwargs.get('cp_only', False)
 
     @classmethod
     def _load_filter_tweet_df(cls, self, user_id, non_rt=False, **kwargs):
         """Load dataframe of tweets for user by username."""
-        isp = inspect.stack()
-        if 'non_rt' in kwargs.keys():
-            non_rt = kwargs['non_rt']
-
         if user_id is None and 'username' in kwargs.keys():
             username = kwargs['username']
             user_id = TwitterHelpers.twitter_lookup_id(username)
@@ -53,7 +61,7 @@ class TwitterUserExtract():
 
         if not isinstance(df, pd.DataFrame):
             msg = "_hist_tweets.parquet does not exist"
-            help_print_arg(msg, isp=isp)
+            help_print_arg(msg, isp=inspect.stack())
 
         fpath_ref = (TwitterHelpers.tf('tweet_by_id', user_id=user_id))
 
@@ -78,7 +86,7 @@ class TwitterUserExtract():
         val_cols = cols[cols.str.contains('val_')]
         pos_cols = sym_cols.union(hash_cols).union(val_cols)
 
-        if cp_only:
+        if self.cp_only:
             cond1 = ((df['call']) | (df['put']))
             df = df[cond1].reset_index(drop=True).copy()
 
@@ -103,9 +111,10 @@ class TwitterUserExtract():
         idx3 = df_cp[~df_cp['RT']].index
         idx_keep = idx1.intersection(idx2).intersection(idx3)
         # Apply conditions and only keep rows that match
-        df_kept = df_cp.loc[df_cp.index.isin(idx_keep)]
-        ex_all = df_kept['text'].str.extractall(self.reg)
-        ex_all = ex_all.loc[:, [1, 2, 4, 5]].reset_index(level=1, drop=True)
+        ex_all = (df_cp.loc[df_cp.index.isin(idx_keep)]
+                  ['text'].str.extractall(self.reg)
+                  .loc[:, [1, 2, 4, 5]]
+                  .reset_index(level=1, drop=True))
         # Remove duplicate row nan s
         cols = ['strike', 'side']
         repl_dict = {'side': {'call': 'c', 'put': 'p'}}
@@ -160,22 +169,24 @@ class TwitterUserExtract():
         return df
 
     @classmethod
-    def _update_tweet_ref_with_tcode(cls, self, df, user_id, **kwargs):
+    def _update_tweet_ref_with_tcode(cls, self, user_id, df, **kwargs):
         """Update the local user_ref tweets with tcodes."""
-        skip_write = kwargs.get('skip_write', False)
-        df = df.loc[df['trades'].dropna().index].copy()
-        df_v1 = df[['id', 'tcode']].drop_duplicates(subset=['id']).copy()
-        f_tref = TwitterHelpers.tf('tweet_by_id', user_id)
-
-        df_tref = (pd.read_parquet(f_tref)
-                     .drop(columns='tcode', errors='ignore'))
+        df_v1 = (df.loc[df['trades'].dropna().index]
+                   .loc[:, ['id', 'tcode']]
+                   .drop_duplicates(subset=['id'])
+                   .copy())
+        # Read local user_tweet_ref file
+        df_tref = (TwitterHelpers.tf('tweet_by_id', user_id, return_df=True)
+                                 .drop(columns='tcode', errors='ignore'))
+        # Combine dataframes to update tcodes
         df_tref2 = (df_tref.join(df_v1.set_index('id'), on='id', how='left')
                            .reset_index(drop=True)
                            .dropna(subset='text'))
+        # Fill NaNs with 0 if column exists
         if 'telegram_sent' in df_tref2.columns:
             df_tref2['telegram_sent'] = df_tref2['telegram_sent'].fillna(0)
-        if not skip_write:
-            write_to_parquet(df_tref2, f_tref)
+        if not self.skip_write:
+            write_to_parquet(df_tref2, self.f_tweet_by_id)
 
         return df_tref2
 
