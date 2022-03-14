@@ -166,6 +166,8 @@ class TwitterUserExtract():
                        + df['side'].astype('str') + '_'
                        + df['next_exp'].dt.strftime('%Y%m%d') + '_'
                        + df['strike'].astype('str'))
+        # Filter to only tweets with strike/side values
+        df.dropna(subset=['strike', 'side'], inplace=True)
         return df
 
     @classmethod
