@@ -8,10 +8,10 @@ import dotenv
 from dotenv import load_dotenv
 
 try:
-    from scripts.dev.multiuse.help_class import help_print_arg
+    from scripts.dev.multiuse.help_class import help_print_arg, getDate
     from scripts.dev.multiuse.aws_keys import get_secret
 except ModuleNotFoundError:
-    from multiuse.help_class import help_print_arg
+    from multiuse.help_class import help_print_arg, getDate
     from multiuse.aws_keys import get_secret
 
 # %% codecell
@@ -28,10 +28,12 @@ class TD_Auth():
     """
 
     def __init__(self):
-        self.dt_now = datetime.now()
+        self.dt_now = getDate.tz_aware_dt_now()
         self._load_params(self)
 
         if self.dt_now > self.refresh_expiry:
+            msg2 = f" TDMA refresh expiry: {self.refresh_expiry}"
+            help_print_arg(f"Time now {self.dt_now} {msg2}")
             self._refresh_access_token(self)
             # self._load_params(self)
 
@@ -43,12 +45,13 @@ class TD_Auth():
         self.refresh_token = os.environ.get('tdma_refresh_token', False)
         self.access_token = os.environ.get('tdma_access_token', False)
         # Set backup (default) that's already expired, trigger new refresh
-        refresh_expiry_backup = (str((datetime.now() - timedelta(minutes=30))
-                                 .replace(microsecond=0)))
-        self.refresh_expiry = (datetime.strptime(
-                               os.environ.get('tdma_access_expires_at',
-                                              refresh_expiry_backup),
-                               '%Y-%m-%d %H:%M:%S'))
+        refresh_expiry_backup = ((self.dt_now - timedelta(minutes=30))
+                                 .replace(microsecond=0))
+        self.refresh_expiry = (datetime.fromtimestamp(int(
+                                 os.environ.get(
+                                        'tdma_access_expires_at',
+                                        refresh_expiry_backup.timestamp()))
+                                ).replace(tzinfo=self.dt_now.tzinfo))
 
     @classmethod
     def _refresh_access_token(cls, self):
@@ -66,17 +69,18 @@ class TD_Auth():
                   refresh_token=self.refresh_token,
                   client_id=self.client_full))
 
+        help_print_arg(str(tokens))
         self.access_token = tokens['access_token']
-        self.refresh_expiry = (str(datetime.fromtimestamp(
-                                   tokens['expires_at'])))
+        self.refresh_expiry = tokens['expires_at']
         # Print to console the expiry date
-        help_print_arg(f"TDMA refresh expiry: {self.refresh_expiry}")
+        # msg2 = f"Time now {self.dt_now}"
+        # help_print_arg(f"TDMA refresh expiry: {self.refresh_expiry} {msg2}")
 
         # Write changes to local .env file
         dotenv_file = dotenv.find_dotenv()
         (dotenv.set_key(dotenv_file, "tdma_access_token",
                         self.access_token))
         (dotenv.set_key(dotenv_file, "tdma_access_expires_at",
-                        self.refresh_expiry))
+                        str(self.refresh_expiry)))
 
 # %% codecell
