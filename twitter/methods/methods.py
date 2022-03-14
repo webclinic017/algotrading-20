@@ -84,7 +84,7 @@ class TwitterMethods(ClsHelp):
     def _tweet_by_id(cls, self, rep, method, fpath, user_id):
         """Store tweets + metadata in local file."""
         try:
-            df = pd.DataFrame.from_dict(rep.json()['data'])
+            df = pd.json_normalize(rep.json()['data'])
             df['created_at'] = pd.to_datetime(df['created_at'])
             # For now just drop the entities column
             df.reset_index(drop=True, inplace=True)
