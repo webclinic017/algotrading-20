@@ -20,7 +20,7 @@ class CreateTradeRef(TwitterHelpers):
     """Create Trade Reference DF."""
 
     def __init__(self, user_id, **kwargs):
-        self.verbose = kwargs.get('verbose', False)
+        self._get_class_vars(self, **kwargs)
         df, fpath = self._get_df(self, user_id, **kwargs)
         df_tcode = self._process_for_tcode(self, df)
         self.df_starts = self._add_trade_starts(self, df_tcode)
@@ -28,9 +28,16 @@ class CreateTradeRef(TwitterHelpers):
         self._write_to_file(self, self.df_trades, fpath)
 
     @classmethod
+    def _get_class_vars(cls, self, **kwargs):
+        """Get class variables, unpack kwargs."""
+        self.verbose = kwargs.get('verbose', False)
+        self.skip_write = kwargs.get('skip_write', False)
+        self.df = kwargs.get('df', False)
+
+    @classmethod
     def _get_df(cls, self, user_id, **kwargs):
         """Get dataframe."""
-        df = kwargs.get('df', None)
+        df = self.df
         if not isinstance(df, pd.DataFrame):
             tue = TwitterUserExtract(user_id)
             df = tue.df_view.drop_duplicates(subset=['id']).copy()
@@ -105,8 +112,7 @@ class CreateTradeRef(TwitterHelpers):
     @classmethod
     def _write_to_file(cls, self, df, fpath, **kwargs):
         """Write to file."""
-        skip_write = kwargs.get('skip_write', False)
-        if not skip_write:  # Drop on index
+        if not self.skip_write:  # Drop on index
             write_to_parquet(df, fpath, combine=True, drop_duplicates=True)
 
 # %% codecell

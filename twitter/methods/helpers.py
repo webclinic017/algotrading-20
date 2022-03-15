@@ -38,7 +38,8 @@ class TwitterHelpers():
                   'tweet_by_id': bpath.joinpath('users', str(user_id), '_tweet_ref.parquet'),
                   'user_dir': bpath.joinpath('users', str(user_id)),
                   'all_hist': bpath.joinpath('tweets', '_hist_tweets_all.parquet'),
-                  'all_trades': bpath.joinpath('tweets', '_trade_tweets_all.parquet')
+                  'all_trades': bpath.joinpath('tweets', '_trade_tweets_all.parquet'),
+                  'all_trade_entries': bpath.joinpath('tweets', '_trades_all.parquet')
                   })
 
         if return_df and pdict[method].exists():
@@ -86,6 +87,7 @@ class TwitterHelpers():
         trade_signal = kwargs.get('trade_signal', False)
         tgrams = kwargs.get('tgrams', False)
         trades = kwargs.get('trades', False)
+        return_df = kwargs.get('return_df', False)
 
         fpath_uref = TwitterHelpers.twitter_fpaths('user_ref')
         fdir_users = fpath_uref.parent
@@ -102,7 +104,7 @@ class TwitterHelpers():
             fname = '_telegram_msgs_all.parquet'
         elif trades:
             pattern = '_trades.parquet'
-            fname = '_trade_tweets_all.parquet'
+            fname = '_trades_all.parquet'
 
         for strpath in fpaths_str:
             if re.search(pattern, str(strpath)):
@@ -119,6 +121,9 @@ class TwitterHelpers():
 
             fpath_all = fdir_users.parent.joinpath('tweets', fname)
             write_to_parquet(dfs, fpath_all)
+
+            if return_df:
+                return dfs
 
 
 # %% codecell
