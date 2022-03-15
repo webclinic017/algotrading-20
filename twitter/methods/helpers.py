@@ -6,8 +6,10 @@ import re
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, write_to_parquet
+    from scripts.dev.multiuse.df_helpers import DfHelpers
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, write_to_parquet
+    from multiuse.df_helpers import DfHelpers
 
 # %% codecell
 
@@ -115,6 +117,8 @@ class TwitterHelpers():
             dfs = (pd.concat(
                 [pd.read_parquet(path) for path in paths_to_concat]
                 ))
+
+            dfs = DfHelpers.combine_duplicate_columns(dfs)
 
             if 'id' in dfs.columns:
                 dfs.drop_duplicates(subset='id', inplace=True)
