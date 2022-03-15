@@ -77,9 +77,13 @@ class TwitterUserTweets(ClsHelp):
     @classmethod
     def _add_calls_puts(cls, self, df):
         """Add call/put columns."""
+        prem = '( \d+\.?\d?)'
+        reg_calls = f'(?={prem}( call|c ))' + '{1}'
+        reg_puts = f'(?={prem}( put|p ))' + '{1}'
+
         tlower = df['text'].str.lower().str.contains
-        df['call'] = tlower('call')
-        df['put'] = tlower('put')
+        df['call'] = tlower(reg_calls)
+        df['put'] = tlower(reg_puts)
         return df.copy()
 
     @classmethod
@@ -173,8 +177,7 @@ class TwitterUserTweets(ClsHelp):
     @classmethod
     def _drop_and_write(cls, self, df, fpath):
         """Drop duplicates and write to local file."""
-        # Can't drop duplicates since this isn't the hist_df
-        write_to_parquet(df, fpath, combine=True)
+        write_to_parquet(df, fpath, combine=True, cols_to_drop=['id'])
 
         return df
 

@@ -37,24 +37,20 @@ class TwitterAPI():
     # Implied that the user_id is known, but will check anyway
 
     def __init__(self, method, **kwargs):
-        if 'verbose' in kwargs.keys():
-            if kwargs['verbose']:
-                help_print_arg(kwargs)
-
-        self._get_class_vars(self)
+        self._get_class_vars(self, **kwargs)
         user_id = self._username_check(self, method, **kwargs)
         params = self._check_for_params(self, method, **kwargs)
         url = self._construct_url(self, method, user_id, **kwargs)
         self.method, self.user_id = method, user_id
         self.get = self._call_twitter_api(self, url, params)
-        self.df = self._call_twitter_methods(self, self.get, method, user_id)
+        self.df = self._call_twitter_methods(self, self.get, method, user_id, **kwargs)
 
     @staticmethod
     def tweet_max_hist(username):
         """Get twitter max historical tweets for a username."""
-        kwargs = ({'username': username,
+        kwargs = ({'username': username, 'get_max_hist': True,
                    'params': {'max_results': 100,
-                              'exclude': 'replies'}})
+                              'exclude': 'retweets,replies'}})
         # First call gets the first round of results - includes pag token
         call = TwitterAPI(method='user_tweets', **kwargs)
         next_token = call.get.json()['meta']['next_token']
@@ -64,27 +60,33 @@ class TwitterAPI():
                 kwargs['params']['pagination_token'] = next_token
                 call = TwitterAPI(method='user_tweets', **kwargs)
                 next_token = call.get.json()['meta']['next_token']
-            except KeyError:
+            except Exception as e:
                 msg1 = "TwitterAPI.tweet_max_hist: "
-                msg2 = "encountered KeyError. Breaking"
+                msg2 = f"encountered error {str(e)} {type(e)}. Breaking"
                 help_print_arg(f"{msg1}{msg2}")
                 help_print_arg(f"{str(call.get.json()['meta'])}")
                 break
 
     @classmethod
-    def _get_class_vars(cls, self):
+    def _get_class_vars(cls, self, **kwargs):
         """Get class variables."""
         self.bpath = Path(baseDir().path, 'social', 'twitter')
         self.burl = "https://api.twitter.com"
 
+        self.username = kwargs.get('username', None)
+
+        self.verbose = kwargs.get('verbose', False)
+        if self.verbose:
+            help_print_arg(kwargs)
+
     @classmethod
     def _username_check(cls, self, method, **kwargs):
         """Check if username in local file. If not, add it."""
-        if method != 'user_ref' and 'username' in kwargs.keys():
-            username = kwargs['username']
+        if method != 'user_ref' and self.username:
+            username = self.username
             user_id = TwitterHelpers.twitter_lookup_id(username)
             if not user_id:
-                if kwargs.get('verbose', False):
+                if self.verbose:
                     help_print_arg(f"TwitterAPI._username_check - could not find user_id")
                 kwargs['exclude_params'] = True
                 TwitterAPI(method='user_ref', **kwargs)
@@ -99,12 +101,8 @@ class TwitterAPI():
     @classmethod
     def _check_for_params(cls, self, method, **kwargs):
         """Check for passed parameters in kwargs."""
-        if method == 'user_tweets' and 'params' in kwargs.keys():
-            return kwargs['params']
-        elif method == 'tweet_by_id' and 'params' in kwargs.keys():
-            return kwargs['params']
-        else:
-            return {}
+        params = kwargs.get('params', {})
+        return params
 
     @classmethod
     def _construct_url(cls, self, method, user_id, **kwargs):
@@ -163,10 +161,12 @@ class TwitterAPI():
         write_to_parquet(df, fpath, combine=True)
 
     @classmethod
-    def _call_twitter_methods(cls, self, get, method, user_id):
+    def _call_twitter_methods(cls, self, get, method, user_id, **kwargs):
         """Call twitter methods for handling response, get request."""
+        if self.verbose:
+            help_print_arg(kwargs)
         try:
-            return TwitterMethods(get, method, user_id).df
+            return TwitterMethods(get, method, user_id, **kwargs).df
         except Exception as e:
             msg1 = f"TwitterAPI._call_twitter_methods: {method} {type(e)} "
             msg2 = f"{str(e)} {str(traceback.format_exc())}"
