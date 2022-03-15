@@ -25,7 +25,9 @@ class TwitterUserExtract():
     """Clean twitter user tweets."""
     # Part 2 of user tweets
 
-    reg = '((\d{1,5})( call|c ))|((\d{1,5})( put|p ))'
+    prem = '( \d+\.?\d?)'
+    reg = f'(?={prem}( call|c ))|(?={prem}( put|p ))'
+    reg1 = reg + '{1}'
     entry = '(entry|bought)'
     lotto = '(lotto|lotto-|risk)'
     out = '(up|/%|all out|sell|sold|trim)'
@@ -113,12 +115,11 @@ class TwitterUserExtract():
         # Apply conditions and only keep rows that match
         ex_all = (df_cp.loc[df_cp.index.isin(idx_keep)]
                   ['text'].str.extractall(self.reg)
-                  .loc[:, [1, 2, 4, 5]]
                   .reset_index(level=1, drop=True))
         # Remove duplicate row nan s
         cols = ['strike', 'side']
         repl_dict = {'side': {'call': 'c', 'put': 'p'}}
-        ex1, ex2 = ex_all[[1, 2]], ex_all[[4, 5]]
+        ex1, ex2 = ex_all[[0, 1]], ex_all[[2, 3]]
         ex1.columns, ex2.columns = cols, cols
         # Combine and rejoin into historical df
         df_all = (pd.concat([ex1, ex2])
@@ -128,6 +129,7 @@ class TwitterUserExtract():
                     .copy())
         df_all['trades'] = True
         df_all['side'] = df_all['side'].str.strip()
+        df_all['strike'] = df_all['strike'].str.strip()
         df_filt = df.join(df_all)
 
         return df_filt
