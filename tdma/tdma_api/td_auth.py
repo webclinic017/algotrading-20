@@ -40,7 +40,7 @@ class TD_Auth():
     @classmethod
     def _load_params(cls, self):
         """Load parameters for api calls."""
-        load_dotenv()
+        load_dotenv(override=True)
         self.client_full = os.environ.get('tdma_client_id', False)
         self.refresh_token = os.environ.get('tdma_refresh_token', False)
         self.access_token = os.environ.get('tdma_access_token', False)
