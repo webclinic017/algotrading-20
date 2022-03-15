@@ -83,6 +83,7 @@ class DfHelpers():
                 idx = df[cols_dupe].dropna(how='all').index
                 # Stack based on unique index, convert to series
                 stacked = df.loc[idx][cols_dupe].stack().reset_index(1, drop=True)
+                stacked = stacked[~stacked.index.duplicated()]
                 # Set the non nan values equal to right index values
                 df.loc[stacked.index, col] = stacked
                 # Drop duplicate columns
