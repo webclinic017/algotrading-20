@@ -84,7 +84,7 @@ class TwitterAPI():
             username = kwargs['username']
             user_id = TwitterHelpers.twitter_lookup_id(username)
             if not user_id:
-                if kwargs['verbose']:
+                if kwargs.get('verbose', False):
                     help_print_arg(f"TwitterAPI._username_check - could not find user_id")
                 kwargs['exclude_params'] = True
                 TwitterAPI(method='user_ref', **kwargs)
