@@ -28,6 +28,8 @@ class TwitterMethods(ClsHelp):
     def __init__(self, rep, method, user_id, **kwargs):
         if not method:
             method = self._determine_method(self, rep)
+
+        self.get_max_hist = kwargs.get('get_max_hist', False)
         self.fpath = TwitterHelpers.twitter_fpaths(method, user_id=user_id)
         self.df = self._call_matching_func(self, rep, method, user_id, **kwargs)
 
@@ -46,10 +48,15 @@ class TwitterMethods(ClsHelp):
         """Call matching function for storing data."""
         mdict = ({'user_ref': self._user_lookup,
                   'user_tweets': [TwitterUserTweets, TwitterUserExtract, CreateTradeRef],
+                  'get_max_hist': TwitterUserTweets,
                   'tweet_by_id': self._tweet_by_id
                   })
+
         if method in ('user_ref', 'tweet_by_id'):
             return mdict[method](self, rep, method, self.fpath, user_id)
+        elif self.get_max_hist:
+            tut = TwitterUserTweets(rep, method, self.fpath, user_id, **kwargs)
+            return tut.df
         elif method == 'user_tweets':
             df1 = mdict[method][0](rep, method, self.fpath, user_id, **kwargs)
             tue = mdict[method][1](user_id, **kwargs)

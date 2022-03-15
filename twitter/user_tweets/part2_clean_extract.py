@@ -157,14 +157,19 @@ class TwitterUserExtract():
     def _add_tcode(cls, self, df):
         """Construct and add tcode to dataframe."""
         # Find the next expiration date (assume Friday)
-        df['next_exp'] = (df['created_at']
-                          + pd.offsets.Week(n=0, weekday=6)
-                          - pd.DateOffset(2))
+        try:
+            df['next_exp'] = (df['created_at']
+                              + pd.offsets.Week(n=0, weekday=6)
+                              - pd.DateOffset(2))
+        except TypeError:
+            df['next_exp'] = (pd.to_datetime(df['created_at'], errors='ignore')
+                              + pd.offsets.Week(n=0, weekday=6)
+                              - pd.DateOffset(2))
         df['next_exp'] = pd.to_datetime(df['next_exp'].dt.date)
 
         # %% codecell
         # Create tcode separated by underscore
-        df['tcode'] = (df['sym_0'] + '_'
+        df['tcode'] = (df['sym_0'].astype('str') + '_'
                        + df['side'].astype('str') + '_'
                        + df['next_exp'].dt.strftime('%Y%m%d') + '_'
                        + df['strike'].astype('str'))

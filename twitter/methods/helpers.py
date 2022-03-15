@@ -34,8 +34,8 @@ class TwitterHelpers():
         bpath = Path(baseDir().path, 'social', 'twitter')
         pdict = ({'user_ref': bpath.joinpath('users', 'user_ref.parquet'),
                   'user_tweets': bpath.joinpath('users', str(user_id), '_hist_tweets.parquet'),
-                  'user_trades': bpath.joinpath('users', str(user_id), '_trades.parquet'),
                   'tweet_by_id': bpath.joinpath('users', str(user_id), '_tweet_ref.parquet'),
+                  'user_trades': bpath.joinpath('users', str(user_id), '_trades.parquet'),
                   'user_dir': bpath.joinpath('users', str(user_id)),
                   'all_hist': bpath.joinpath('tweets', '_hist_tweets_all.parquet'),
                   'all_trades': bpath.joinpath('tweets', '_trade_tweets_all.parquet'),
