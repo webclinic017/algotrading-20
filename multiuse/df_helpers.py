@@ -58,36 +58,39 @@ class DfHelpers():
     @staticmethod
     def combine_duplicate_columns(df, verbose=False):
         """Combine duplicate columns (merging errors)."""
-        cols = df.columns
+        if isinstance(df.index, pd.Index):
+            df.reset_index(drop=True, inplace=True)
 
-        cols_x = cols[cols.str.contains('_x', regex=True)]
-        cols_y = cols[cols.str.contains('_y', regex=True)]
-        cols_x_r = cols_x.str.replace('_x', '', regex=True)
-        cols_y_r = cols_y.str.replace('_y', '', regex=True)
+        c_all = df.columns
+        col_x = c_all[c_all.str.contains('_x', regex=True)]
+        col_y = c_all[c_all.str.contains('_y', regex=True)]
+        cols_ = col_x.str.replace('_x', '', regex=True)
 
         # Check if there are duplicates from merge
-        if not cols_x_r.difference(cols_y_r).empty:
+        if col_x.empty:
             if verbose:
                 msg1 = ("combine_duplicate_columns: No difference between "
                         "cols_x and cols_y")
-                msg2 = (f"cols_x {str(cols_x)} and {str(cols_y)}")
+                msg2 = (f"cols_x {str(col_x)} and {str(col_y)}")
                 help_print_arg(f"{msg1}{msg2}")
             return df
         else:
-            cols_new = cols_x_r
-            for col in cols_new:
-                # Create new column of all np.NaNs
-                df[col] = np.NaN
-                # Create list of old columns for easy acccess
-                cols_dupe = [f"{col}_x", f"{col}_y"]
-                idx = df[cols_dupe].dropna(how='all').index
-                # Stack based on unique index, convert to series
-                stacked = df.loc[idx][cols_dupe].stack().reset_index(1, drop=True)
-                stacked = stacked[~stacked.index.duplicated()]
-                # Set the non nan values equal to right index values
-                df.loc[stacked.index, col] = stacked
-                # Drop duplicate columns
-                df.drop(columns=cols_dupe, inplace=True, errors='ignore')
+            for col in cols_:
+                colm = df.get(col, f"{col}_x")
+                if isinstance(colm, pd.Series):
+                    colm = colm.name
+                df[col] = (np.where(
+                                df[colm].notna(),
+                                df[colm],
+                                np.where(
+                                    df[f"{col}_x"].notna(), df[f"{col}_x"],
+                                    np.where(
+                                        df[f"{col}_y"].notna(), df[f"{col}_y"], 0
+                                    ),
+                                ),
+                            ))
+
+            df.drop(columns=col_x.append(col_y), inplace=True)
 
         return df
 
