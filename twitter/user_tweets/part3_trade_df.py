@@ -113,6 +113,6 @@ class CreateTradeRef(TwitterHelpers):
     def _write_to_file(cls, self, df, fpath, **kwargs):
         """Write to file."""
         if not self.skip_write:  # Drop on index
-            write_to_parquet(df, fpath, combine=True, drop_duplicates=True)
+            write_to_parquet(df, fpath, combine=True)
 
 # %% codecell
