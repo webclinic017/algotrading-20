@@ -156,15 +156,24 @@ class TwitterUserExtract():
     @classmethod
     def _add_tcode(cls, self, df):
         """Construct and add tcode to dataframe."""
+        # Replace 0s with NaTs.
+        s_ca_filt = df[df['created_at'] == 0]['created_at']
+        df.loc[s_ca_filt.index, 'created_at'] = s_ca_filt.replace(0, pd.NaT)
+        # Only use values that are non NaNs
+        df = df.dropna(subset=['trades']).copy()
         # Find the next expiration date (assume Friday)
         try:
             df['next_exp'] = (df['created_at']
                               + pd.offsets.Week(n=0, weekday=6)
                               - pd.DateOffset(2))
         except TypeError:
-            df['next_exp'] = (pd.to_datetime(df['created_at'], errors='ignore')
+            df['next_exp'] = (pd.to_datetime(df['created_at'], utc=True, errors='ignore')
                               + pd.offsets.Week(n=0, weekday=6)
                               - pd.DateOffset(2))
+        except Exception as e:
+            msg1 = f"P2CleanExtract{str(df['created_at'].dtype)}"
+            msg2 = f"{str(df['created_at'].iloc[0])}"
+            help_print_arg(f"{msg1}{msg2}")
         df['next_exp'] = pd.to_datetime(df['next_exp'].dt.date)
 
         # %% codecell
