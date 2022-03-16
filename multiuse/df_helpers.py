@@ -79,7 +79,7 @@ class DfHelpers():
                 colm = df.get(col, f"{col}_x")
                 if isinstance(colm, pd.Series):
                     colm = colm.name
-                df[col] = (np.where(
+                vals = (np.where(
                                 df[colm].notna(),
                                 df[colm],
                                 np.where(
@@ -89,6 +89,7 @@ class DfHelpers():
                                     ),
                                 ),
                             ))
+                df[col] = vals
 
             df.drop(columns=col_x.append(col_y), inplace=True)
 

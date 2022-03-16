@@ -70,6 +70,9 @@ class TwitterUserExtract():
         if fpath_ref.exists():
             df_ref = pd.read_parquet(fpath_ref).drop(columns='text')
             if not df_ref.empty:
+                df = (DfHelpers.combine_duplicate_columns(df)
+                               .drop(columns=df_ref.columns.drop('id'),
+                                     errors='ignore'))
                 df = pd.merge(df, df_ref, on='id', how='left')
                 df = DfHelpers.combine_duplicate_columns(df)
                 df.reset_index(drop=True, inplace=True)
