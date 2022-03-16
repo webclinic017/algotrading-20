@@ -159,11 +159,17 @@ class TwitterUserExtract():
     @classmethod
     def _add_tcode(cls, self, df):
         """Construct and add tcode to dataframe."""
+        # Only use values that are non NaNs
+        df = df.dropna(subset=['trades']).copy()
         # Replace 0s with NaTs.
         s_ca_filt = df[df['created_at'] == 0]['created_at']
         df.loc[s_ca_filt.index, 'created_at'] = s_ca_filt.replace(0, pd.NaT)
-        # Only use values that are non NaNs
-        df = df.dropna(subset=['trades']).copy()
+        # Convert to Eastern time if aware
+        if df['created_at'].dt.tz:
+            df['created_at'] = (df['created_at']
+                                .dt.tz_convert(None)
+                                .dt.tz_localize('UTC')
+                                .dt.tz_convert('US/Eastern'))
         # Find the next expiration date (assume Friday)
         try:
             df['next_exp'] = (df['created_at']
