@@ -4,6 +4,8 @@ from pathlib import Path
 import pandas as pd
 import re
 
+from dateutil.relativedelta import relativedelta, FR
+
 try:
     from scripts.dev.multiuse.help_class import baseDir, write_to_parquet
     from scripts.dev.multiuse.df_helpers import DfHelpers
@@ -82,6 +84,20 @@ class TwitterHelpers():
             if 'author_id' not in df.columns:
                 df['author_id'] = user_id
                 write_to_parquet(df, fpath)
+
+    @staticmethod
+    def convert_ca_tz_exp_date(df, **kwargs):
+        """Convert timezone for created_at, and expDate."""
+        df['created_at'] = (df['created_at']
+                            .dt.tz_convert(None)
+                            .dt.tz_localize('UTC')
+                            .dt.tz_convert('US/Eastern'))
+
+        df['expDate'] = (pd.to_datetime(
+                         df['created_at'].dt.date
+                         + relativedelta(weekday=FR(1))))
+
+        return df
 
     @staticmethod
     def combine_twitter_all(**kwargs):

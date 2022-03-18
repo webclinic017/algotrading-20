@@ -3,9 +3,11 @@
 from pathlib import Path
 import warnings
 import inspect
+from datetime import timedelta
 
 import pandas as pd
 import numpy as np
+from dateutil.relativedelta import relativedelta, FR
 
 try:
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
@@ -160,10 +162,11 @@ class TwitterUserExtract():
     def _add_tcode(cls, self, df):
         """Construct and add tcode to dataframe."""
         # Only use values that are non NaNs
-        df = df.dropna(subset=['trades']).copy()
-        # Replace 0s with NaTs.
-        s_ca_filt = df[df['created_at'] == 0]['created_at']
-        df.loc[s_ca_filt.index, 'created_at'] = s_ca_filt.replace(0, pd.NaT)
+        df['created_at'] = (np.where(df['created_at'] == 0,
+                                     pd.NaT, df['created_at']))
+        # Filter to only tweets with strike/side values
+        df.dropna(subset=['strike', 'side'], inplace=True)
+        df.drop_duplicates(subset='id', inplace=True)
         # Convert to Eastern time if aware
         if df['created_at'].dt.tz:
             df['created_at'] = (df['created_at']
@@ -171,28 +174,23 @@ class TwitterUserExtract():
                                 .dt.tz_localize('UTC')
                                 .dt.tz_convert('US/Eastern'))
         # Find the next expiration date (assume Friday)
-        try:
-            df['next_exp'] = (df['created_at']
-                              + pd.offsets.Week(n=0, weekday=6)
-                              - pd.DateOffset(2))
-        except TypeError:
-            df['next_exp'] = (pd.to_datetime(df['created_at'], utc=True, errors='ignore')
-                              + pd.offsets.Week(n=0, weekday=6)
-                              - pd.DateOffset(2))
-        except Exception as e:
-            msg1 = f"P2CleanExtract{str(df['created_at'].dtype)}"
-            msg2 = f"{str(df['created_at'].iloc[0])}"
-            help_print_arg(f"{msg1}{msg2}")
-        df['next_exp'] = pd.to_datetime(df['next_exp'].dt.date)
+        dt_ca = df['created_at'].dropna()
+        days_less = dt_ca.apply(lambda x: 4 - x.weekday)
+        days_less.name = 'days_less'
 
-        # %% codecell
+        new_exps = (dt_ca.to_frame().join(days_less)
+                         .apply(lambda x: x['created_at'].date()
+                    + pd.Timedelta(days=x['days_less']), axis=1))
+        df['next_exp'] = pd.NaT
+        df.loc[new_exps.index, 'next_exp'] = new_exps
+        df['next_exp'] = pd.to_datetime(df['next_exp']).dt.tz_localize('US/Eastern')
         # Create tcode separated by underscore
         df['tcode'] = (df['sym_0'].astype('str') + '_'
                        + df['side'].astype('str') + '_'
                        + df['next_exp'].dt.strftime('%Y%m%d') + '_'
                        + df['strike'].astype('str'))
-        # Filter to only tweets with strike/side values
-        df.dropna(subset=['strike', 'side'], inplace=True)
+        # Drop rows that aren't considered trades
+        df = df.dropna(subset=['trades']).copy()
         return df
 
     @classmethod
