@@ -67,7 +67,7 @@ def get_most_recent_messages_per_user(telegram=False, **kwargs):
 
         if isinstance(df_view, pd.DataFrame):
             if not df_view.empty:  # id is user_id, from df_uref
-                gte_df = GetTimestampsForEachRelTweet(row['id'], testing=False).df
+                gte_df = GetTimestampsForEachRelTweet(row['id'], testing=False, verbose=verbose).df
                 if verbose:
                     msg = f"there are {str(gte_df.shape[0])} timestamps needed"
                     help_print_arg(msg, isp)

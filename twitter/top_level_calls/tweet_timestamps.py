@@ -24,11 +24,7 @@ class GetTimestampsForEachRelTweet():
         self.testing = kwargs.get('testing', False)
         self.verbose = kwargs.get('verbose', False)
         # For get_max_history method, pass in dataframe through kwargs
-        self.df = kwargs.get('df', pd.DataFrame())
-        if self.df.empty:
-            if self.verbose:
-                help_print_arg("GetTimestampsForEachRelTweet: DF not passed in kwargs")
-            self.df = self._get_relevant_tweets(self, user_id)
+        self.df = kwargs.get('df', self._get_relevant_tweets(self, user_id))
 
         if not self.df.empty and not self.testing:
             self._call_tweets_by_id(self, self.df)
@@ -36,14 +32,15 @@ class GetTimestampsForEachRelTweet():
     @classmethod
     def _get_relevant_tweets(cls, self, user_id):
         """Get relevant tweets with user_id."""
-        df_view = TwitterUserExtract(user_id).df_view
+        df_ref = TwitterUserExtract(user_id).df_ref
 
         cols_to_view, df_to_get = ['id', 'author_id'], None
 
-        if 'created_at' in df_view.columns:
-            df_to_get = df_view[df_view['created_at'].isna()][cols_to_view]
-        else:
-            df_to_get = df_view[cols_to_view]
+        # Only get timestamps with created_at ~ NaT. New tweets
+        if 'created_at' in df_ref.columns:
+            df_to_get = df_ref[df_ref['created_at'].isna()][cols_to_view]
+        else:  # If created_at doesn't exist, get all timestamps
+            df_to_get = df_ref[cols_to_view]
 
         return df_to_get
 
@@ -62,6 +59,8 @@ class GetTimestampsForEachRelTweet():
             help_print_arg(f"GetTimestampsForEachRelTweet: {str(rows)} rows")
 
         for index, row in df.iterrows():
+            if self.verbose:
+                help_print_arg(f"GetTimestampsForEachRelTweet: {row['id']}")
             kwargs['tweet_id'] = row['id']
             kwargs['author_id'] = row['author_id']
             kwargs['params']['tweet.fields'] = payload
