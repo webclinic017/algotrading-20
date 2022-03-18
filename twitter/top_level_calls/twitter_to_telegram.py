@@ -38,13 +38,15 @@ def get_most_recent_messages_per_user(telegram=False, **kwargs):
     verbose = kwargs.get('verbose', False)
     max_results = kwargs.get('max_results', 5)
     offset = kwargs.get('offset', 75)
-
-    if verbose:
-        call_list = []
+    call_list = []
 
     for index, row in df_uref.iterrows():
         start_time = getDate.tz_aware_dt_now(offset=offset, rfcc=True, utc=True)
         end_time = getDate.tz_aware_dt_now(rfcc=True, utc=True)
+
+        if verbose:
+            help_print_arg(f"Start time: {start_time}. End time: {end_time}")
+
 
         params = ({'username': row['username'],
                    'params': {'max_results': max_results,  # smallest val is 5
@@ -171,6 +173,10 @@ def make_tradeable_messages(user_id, tids=None, df=None):
 
 def send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs):
     """Send / test send messages for telegram."""
+    verbose = kwargs.get('verbose')
+    testing = kwargs.get('testing')
+    if testing:
+        print('send_telegram_trade_record_msg_sent: kwargs confirmed testing')
     # All messages sent to Telegram
     user_dir = TwitterHelpers.tf('user_dir', user_id)
     fpath_tgrams = user_dir.joinpath('_telegram_msgs.parquet')
