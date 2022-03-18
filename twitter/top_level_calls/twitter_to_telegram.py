@@ -72,7 +72,9 @@ def get_most_recent_messages_per_user(telegram=False, **kwargs):
                     msg = f"there are {str(gte_df.shape[0])} timestamps needed"
                     help_print_arg(msg, isp)
                 if telegram:  # See if already recorded - default no
-                    check_for_unsent_telegram_messages(user_id=row['id'], **kwargs)
+                    val = check_for_unsent_telegram_messages(user_id=row['id'], **kwargs)
+                    if testing:
+                        call_list.append(val)
 
     if testing:
         return call_list
@@ -96,12 +98,10 @@ def check_for_unsent_telegram_messages(user_id=False, **kwargs):
             help_print_arg(f"df_uref empty for fpath {str(fpath_ref)}")
         return False
 
-    if 'telegram_sent' not in df_reft.columns:
-        df_reft['telegram_sent'] = 0  # 1 if sent
-    # Fill nas if applicable
-    df_reft['telegram_sent'].fillna(0, inplace=True)
-
-    # Only tweets in the last 60 seconds
+    # Add column, fill nas if they exist
+    df_reft['telegram_sent'] = (df_reft.get('telegram_sent', pd.Series(0))
+                                       .fillna(0))
+    # Only tweets from today
     dt, secs = getDate.tz_aware_dt_now(), 75
     if testing:
         if 'time_filter' in kwargs.keys():
@@ -109,8 +109,11 @@ def check_for_unsent_telegram_messages(user_id=False, **kwargs):
         else:
             secs = 60**3
 
-    cond_dt = (df_reft['created_at'].dt.to_pydatetime() >
-               (dt - timedelta(seconds=secs)))
+    # These hardly work due to the lack of consistent datetime schema
+    # Replace with if these are the same day, rather than within 75 seconds
+    cond_dt = (df_reft['created_at'].dt.date == dt.date())
+    # cond_dt = (df_reft['created_at'].dt.to_pydatetime() >
+    #            (dt - timedelta(seconds=secs)))
     # Only messages that haven't been sent
     cond_sent = (df_reft['telegram_sent'] == 0)
 
@@ -122,13 +125,16 @@ def check_for_unsent_telegram_messages(user_id=False, **kwargs):
             help_print_arg(msg, isp=isp)
         return False
     else:
+        if verbose:
+            msg1 = "check_for_unsent_telegram_messages: "
+            help_print_arg(f"{msg1} {str(rows)}")
         # Convert all tweet ids to list
         tids = rows['id'].tolist()
         df_msgs = make_tradeable_messages(user_id, tids)
         if not df_msgs.empty:
             send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs)
 
-        if kwargs.get('testing', None):
+        if testing:
             return {'rows': rows, 'trade_messages': df_msgs}
 
 # %% codecell
@@ -189,8 +195,8 @@ def send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs):
     fpath_reft = TwitterHelpers.tf('tweet_by_id', user_id)
     df_reft = pd.read_parquet(fpath_reft).reset_index(drop=True)
     # If column not in the "trade df", add it and set value = 0
-    if 'telegram_sent' not in df_reft.columns:
-        df_reft['telegram_sent'] = 0
+    df_reft['telegram_sent'] = (df_reft.get('telegram_sent', pd.Series(0))
+                                       .fillna(0))
     # Load all trades
     df_trades = TwitterHelpers.tf('user_trades', user_id, return_df=True)
     if isinstance(df_trades, pd.DataFrame):
@@ -202,8 +208,14 @@ def send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs):
     for index, row in df_msgs.iterrows():
         # twitter_tweet_id = row['id']
         if row['id'] in tgram_msgs:
+            if verbose:
+                msg1 = "send_telegram_trade_record_msg_sent"
+                help_print_arg(f"{msg1}: id {str(row['id'])} already sent")
             continue  # Check if this message has already been sent
         elif row['tcode'] not in tcode_idx and row['exit']:
+            if verbose:
+                msg1 = "send_telegram_trade_record_msg_sent"
+                help_print_arg(f"{msg1}: no entry signal for {str(row['id'])}")
             continue  # Check if this is a sell msg, but buy was missed
 
         result = telegram_push_poll(tid=row['id'], text=row['message'], **kwargs)
