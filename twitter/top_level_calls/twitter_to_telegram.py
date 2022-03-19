@@ -112,8 +112,12 @@ def check_for_unsent_telegram_messages(user_id=False, **kwargs):
     # These hardly work due to the lack of consistent datetime schema
     # Replace with if these are the same day, rather than within 75 seconds
     cond_dt = (df_reft['created_at'].dt.date == dt.date())
+    if testing:
+        test_dt = (dt.date() - timedelta(days=7))
+        cond_dt = (df_reft['created_at'].dt.date >= test_dt)
     # cond_dt = (df_reft['created_at'].dt.to_pydatetime() >
     #            (dt - timedelta(seconds=secs)))
+
     # Only messages that haven't been sent
     cond_sent = (df_reft['telegram_sent'] == 0)
 
@@ -127,10 +131,14 @@ def check_for_unsent_telegram_messages(user_id=False, **kwargs):
     else:
         if verbose:
             msg1 = "check_for_unsent_telegram_messages: "
-            help_print_arg(f"{msg1} {str(rows)}")
+            help_print_arg(f"{msg1} {str(rows.head(1))}")
         # Convert all tweet ids to list
         tids = rows['id'].tolist()
-        df_msgs = make_tradeable_messages(user_id, tids)
+        df_msgs = make_tradeable_messages(user_id, tids, rows, **kwargs)
+
+        if verbose:
+            msg1 = "post_make_tradeable_messages: "
+            help_print_arg(f"{msg1} {str(df_msgs.head(1))}")
         if not df_msgs.empty:
             send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs)
 
@@ -140,13 +148,20 @@ def check_for_unsent_telegram_messages(user_id=False, **kwargs):
 # %% codecell
 
 
-def make_tradeable_messages(user_id, tids=None, df=None):
+def make_tradeable_messages(user_id, tids=None, df=None, **kwargs):
     """Make tradeable messages that can be sent to telegram chat."""
+    verbose = kwargs.get('verbose', False)
     if df is None:
         # Ignore all this for the time being
         df = TwitterUserExtract(user_id).df_view
 
-    cols_to_keep = (['entry', 'exit', 'sym_0', 'strike', 'side', 'tcode',
+    df = TwitterHelpers.parse_tcode(df)
+    cols = df.columns
+    if 'entry' not in cols and 'exit' not in cols:
+        df_view = TwitterUserExtract(user_id).df_view[['id', 'entry', 'exit']]
+        df = df.merge(df_view, on='id', how='left')
+
+    cols_to_keep = (['entry', 'exit', 'symbol', 'strike', 'side', 'tcode',
                      'text', 'id', 'author_id', 'created_at'])
     df_t1 = df[cols_to_keep].copy()
 
@@ -156,16 +171,22 @@ def make_tradeable_messages(user_id, tids=None, df=None):
                     .str.replace('c', 'call', regex=False))
 
     df_t1.loc[s_to_replace.index, 'side'] = s_to_replace
-
+    if verbose:
+        help_print_arg(f"make_tradeable_messages {str(df_t1.head(1))}")
+    # Reduce to trade "entries"
     df_buys = df_t1[df_t1['entry']].copy()
-    df_buys['message'] = (df_buys.apply(lambda row: f"Buy {row['sym_0']} "
-                          f"${str(row['strike'])} {row['side']}: OG Tweet: "
-                                        f"{row['text']}", axis=1))
+    if verbose:
+        help_print_arg(f"make_tradeable_messages df_buys: {str(df_buys.head(1))}")
+    if not df_buys.empty:
+        df_buys['message'] = (df_buys.apply(lambda row: f"Buy {row['symbol']} "
+                               f"${str(row['strike'])} {row['side']}: OG Tweet: "
+                                              f"{row['text']}", axis=1))
 
     df_sells = df_t1[df_t1['exit']].copy()
-    df_sells['message'] = (df_sells.apply(lambda row: f"Sell {row['sym_0']} "
-                           f"${str(row['strike'])} {row['side']}: OG Tweet: "
-                                          f"{row['text']}", axis=1))
+    if not df_sells.empty:
+        df_sells['message'] = (df_sells.apply(lambda row: f"Sell {row['symbol']} "
+                               f"${str(row['strike'])} {row['side']}: OG Tweet: "
+                                              f"{row['text']}", axis=1))
 
     df_all = pd.concat([df_buys, df_sells])
 
@@ -181,6 +202,7 @@ def send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs):
     """Send / test send messages for telegram."""
     verbose = kwargs.get('verbose')
     testing = kwargs.get('testing')
+    help_print_arg(f"send_telegram_trade_record_msg_sent: {str(kwargs)}")
     if testing:
         print('send_telegram_trade_record_msg_sent: kwargs confirmed testing')
     # All messages sent to Telegram
@@ -198,11 +220,10 @@ def send_telegram_trade_record_msg_sent(user_id, df_msgs, **kwargs):
     df_reft['telegram_sent'] = (df_reft.get('telegram_sent', pd.Series(0))
                                        .fillna(0))
     # Load all trades
+    tcode_idx = []
     df_trades = TwitterHelpers.tf('user_trades', user_id, return_df=True)
     if isinstance(df_trades, pd.DataFrame):
         tcode_idx = df_trades.index
-    else:
-        tcode_idx = []
 
     # Iterate through messages to be sent
     for index, row in df_msgs.iterrows():

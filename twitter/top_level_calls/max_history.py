@@ -29,7 +29,8 @@ class TwitterMaxHistory():
         self.proceed = self._tweet_max_hist(self, **kwargs)
         if self.proceed:
             self._load_clean_hist_tweets(self, **kwargs)
-            self._merge_tweet_meta_with_hist(self, **kwargs)
+            # self._merge_tweet_meta_with_hist(self, **kwargs)
+            # ^ Should already be implemented with timestamp class
             self.p2 = self._run_p2_trade_extract(self, **kwargs)
             self.p3 = self._run_p3_trade_df(self, **kwargs)
 
@@ -96,9 +97,10 @@ class TwitterMaxHistory():
         df_hist = (TwitterHelpers.tf('user_tweets', username=self.username,
                                      return_df=True))
 
-        cols_to_drop = (df_hist.index.intersection(df_tref.index)
-                                     .drop('id', errors='ignore'))
-        df_hist = df_hist.loc[:, df_hist.columns.difference(cols_to_drop)]
+        hcols, rcols = df_hist.columns, df_tref.columns
+        cols_to_drop = (hcols.intersection(rcols)
+                             .drop('id', errors='ignore'))
+        df_hist = df_hist.loc[:, hcols.difference(cols_to_drop)]
         df_hist_comb = df_hist.merge(df_tref, on='id', how='left')
 
         f_hist = TwitterHelpers.tf('user_tweets', username=self.username)
