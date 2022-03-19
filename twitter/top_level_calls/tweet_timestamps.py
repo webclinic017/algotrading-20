@@ -8,11 +8,13 @@ import pandas as pd
 try:
     from scripts.dev.twitter.user_tweets.part2_clean_extract import TwitterUserExtract
     from scripts.dev.twitter.twitter_api import TwitterAPI
-    from scripts.dev.multiuse.help_class import help_print_arg
+    from scripts.dev.twitter.methods.helpers import TwitterHelpers
+    from scripts.dev.multiuse.help_class import help_print_arg, write_to_parquet
 except ModuleNotFoundError:
     from twitter.user_tweets.part2_clean_extract import TwitterUserExtract
     from twitter.twitter_api import TwitterAPI
-    from multiuse.help_class import help_print_arg
+    from twitter.methods.helpers import TwitterHelpers
+    from multiuse.help_class import help_print_arg, write_to_parquet
 
 # %% codecell
 
@@ -23,17 +25,25 @@ class GetTimestampsForEachRelTweet():
     def __init__(self, user_id, **kwargs):
         self.testing = kwargs.get('testing', False)
         self.verbose = kwargs.get('verbose', False)
+        # skip_write historical combined dataframe
+        self.skip_write = kwargs.get('skip_write', True)
         # For get_max_history method, pass in dataframe through kwargs
         self.df = kwargs.get('df', self._get_relevant_tweets(self, user_id))
 
         if not self.df.empty and not self.testing:
             self._call_tweets_by_id(self, self.df)
+            self.df_hist_cb = self._merge_tweet_meta_with_hist(self, user_id)
+            print('Historical combined available under: self.df_hist_cb')
+            # Need to run TwitterUserExtract again to get the timestamps
+            TwitterUserExtract(user_id)
 
     @classmethod
     def _get_relevant_tweets(cls, self, user_id):
         """Get relevant tweets with user_id."""
-        df_ref = TwitterUserExtract(user_id).df_ref
+        # df_ref = TwitterUserExtract(user_id).df_ref
 
+        # This below contains the tweets with null created_at
+        df_ref = TwitterUserExtract(user_id).df
         cols_to_view, df_to_get = ['id', 'author_id'], None
 
         # Only get timestamps with created_at ~ NaT. New tweets
@@ -64,7 +74,7 @@ class GetTimestampsForEachRelTweet():
             kwargs['tweet_id'] = row['id']
             kwargs['author_id'] = row['author_id']
             kwargs['params']['tweet.fields'] = payload
-            try:  # If there's an error, break the loop
+            try:  # If there's an error, break the loop - this only get tstamps
                 ta = TwitterAPI(method=method, **kwargs)
                 time.sleep(sleep_num)
             except Exception as e:
@@ -73,9 +83,29 @@ class GetTimestampsForEachRelTweet():
                 help_print_arg(msg)
                 break
 
+    @classmethod
+    def _merge_tweet_meta_with_hist(cls, self, user_id):
+        """Merge meta tweets with normal historical tweets."""
+        df_tref = (TwitterHelpers.tf('tweet_by_id',
+                                     user_id, return_df=True))
+        df_tref['created_at'] = (pd.to_datetime(df_tref['created_at'],
+                                                errors='ignore'))
+        df_hist = (TwitterHelpers.tf('user_tweets', user_id=user_id,
+                                     return_df=True))
 
-# %% codecell
+        hcols, rcols = df_hist.columns, df_tref.columns
+        cols_to_drop = (hcols.intersection(rcols)
+                             .drop('id', errors='ignore'))
+        if self.verbose:
+            msg1 = "GetTimestampsForEachRelTweet._merge_tweet_meta_with_hist"
+            help_print_arg(f"{msg1} {str(cols_to_drop)}")
+        df_tref = df_tref.loc[:, rcols.difference(cols_to_drop)]
+        df_hist_comb = df_hist.merge(df_tref, on='id', how='left')
 
+        f_hist = TwitterHelpers.tf('user_tweets', user_id=user_id)
+        if not self.skip_write:
+            write_to_parquet(df_hist_comb, f_hist)
 
+        return df_hist_comb
 
 # %% codecell

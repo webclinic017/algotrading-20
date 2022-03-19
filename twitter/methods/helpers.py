@@ -7,10 +7,10 @@ import re
 from dateutil.relativedelta import relativedelta, FR
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, write_to_parquet
+    from scripts.dev.multiuse.help_class import baseDir, write_to_parquet, help_print_arg
     from scripts.dev.multiuse.df_helpers import DfHelpers
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, write_to_parquet
+    from multiuse.help_class import baseDir, write_to_parquet, help_print_arg
     from multiuse.df_helpers import DfHelpers
 
 # %% codecell
@@ -93,9 +93,41 @@ class TwitterHelpers():
                             .dt.tz_localize('UTC')
                             .dt.tz_convert('US/Eastern'))
 
-        df['expDate'] = (pd.to_datetime(
-                         df['created_at'].dt.date
-                         + relativedelta(weekday=FR(1))))
+        dt_ca = df['created_at'].dropna()
+        days_less = dt_ca.apply(lambda x: 4 - x.weekday)
+        days_less.name = 'days_less'
+
+        new_exps = (dt_ca.to_frame().join(days_less)
+                         .apply(lambda x: x['created_at'].date()
+                    + pd.Timedelta(days=x['days_less']), axis=1))
+        df['next_exp'] = pd.NaT
+        df.loc[new_exps.index, 'next_exp'] = new_exps
+        df['next_exp'] = pd.to_datetime(df['next_exp']).dt.tz_localize('US/Eastern')
+
+        return df
+
+    @staticmethod
+    def parse_tcode(df, **kwargs):
+        """Parse tcode and return formatted dataframe."""
+        df_tcode = df['tcode'].str.split('_', expand=True)
+        # Define columns used for the 4 parsed tcode cols
+        cols = ['symbol', 'side', 'expDate', 'strike']
+        try:
+            df_tcode.columns = cols
+        except ValueError:
+            help_print_arg(f"parse_tcode: {str(df_tcode.head(1))}")
+
+        try:
+            df_tcode['expDate'] = (pd.to_datetime(df_tcode['expDate'],
+                                   format='%Y%m%d'))
+        except KeyError:
+            msg1 = f"parse_tcode: df cols: {str(df.columns)}"
+            msg2 = f"{msg1} df_tcode cols: {str(df_tcode.columns)}"
+
+            tcodes = df['tcode'].tolist()
+            help_print_arg(f"{msg1} {msg2} tcode: {str(tcodes)}")
+
+        df = df.join(df_tcode).copy()
 
         return df
 

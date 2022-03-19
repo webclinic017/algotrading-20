@@ -3,11 +3,9 @@
 from pathlib import Path
 import warnings
 import inspect
-from datetime import timedelta
 
 import pandas as pd
 import numpy as np
-from dateutil.relativedelta import relativedelta, FR
 
 try:
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
@@ -20,29 +18,31 @@ except ModuleNotFoundError:
     from multiuse.class_methods import ClsHelp
     from multiuse.help_class import baseDir, write_to_parquet, help_print_arg
 
+warnings.simplefilter("ignore")
 # %% codecell
 
 
 class TwitterUserExtract():
     """Clean twitter user tweets."""
     # Part 2 of user tweets
-
+    syms = '(\$[A-Z]+)'
     prem = '( \d+\.?\d?)'
     reg = f'(?={prem}( call|c ))|(?={prem}( put|p ))'
     reg1 = reg + '{1}'
-    entry = '(entry|bought)'
+    entry = '(entry|bought|buy )'
     lotto = '(lotto|lotto-|risk)'
     out = '(up|/%|all out|sell|sold|trim)'
 
     def __init__(self, user_id, **kwargs):
         self._get_class_vars(self, user_id, **kwargs)
         df = self._load_filter_tweet_df(self, user_id, **kwargs)
-        df_nan = self._remove_cols_with_all_nans(self, df, **kwargs)
-        self.df_filt = self._match_put_calls(self, df_nan)
+        self.df_nan = self._remove_cols_with_all_nans(self, df, **kwargs)
+        self.df_filt = self._match_put_calls(self, self.df_nan)
         self.df = self._filter_entry_exit_cols(self, self.df_filt, **kwargs)
         self.df_view = self._add_tcode(self, self.df)
         # Updated dataframe for user reference tweets
         self.df_ref = self._update_tweet_ref_with_tcode(self, user_id, self.df_view)
+        print('TwitterUserExtract: final df: self.df_ref')
 
     @classmethod
     def _get_class_vars(cls, self, user_id, **kwargs):
@@ -54,12 +54,15 @@ class TwitterUserExtract():
         self.skip_write = kwargs.get('skip_write', False)
         self.cp_only = kwargs.get('cp_only', False)
 
+        self.username = kwargs.get('username', False)
+        if self.skip_write:
+            help_print_arg("TwitterUserExtract: self.skip_write active")
+
     @classmethod
     def _load_filter_tweet_df(cls, self, user_id, non_rt=False, **kwargs):
         """Load dataframe of tweets for user by username."""
-        if user_id is None and 'username' in kwargs.keys():
-            username = kwargs['username']
-            user_id = TwitterHelpers.twitter_lookup_id(username)
+        if user_id is None and self.username:
+            user_id = TwitterHelpers.twitter_lookup_id(self.username)
 
         df = TwitterHelpers.tf('user_tweets', user_id, return_df=True)
 
@@ -77,25 +80,19 @@ class TwitterUserExtract():
                                      errors='ignore'))
                 df = pd.merge(df, df_ref, on='id', how='left')
                 df = DfHelpers.combine_duplicate_columns(df)
+                df['author_id'] = user_id
                 df.reset_index(drop=True, inplace=True)
 
         return df
 
     @classmethod
-    def _remove_cols_with_all_nans(cls, self, df, cp_only=False, **kwargs):
+    def _remove_cols_with_all_nans(cls, self, df, **kwargs):
         """Go through and remove any columns that only contains NaNs."""
-        if 'cp_only' in kwargs.keys():
-            cp_only = kwargs['cp_only']
-
         cols = df.columns
         sym_cols = cols[cols.str.contains('sym_')]
         hash_cols = cols[cols.str.contains('hash_')]
         val_cols = cols[cols.str.contains('val_')]
         pos_cols = sym_cols.union(hash_cols).union(val_cols)
-
-        if self.cp_only:
-            cond1 = ((df['call']) | (df['put']))
-            df = df[cond1].reset_index(drop=True).copy()
 
         cols_to_drop = []
         for col in pos_cols:
@@ -146,11 +143,21 @@ class TwitterUserExtract():
         df_filt['watch'] = dtsc('watch', regex=True, case=False)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            df_filt['entry'] = dtsc(self.entry, regex=True, case=False)
+            # df_filt['entry'] = dtsc(self.entry, regex=True, case=False)
             df_filt['lotto'] = dtsc(self.lotto, regex=True, case=False)
             df_filt['exit'] = dtsc(self.out, regex=True, case=False)
             df_filt['uw'] = dtsc('unusual_whales', regex=True, case=False)
 
+        # Create entry column based on conditions
+        match_list = []
+        match_list.append(dtsc(self.entry, case=False))
+        match_list.append(dtsc(self.syms, case=False))
+        match_list.append(dtsc(self.reg, case=False))
+        matchc = pd.concat(match_list, axis=1)
+        # Assign all values to False, then update to true where applicable
+        df_filt['entry'] = False
+        df_filt.loc[matchc[matchc.all(axis=1)].index, 'entry'] = True
+        # Drop rows that don't have at least 2 symbols
         df_f2 = df_filt[['sym_1', 'sym_2']].dropna()
         df_f2['recap'] = True
         # Combine with df_filt

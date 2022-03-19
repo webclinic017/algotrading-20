@@ -1,5 +1,6 @@
 """Twitter user tweets."""
 # %% codecell
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -13,6 +14,7 @@ except ModuleNotFoundError:
     from multiuse.class_methods import ClsHelp
     from twitter.methods.helpers import TwitterHelpers
 
+warnings.simplefilter("ignore")
 # %% codecell
 
 
