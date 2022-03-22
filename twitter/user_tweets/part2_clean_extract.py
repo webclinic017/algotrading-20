@@ -29,7 +29,7 @@ class TwitterUserExtract():
     prem = '( \d+\.?\d?)'
     reg = f'(?={prem}( call|c ))|(?={prem}( put|p ))'
     reg1 = reg + '{1}'
-    entry = '(entry|bought|buy )'
+    entry = '(entry|bought|buy |potential)'
     lotto = '(lotto|lotto-|risk)'
     out = '(up|/%|all out|sell|sold|trim)'
 
@@ -118,7 +118,7 @@ class TwitterUserExtract():
         ex_all = (df_cp.loc[df_cp.index.isin(idx_keep)]
                   ['text'].str.extractall(self.reg)
                   .reset_index(level=1, drop=True))
-        # Remove duplicate row nan s
+        # Remove duplicate row nans
         cols = ['strike', 'side']
         repl_dict = {'side': {'call': 'c', 'put': 'p'}}
         ex1, ex2 = ex_all[[0, 1]], ex_all[[2, 3]]
@@ -150,7 +150,9 @@ class TwitterUserExtract():
 
         # Create entry column based on conditions
         match_list = []
-        match_list.append(dtsc(self.entry, case=False))
+        # The entry keywords are nice but aren't consistent/broad enough
+        # to work effectively. Exclude for now
+        # match_list.append(dtsc(self.entry, case=False))
         match_list.append(dtsc(self.syms, case=False))
         match_list.append(dtsc(self.reg, case=False))
         matchc = pd.concat(match_list, axis=1)
