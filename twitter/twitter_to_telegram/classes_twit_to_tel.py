@@ -161,10 +161,12 @@ class MakeTradeableMessages():
 
             if not udict['rows'].empty:
                 self._mtm_get_mod_df_rows(self, row['id'], **kwargs)
-            else:
+            elif self.verbose:
                 uname = udict['username']
                 msg = "MakeTradeableMessages: skipping loop: self.rows empty"
                 help_print_arg(f"{uname} {msg}")
+            else:
+                pass
 
     @classmethod
     def _mtm_get_mod_df_rows(cls, self, user_id, **kwargs):
