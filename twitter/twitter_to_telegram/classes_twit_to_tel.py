@@ -41,16 +41,23 @@ class TwitterRecentMessagesUser():
         """Initiate loop to pull most recent tweets for each user."""
         for index, row in self.df_uref.iterrows():
             udict = self.user_dict[row['id']]
-            df = self._trmu_get_return_tweets(self, index, row)
-            if isinstance(df, pd.DataFrame):
-                if not df.empty:  # id is user_id, from df_uref
-                    gte_df = GetTimestampsForEachRelTweet(row['id'], testing=False, verbose=self.verbose).df
-                    # Print # of timestamps needed
-                    if self.verbose:
-                        msg = f"There were {str(gte_df.shape[0])} timestamps needed"
-                        help_print_arg(msg, isp=inspect.stack())
-                # Refresh tweet_by_id df if new timestamps were added
-                udict['tweet_by_id'] = pd.read_parquet(udict['fpath_reft'])
+            try:
+                df = self._trmu_get_return_tweets(self, index, row)
+                if isinstance(df, pd.DataFrame):
+                    if not df.empty:  # id is user_id, from df_uref
+                        gte_df = GetTimestampsForEachRelTweet(row['id'], testing=False, verbose=self.verbose).df
+                        # Print # of timestamps needed
+                        if self.verbose:
+                            msg = f"There were {str(gte_df.shape[0])} timestamps needed"
+                            help_print_arg(msg, isp=inspect.stack())
+                    # Refresh tweet_by_id df if new timestamps were added
+                    udict['tweet_by_id'] = pd.read_parquet(udict['fpath_reft'])
+            except Exception as e:
+                uname = udict['username']
+                help_print_arg('')
+                help_print_arg(f'TwitterRecentMessagesUser failed for {uname}')
+                self.elog(self, e)
+                continue
 
     @classmethod
     def _trmu_get_return_tweets(cls, self, index, row):
