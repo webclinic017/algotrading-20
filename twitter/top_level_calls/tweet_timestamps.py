@@ -54,15 +54,16 @@ class GetTimestampsForEachRelTweet():
         else:  # If created_at doesn't exist, get all timestamps
             df_to_get = df_ref[cols_to_view]
 
+        # Get all watchlist tweet ids needing reference ids
         df_atrades = TwitterPossibleTrades().df_atrades.copy()
         cols_watch = ['id_watch', 'created_at_watch', 'author_id']
-        df_watch_to_get = (df_atrades[df_atrades
-                           [df_atrades['author_id'] == str(user_id)]
-                           ['created_at_watch'].isna()]
-                           .loc[:, cols_watch]
-                           .drop_duplicates()
-                           .drop(columns='created_at_watch')
-                           .rename(columns={'id_watch': 'id'}))
+        df_watch_to_get = df_atrades[df_atrades['author_id'] == str(user_id)]
+        if not df_watch_to_get.empty:
+            df_watch_to_get = (df_watch_to_get[
+                               df_watch_to_get['created_at_watch'].isna()]
+                               .loc[:, cols_watch].drop_duplicates()
+                               .drop(columns='created_at_watch')
+                               .rename(columns={'id_watch': 'id'}))
 
         if not df_watch_to_get.empty:
             df_to_get = pd.concat([df_to_get, df_watch_to_get])
