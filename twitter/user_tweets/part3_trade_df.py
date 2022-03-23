@@ -9,16 +9,18 @@ try:
     from scripts.dev.twitter.user_tweets.part2_clean_extract import TwitterUserExtract
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
     from scripts.dev.api import serverAPI
+    from scripts.dev.multiuse.class_methods import ClsHelp
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, getDate, write_to_parquet, help_print_arg
     from twitter.user_tweets.part2_clean_extract import TwitterUserExtract
     from twitter.methods.helpers import TwitterHelpers
     from api import serverAPI
+    from multiuse.class_methods import ClsHelp
 
 # %% codecell
 
 
-class CreateTradeDfV2(TwitterHelpers):
+class CreateTradeDfV2(TwitterHelpers, ClsHelp):
     """Second iteration. Create dataframe of trades to be used for tgram."""
 
     r_syms = r'\$[A-Z]+'
@@ -167,11 +169,18 @@ class CreateTradeDfV2(TwitterHelpers):
         self.df_non_entries = df_non_entries.copy()
         self.df_trades = df_trades.copy()
 
+        if self.verbose:
+            help_print_arg("CreateTradeDfV2: final df under self.df_trades")
+
     @classmethod
     def _write_to_parquet(cls, self, **kwargs):
         """Write to parquet."""
-        kwargs = {'cols_to_drop': ['id']}
-        write_to_parquet(self.df_trades, self.fpath, combine=True, **kwargs)
+        try:
+            # kwargs = {'cols_to_drop': ['id']}
+            # write_to_parquet(self.df_trades, self.fpath, combine=True, **kwargs)
+            write_to_parquet(self.df_trades, self.fpath)
+        except Exception as e:
+            self.elog(self, e)
 
 # %% codecell
 
