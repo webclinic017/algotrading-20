@@ -7,11 +7,13 @@ import pandas as pd
 
 try:
     from scripts.dev.twitter.user_tweets.part2_clean_extract import TwitterUserExtract
+    from scripts.dev.twitter.watchlists.possible_trades import TwitterPossibleTrades
     from scripts.dev.twitter.twitter_api import TwitterAPI
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
     from scripts.dev.multiuse.help_class import help_print_arg, write_to_parquet
 except ModuleNotFoundError:
     from twitter.user_tweets.part2_clean_extract import TwitterUserExtract
+    from twitter.watchlists.possible_trades import TwitterPossibleTrades
     from twitter.twitter_api import TwitterAPI
     from twitter.methods.helpers import TwitterHelpers
     from multiuse.help_class import help_print_arg, write_to_parquet
@@ -51,6 +53,19 @@ class GetTimestampsForEachRelTweet():
             df_to_get = df_ref[df_ref['created_at'].isna()][cols_to_view]
         else:  # If created_at doesn't exist, get all timestamps
             df_to_get = df_ref[cols_to_view]
+
+        df_atrades = TwitterPossibleTrades().df_atrades.copy()
+        cols_watch = ['id_watch', 'created_at_watch', 'author_id']
+        df_watch_to_get = (df_atrades[df_atrades
+                           [df_atrades['author_id'] == str(user_id)]
+                           ['created_at_watch'].isna()]
+                           .loc[:, cols_watch]
+                           .drop_duplicates()
+                           .drop(columns='created_at_watch')
+                           .rename(columns={'id_watch': 'id'}))
+
+        if not df_watch_to_get.empty:
+            df_to_get = pd.concat([df_to_get, df_watch_to_get])
 
         return df_to_get
 
