@@ -27,10 +27,10 @@ class CreateTradeDfV2(TwitterHelpers):
 
     def __init__(self, user_id=None, **kwargs):
         self.fpath = self._get_class_vars(self, user_id, **kwargs)
-        self.df_m = self._get_merge_dataframes(self, user_id, **kwargs)
-        self.df_fc = self._filter_clean(self, self.df_m, **kwargs)
+        self.df_m = self._get_merge_dataframes(self, user_id)
+        self.df_fc = self._ctd_filter_clean(self, self.df_m)
         # Dataframe pre merge
-        self.df_pre = self._df_symbol_call_put(self, self.df_fc, **kwargs)
+        self.df_pre = self._df_symbol_call_put(self, self.df_fc)
         # Df exps
         self.df_wExps = self.add_exp_dates(self.df_pre, tcode=True)
         self._entries_non_combined(self, self.df_wExps, self.df_m)
@@ -71,7 +71,7 @@ class CreateTradeDfV2(TwitterHelpers):
         return df
 
     @classmethod
-    def _filter_clean(cls, self, df, **kwargs):
+    def _ctd_filter_clean(cls, self, df):
         """Filter and clean dataframe to one symbol only, non RTs."""
         one_sym = ((df['text'].str.extractall(f"({self.r_syms})")
                               .stack()
@@ -86,7 +86,7 @@ class CreateTradeDfV2(TwitterHelpers):
         return df
 
     @classmethod
-    def _df_symbol_call_put(cls, self, df, **kwargs):
+    def _df_symbol_call_put(cls, self, df):
         """Extract relevant call/put info."""
         dtsc = df['text'].str.contains
         match_list = []

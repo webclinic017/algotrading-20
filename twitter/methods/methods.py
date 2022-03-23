@@ -62,7 +62,7 @@ class TwitterMethods(ClsHelp):
             df1 = mdict[method][0](rep, method, self.fpath, user_id, **kwargs)
             tue = mdict[method][1](user_id, **kwargs)
             # Create trade ref df
-            kwargs = {'df': tue.df_view}
+            # kwargs = {'df': tue.df_view}
             mdict[method][2](user_id, **kwargs)
             df, df_view = tue.df, tue.df_view
             return df_view
