@@ -10,12 +10,14 @@ try:
     from scripts.dev.twitter.watchlists.possible_trades import TwitterPossibleTrades
     from scripts.dev.twitter.twitter_api import TwitterAPI
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
+    from scripts.dev.multiuse.df_helpers import DfHelpers
     from scripts.dev.multiuse.help_class import help_print_arg, write_to_parquet
 except ModuleNotFoundError:
     from twitter.user_tweets.part2_clean_extract import TwitterUserExtract
     from twitter.watchlists.possible_trades import TwitterPossibleTrades
     from twitter.twitter_api import TwitterAPI
     from twitter.methods.helpers import TwitterHelpers
+    from multiuse.df_helpers import DfHelpers
     from multiuse.help_class import help_print_arg, write_to_parquet
 
 # %% codecell
@@ -28,12 +30,13 @@ class GetTimestampsForEachRelTweet():
         self.testing = kwargs.get('testing', False)
         self.verbose = kwargs.get('verbose', False)
         # skip_write historical combined dataframe
-        self.skip_write = kwargs.get('skip_write', True)
+        self.skip_write = kwargs.get('skip_write', False)
         # For get_max_history method, pass in dataframe through kwargs
         self.df = kwargs.get('df', self._get_relevant_tweets(self, user_id))
 
         if not self.df.empty and not self.testing:
             self._call_tweets_by_id(self, self.df)
+            # Write/update local hist with timestamps
             self.df_hist_cb = self._merge_tweet_meta_with_hist(self, user_id)
             print('Historical combined available under: self.df_hist_cb')
             # Need to run TwitterUserExtract again to get the timestamps
@@ -104,19 +107,24 @@ class GetTimestampsForEachRelTweet():
         """Merge meta tweets with normal historical tweets."""
         df_tref = (TwitterHelpers.tf('tweet_by_id',
                                      user_id, return_df=True))
-        df_tref['created_at'] = (pd.to_datetime(df_tref['created_at'],
-                                                errors='ignore'))
-        df_hist = (TwitterHelpers.tf('user_tweets', user_id=user_id,
-                                     return_df=True))
+        df_tref['created_at'] = (pd.to_datetime(
+                                 df_tref['created_at'],
+                                 errors='ignore'))
+        df_hist = (DfHelpers.combine_duplicate_columns(
+                  (TwitterHelpers.tf(
+                   'user_tweets',
+                   user_id=user_id,
+                   return_df=True))))
 
         hcols, rcols = df_hist.columns, df_tref.columns
         cols_to_drop = (hcols.intersection(rcols)
-                             .drop('id', errors='ignore'))
-        if self.verbose:
-            msg1 = "GetTimestampsForEachRelTweet._merge_tweet_meta_with_hist"
-            help_print_arg(f"{msg1} {str(cols_to_drop)}")
-        df_tref = df_tref.loc[:, rcols.difference(cols_to_drop)]
-        df_hist_comb = df_hist.merge(df_tref, on='id', how='left')
+                             .drop(['id', 'text'], errors='ignore'))
+
+        df_hist = df_hist.loc[:, hcols.difference(cols_to_drop)]
+        df_hist_comb = (df_hist.merge(df_tref.drop(columns='text'),
+                                      on='id', how='left')
+                               .drop_duplicates(subset='id')
+                               .reset_index(drop=True))
 
         f_hist = TwitterHelpers.tf('user_tweets', user_id=user_id)
         if not self.skip_write:
