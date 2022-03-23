@@ -9,14 +9,14 @@ try:
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
     from scripts.dev.twitter.user_tweets.part1_get_process import TwitterUserTweets
     from scripts.dev.twitter.user_tweets.part2_clean_extract import TwitterUserExtract
-    from scripts.dev.twitter.user_tweets.part3_trade_df import CreateTradeRef
+    from scripts.dev.twitter.user_tweets.part3_trade_df import CreateTradeRef, CreateTradeDfV2
 except ModuleNotFoundError:
     from multiuse.help_class import getDate, write_to_parquet
     from multiuse.class_methods import ClsHelp
     from twitter.methods.helpers import TwitterHelpers
     from twitter.user_tweets.part1_get_process import TwitterUserTweets
     from twitter.user_tweets.part2_clean_extract import TwitterUserExtract
-    from twitter.user_tweets.part3_trade_df import CreateTradeRef
+    from twitter.user_tweets.part3_trade_df import CreateTradeRef, CreateTradeDfV2
 
 # %% codecell
 
@@ -47,7 +47,8 @@ class TwitterMethods(ClsHelp):
     def _call_matching_func(cls, self, rep, method, user_id, **kwargs):
         """Call matching function for storing data."""
         mdict = ({'user_ref': self._user_lookup,
-                  'user_tweets': [TwitterUserTweets, TwitterUserExtract, CreateTradeRef],
+                  # 'user_tweets': [TwitterUserTweets, TwitterUserExtract, CreateTradeRef],
+                  'user_tweets': [TwitterUserTweets, TwitterUserExtract, CreateTradeDfV2],
                   'get_max_hist': TwitterUserTweets,
                   'tweet_by_id': self._tweet_by_id
                   })
