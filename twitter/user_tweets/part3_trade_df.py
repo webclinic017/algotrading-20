@@ -34,6 +34,7 @@ class CreateTradeDfV2(TwitterHelpers):
         # Df exps
         self.df_wExps = self.add_exp_dates(self.df_pre, tcode=True)
         self._entries_non_combined(self, self.df_wExps, self.df_m)
+        self._write_to_parquet(self)
 
     @classmethod
     def _get_class_vars(cls, self, user_id, **kwargs):

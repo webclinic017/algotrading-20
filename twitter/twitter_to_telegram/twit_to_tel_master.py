@@ -38,7 +38,7 @@ class TwitterToTelegram(TwitterRecentMessagesUser, TwitterUnsentTelegramMsgs,
         """Unpack class variables from kwargs."""
         th = TwitterHelpers.twitter_fpaths
         # All twitter users reference dataframe
-        self.df_uref = pd.read_parquet(th('user_ref'))
+        self.df_uref = kwargs.get('df_uref', pd.read_parquet(th('user_ref')))
 
         self.telegram = kwargs.get('telegram', False)
         self.testing = kwargs.get('testing', False)
