@@ -154,20 +154,20 @@ class FpathsTest():
 
         cboe_path_dict = ({
             # 'cboe_raw': f"{cboe_base_path}/mmo/_{dt}.parquet",
-            'CBOE nopop_2000': f"{cboe_bpath}/cboe/nopop_2000_{dt}.parquet",
-            'CBOE long_time': f"{cboe_syms_path}/long_{dt}.parquet",
-            'CBOE medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
-            'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet",
+            # 'CBOE nopop_2000': f"{cboe_bpath}/cboe/nopop_2000_{dt}.parquet",
+            # 'CBOE long_time': f"{cboe_syms_path}/long_{dt}.parquet",
+            # 'CBOE medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
+            # 'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet",
             'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/_{mkt_dt}_eod.parquet"
 
         })
 
         cboe_parquet_dict = ({
             # 'cboe_raw': f"{cboe_base_path}/mmo/_{dt}.parquet",
-            'CBOE nopop_2000': f"{cboe_bpath}/cboe/nopop_2000_{dt}.parquet",
-            'CBOE long_time': f"{cboe_syms_path}/long_{dt}.parquet",
-            'CBOE medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
-            'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet",
+            # 'CBOE nopop_2000': f"{cboe_bpath}/cboe/nopop_2000_{dt}.parquet",
+            # 'CBOE long_time': f"{cboe_syms_path}/long_{dt}.parquet",
+            # 'CBOE medium_time': f"{cboe_syms_path}/medium_{dt}.parquet",
+            # 'CBOE short_time': f"{cboe_syms_path}/short_{dt}.parquet",
             'CBOE Intraday': f"{cboe_intra}/{mkt_yr}/_{mkt_dt}_eod.parquet"
 
         })
