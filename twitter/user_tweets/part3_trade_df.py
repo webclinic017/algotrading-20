@@ -8,10 +8,169 @@ try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, write_to_parquet, help_print_arg
     from scripts.dev.twitter.user_tweets.part2_clean_extract import TwitterUserExtract
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
+    from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, getDate, write_to_parquet, help_print_arg
     from twitter.user_tweets.part2_clean_extract import TwitterUserExtract
     from twitter.methods.helpers import TwitterHelpers
+    from api import serverAPI
+
+# %% codecell
+
+
+class CreateTradeDfV2(TwitterHelpers):
+    """Second iteration. Create dataframe of trades to be used for tgram."""
+
+    r_syms = r'\$[A-Z]+'
+    r_cp = r' [0-9]+\.?\d{1}([cp]{1}| call | put)'
+    r_exp = r'(\d{1,2}[/]\d{1,2}[/]?\d{0,4})'
+
+    def __init__(self, user_id=None, **kwargs):
+        self.fpath = self._get_class_vars(self, user_id, **kwargs)
+        self.df_m = self._get_merge_dataframes(self, user_id, **kwargs)
+        self.df_fc = self._filter_clean(self, self.df_m, **kwargs)
+        # Dataframe pre merge
+        self.df_pre = self._df_symbol_call_put(self, self.df_fc, **kwargs)
+        # Df exps
+        self.df_wExps = self.add_exp_dates(self.df_pre, tcode=True)
+        self._entries_non_combined(self, self.df_wExps, self.df_m)
+
+    @classmethod
+    def _get_class_vars(cls, self, user_id, **kwargs):
+        """Get class variables, unpack kwargs."""
+        self.verbose = kwargs.get('verbose', False)
+        self.skip_write = kwargs.get('skip_write', False)
+        self.df = kwargs.get('df', False)
+
+        fpath = self.tf('user_trades', user_id=user_id)
+        if not user_id:
+            fpath = self.tf('all_trade_entries')
+        if self.verbose:
+            help_print_arg(f"CreateTradeDfV2 fpath: {str(fpath)}")
+        return fpath
+
+    @classmethod
+    def _get_merge_dataframes(cls, self, user_id, **kwargs):
+        """Get dataframes and if user_id, subset to user."""
+        df_hist = serverAPI('twitter_hist_all').df
+        df_tweet_ref = serverAPI('twitter_trade_signals').df
+
+        if user_id:
+            df_hist = df_hist[df_hist['author_id'] == user_id]
+            df_tweet_ref = df_tweet_ref[df_tweet_ref['author_id'] == user_id]
+        else:
+            print('CreateTradeDfV2: no user_id passed')
+
+        df_prem = (df_hist[pd.Index(['id', 'text'])
+                   .append(df_hist.columns
+                   .drop(df_tweet_ref.columns, errors='ignore'))])
+        df_tref_prem = df_tweet_ref.drop(columns='text')
+
+        df = df_prem.merge(df_tref_prem, on='id', how='left').copy()
+
+        return df
+
+    @classmethod
+    def _filter_clean(cls, self, df, **kwargs):
+        """Filter and clean dataframe to one symbol only, non RTs."""
+        one_sym = ((df['text'].str.extractall(f"({self.r_syms})")
+                              .stack()
+                              .reset_index([1, 2], drop=True)
+                              .index.value_counts() == 1)
+                   .replace(False, np.NaN).dropna())
+
+        cond_no_rt = (~df['RT'])
+        one_sym_idx = (df.index.isin(one_sym.index))
+        df = df[cond_no_rt & one_sym_idx].copy()
+
+        return df
+
+    @classmethod
+    def _df_symbol_call_put(cls, self, df, **kwargs):
+        """Extract relevant call/put info."""
+        dtsc = df['text'].str.contains
+        match_list = []
+        match_list.append(dtsc(self.r_syms, case=False))
+        match_list.append(dtsc(self.r_cp, case=False))
+        matchc = (pd.concat(match_list, axis=1)
+                    .all(axis=1)
+                    .replace(False, np.NaN)
+                    .dropna())
+
+        s_r_exp = (df.loc[matchc.index]['text']
+                     .str.extractall(self.r_exp)
+                     .reset_index(1, drop=True))
+        # Get text with only one expiration date
+        s_r_exp = (s_r_exp.loc[s_r_exp.index
+                               .drop_duplicates(keep=False)]
+                   .copy())
+
+        df_sym_cp = (df.loc[matchc.index]['text'].str
+                       .extractall(f"({self.r_syms})({self.r_cp})")
+                       .reset_index(1, drop=True)
+                       .rename(columns={0: 'symbol', 1: 'strikeCP'})
+                       .join(s_r_exp))
+
+        df_st_side = (df_sym_cp['strikeCP'].str
+                      .split('(c|p)', expand=True)
+                      .drop(columns=[2])
+                      .rename(columns={0: 'strike', 1: 'side'}))
+
+        df_trade = (df_sym_cp.join(df_st_side)
+                             .drop(columns='strikeCP')
+                             .rename(columns={0: 'expDate'})
+                             .copy())
+        df_trade['symbol'] = (df_trade['symbol'].str
+                              .replace('\$', '', regex=True))
+        # Merge with original df to get created_at column
+        df_trade = df_trade.join(df['created_at']).copy()
+        if 2 in df_trade.columns:
+            df_trade.drop(columns=[2], inplace=True, errors='ignore')
+
+        # Drop nans for the moment since we need server meta data
+        df_trade.dropna(subset='created_at', inplace=True)
+
+        df_pre = df_trade.copy()
+
+        return df_pre
+
+    @classmethod
+    def _entries_non_combined(cls, self, df, df_m):
+        """Df entries. Non entries, and and the two dataframes combined."""
+        df_entries = (df.sort_values(by='created_at')
+                        .drop_duplicates(subset='tcode'))
+        cols_to_keep = ['id', 'conversation_id', 'author_id', 'text']
+        df_entry_full = df_entries.join(df_m[cols_to_keep])
+        df_entry_full['expCode'] = (df_entry_full['symbol'].astype('str') + '_'
+                                    + df_entry_full['expDate']
+                                    .dt.strftime('%Y%m%d'))
+
+        df_nonEntries = (df_m.loc[df_m['created_at'].dropna()
+                         .index.drop(df_entries.index)]
+                         .copy())
+        # From inherited TwitterHelpers function
+        df_nonEntExp = self.add_exp_dates(df_nonEntries)
+
+        cols_non_entries = cols_to_keep + ['expDate', 'created_at', 'sym_0']
+        df_non_entries = (df_nonEntExp[cols_non_entries]
+                          .rename(columns={'sym_0': 'symbol'}))
+        df_non_entries['expCode'] = (df_non_entries['symbol'].astype('str') + '_'
+                                     + df_non_entries['expDate']
+                                     .dt.strftime('%Y%m%d'))
+
+        df_trades = (df_entry_full.merge(
+                     df_non_entries, on=['expCode'],
+                     how='left', suffixes=('', '_ne')))
+
+        self.df_entries = df_entry_full.copy()
+        self.df_non_entries = df_non_entries.copy()
+        self.df_trades = df_trades.copy()
+
+    @classmethod
+    def _write_to_parquet(cls, self, **kwargs):
+        """Write to parquet."""
+        kwargs = {'cols_to_drop': ['id']}
+        write_to_parquet(self.df_trades, self.fpath, combine=True, **kwargs)
 
 # %% codecell
 

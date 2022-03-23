@@ -2,6 +2,7 @@
 # %% codecell
 from pathlib import Path
 import pandas as pd
+import numpy as np
 import re
 
 from dateutil.relativedelta import relativedelta, FR
@@ -130,6 +131,51 @@ class TwitterHelpers():
         df = df.join(df_tcode).copy()
 
         return df
+
+    @staticmethod
+    def add_exp_dates(df, **kwargs):
+        """Add expiration dates."""
+        tcode = kwargs.get('tcode', False)
+
+        df['expDate'] = df.get('expDate', pd.NaT)
+        df['year'] = df['created_at'].dt.year.astype('str')
+
+        # Split this into expDates and non
+        df_expDates = df.loc[df['expDate'].dropna().index].copy()
+        df_noExpDates = df.loc[df.index.drop(df_expDates.index)].copy()
+
+        if not df_expDates.empty:
+            dt_idx = (df_expDates.apply(
+                      lambda x: x.year in x.expDate, axis=1)
+                      .replace(True, np.NaN)
+                      .dropna().index)
+
+            df_sub_add = df_expDates.loc[dt_idx]
+            df_sub_add['expDate'] = df_sub_add['expDate'] + '/' + df_sub_add['year']
+            df_expDates.loc[dt_idx, :] = df_sub_add
+            df_expDates['expDate'] = (pd.to_datetime(
+                                      df_expDates['expDate'],
+                                      exact=False)
+                                      .dt.date)
+
+        df_noExpDates['days_less'] = (df_noExpDates['created_at']
+                                      .apply(lambda x: 4 - x.weekday)
+                                      .rename('days_less'))
+        df_noExpDates['expDate'] = (df_noExpDates.apply(
+                                    lambda row: row['created_at']
+                                    + pd.Timedelta(row['days_less']), axis=1)
+                                    .dt.date)
+
+        df_wExps = (pd.concat([df_expDates, df_noExpDates])
+                      .drop(columns=['year', 'days_less']))
+        df_wExps['expDate'] = pd.to_datetime(df_wExps['expDate'], exact=False)
+        if tcode:
+            df_wExps['tcode'] = (df_wExps['symbol'].astype('str') + '_'
+                                 + df_wExps['side'].astype('str') + '_'
+                                 + df_wExps['expDate'].dt.strftime('%Y%m%d') + '_'
+                                 + df_wExps['strike'].astype('str').str.strip())
+
+        return df_wExps
 
     @staticmethod
     def combine_twitter_all(**kwargs):
