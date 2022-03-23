@@ -51,7 +51,7 @@ class TwitterRecentMessagesUser():
                             msg = f"There were {str(gte_df.shape[0])} timestamps needed"
                             help_print_arg(msg, isp=inspect.stack())
                     # Refresh tweet_by_id df if new timestamps were added
-                    udict['tweet_by_id'] = pd.read_parquet(udict['fpath_reft'])
+                    self.user_dict[row['id']]['tweet_by_id'] = pd.read_parquet(udict['fpath_reft'])
             except Exception as e:
                 uname = udict['username']
                 help_print_arg('')
@@ -118,8 +118,8 @@ class TwitterUnsentTelegramMsgs():
             return False
 
         # Add column, fill nas if they exist
-        df_reft['telegram_sent'] = (df_reft.get('telegram_sent', pd.Series(0))
-                                           .fillna(0))
+        df_reft['telegram_sent'] = df_reft.get('telegram_sent', pd.Series(0))
+        df_reft['telegram_sent'] = df_reft['telegram_sent'].fillna(0)
         # Only tweets from today
         dt, secs = getDate.tz_aware_dt_now(), 75
         # These hardly work due to the lack of consistent datetime schema
@@ -128,7 +128,7 @@ class TwitterUnsentTelegramMsgs():
         if self.testing:
             test_dt = (dt.date() - timedelta(days=7))
             cond_dt = (df_reft['created_at'].dt.date >= test_dt)
-
+            # Not used
             secs = self.time_filter
 
         # Only messages that haven't been sent
@@ -197,6 +197,8 @@ class MakeTradeableMessages():
                         .str.replace('c', 'call', regex=False))
 
         df_t1.loc[s_to_replace.index, 'side'] = s_to_replace
+        df_t1['entry'] = df_t1['entry'].fillna(False)
+        df_t1['exit'] = df_t1['exit'].fillna(False)
         self.user_dict[user_id]['df_msgs_mod1'] = df_t1
 
         df_msgs = self._mtm_df_buy_sell_all(self, df_t1, tids, **kwargs)
@@ -260,6 +262,7 @@ class SendTelegramPollFromTrade():
     def _stpft_get_df_trades(cls, self, user_id, **kwargs):
         """Get df_trades before telegram message send iteration."""
         if self.verbose:
+            help_print_arg('')
             help_print_arg(f"send_telegram_trade_record_msg_sent: {str(kwargs)}")
 
         user_dir = TwitterHelpers.tf('user_dir', user_id)
@@ -285,17 +288,18 @@ class SendTelegramPollFromTrade():
         self.user_dict[user_id]['df_trades_pre'] = df_trades
         self.user_dict[user_id]['tgram_msgs'] = tgram_msgs
         self.user_dict[user_id]['tcode_idx'] = tcode_idx
+        self.user_dict[user_id]['tgram_results'] = []
 
         self._stpft_send_poll_rcd_msg(self, user_id, **kwargs)
 
     @classmethod
     def _stpft_send_poll_rcd_msg(cls, self, user_id, **kwargs):
         """Send poll and record meta data, modify df_trades."""
-        user = self.user_dict[user_id]
-        df_msgs = user['df_msgs']
-        tgram_msgs = user['tgram_msgs']
-        tcode_idx = user['tcode_idx']
-        df_reft = user['tweet_by_id']
+        udict = self.user_dict[user_id]
+        df_msgs = udict['df_msgs']
+        tgram_msgs = udict['tgram_msgs']
+        tcode_idx = udict['tcode_idx']
+        df_reft = udict['tweet_by_id']
 
         # Iterate through messages to be sent
         for index, row in df_msgs.iterrows():
@@ -317,7 +321,7 @@ class SendTelegramPollFromTrade():
                 # Set the "df trade" position to 1, meaning sent
                 df_reft.at[index, 'telegram_sent'] = 1
                 if not self.testing:
-                    write_to_parquet(df_reft, user['fpath_reft'], combine=True)
+                    write_to_parquet(df_reft, udict['fpath_reft'], combine=True)
 
                 # Parse json data, convert to df
                 df_tgrams = pd.json_normalize(result.json()['result'])
@@ -326,10 +330,10 @@ class SendTelegramPollFromTrade():
                 df_tgrams.drop(columns='entities', inplace=True, errors='ignore')
                 df_tgrams['date'] = pd.to_datetime(df_tgrams['date'], unit='s')
                 # Combine with local file, if it exists
-                write_to_parquet(df_tgrams, user['fpath_tgrams'], combine=True)
+                write_to_parquet(df_tgrams, udict['fpath_tgrams'], combine=True)
 
-            if kwargs['testing']:
-                return result
+            if self.testing:
+                udict['tgram_results'].append(result)
 
         if not self.testing:
-            write_to_parquet(df_reft, user['fpath_reft'])
+            write_to_parquet(df_reft, udict['fpath_reft'])
