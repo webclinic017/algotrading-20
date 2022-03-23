@@ -309,7 +309,8 @@ class SendTelegramPollFromTrade():
             if result:
                 # Set the "df trade" position to 1, meaning sent
                 df_reft.at[index, 'telegram_sent'] = 1
-                write_to_parquet(df_reft, user['fpath_reft'], combine=True)
+                if not self.testing:
+                    write_to_parquet(df_reft, user['fpath_reft'], combine=True)
 
                 # Parse json data, convert to df
                 df_tgrams = pd.json_normalize(result.json()['result'])
@@ -323,4 +324,5 @@ class SendTelegramPollFromTrade():
             if kwargs['testing']:
                 return result
 
-        write_to_parquet(df_reft, user['fpath_reft'])
+        if not self.testing:
+            write_to_parquet(df_reft, user['fpath_reft'])
