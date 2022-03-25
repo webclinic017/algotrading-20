@@ -57,6 +57,7 @@ def make_url_dict():
         'iex_intraday_m1': '/data/hist/intraday/minute_1/all',
         'gz_file_sizes': '/data/ref_data/get_sizes',
         'fpath_list': '/data/ref_data/fpath_list',
+        'file_sizes': '/data/ref_data/data_files_sizes',
         'missing_dates_less': '/data/hist/missing_dates/less_than_20',
         'missing_dates_all': '/data/hist/missing_dates/all',
         'missing_dates_null': '/data/hist/missing_dates/null',

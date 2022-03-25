@@ -10,11 +10,11 @@ import numpy as np
 try:
     from scripts.dev.multiuse.help_class import baseDir, write_to_parquet
     from scripts.dev.api import serverAPI
-    from scripts.dev.data_collect.sec_routines import sec_sym_list
+    from scripts.dev.data_collect.sec.sec_routines import sec_sym_list
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, write_to_parquet
     from api import serverAPI
-    from data_collect.sec_routines import sec_sym_list
+    from data_collect.sec.sec_routines import sec_sym_list
 
 # %% codecell
 

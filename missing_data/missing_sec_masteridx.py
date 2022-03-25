@@ -9,11 +9,11 @@ import pandas as pd
 import numpy as np
 
 try:
-    from scripts.dev.data_collect.sec_routines import secMasterIdx
+    from scripts.dev.data_collect.sec.sec_routines import secMasterIdx
     from scripts.dev.multiuse.help_class import getDate, help_print_arg
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
-    from data_collect.sec_routines import secMasterIdx
+    from data_collect.sec.sec_routines import secMasterIdx
     from api import serverAPI
     from multiuse.help_class import getDate, help_print_arg
 
