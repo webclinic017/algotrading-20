@@ -65,7 +65,7 @@ def get_nasdaq_symbol_changes():
                  f'_{dt}.parquet'))
 
     if isinstance(df_sym_change, pd.DataFrame):
-        write_to_parquet(df_sym_change, path)
+        write_to_parquet(df_sym_change, path, combine=True)
     else:
         raise Exception
 

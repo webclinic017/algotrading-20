@@ -10,12 +10,13 @@ except ModuleNotFoundError:
 # %% codecell
 
 class ClsHelp():
+    # sf is the class object that's calling ClsHelp
 
-    def elog(self, sf, e):
+    def elog(self, sf, e, text=None):
         """Error log."""
         name = self.cnames(sf)
         ename = self.ename(e)
-        print(f"{name} {ename}")
+        help_print_arg(f"{name} {ename} {str(text)}")
 
     def isp(self, sf, e):
         name = self.cnames(sf)
