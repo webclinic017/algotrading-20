@@ -11,14 +11,16 @@ import requests
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, help_print_arg, write_to_parquet
+    from scripts.dev.multiuse.class_methods import ClsHelp
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, help_print_arg, write_to_parquet
+    from multiuse.class_methods import ClsHelp
 
 # %% codecell
 #################################
 
 
-class RecordAPICalls():
+class RecordAPICalls(ClsHelp):
     """Record API calls."""
 
     def __init__(self, rep, name, **kwargs):
@@ -72,7 +74,11 @@ class RecordAPICalls():
         if verbose:
             help_print_arg(f"RecordAPICalls: {name}: {str(fpath)}")
 
-        write_to_parquet(df, fpath, combine=True)
+        try:
+            write_to_parquet(df, fpath, combine=True)
+        except Exception as e:
+            self.elog(self, e)
+
 
 
 # %% codecell

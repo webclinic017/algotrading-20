@@ -3,6 +3,7 @@
 
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 
 try:
     from scripts.dev.multiuse.pd_funcs import vc
@@ -94,6 +95,28 @@ class DfHelpers():
             df.drop(columns=col_x.append(col_y), inplace=True)
 
         return df
+
+    @staticmethod
+    def standardize_path_list(path_list):
+        """Standardize data types (categorical) in path_list."""
+        # In preparation for dask
+
+        df0 = path_list[0]
+        cols_cat = df0.dtypes[df0.dtypes == 'category'].index
+        for df_n in tqdm(path_list):
+            cols_cat_test = df_n.dtypes[df_n.dtypes == 'category'].index
+
+            # Get master list of all category columns
+            if not cols_cat.equals(cols_cat_test):
+                cols_cat = cols_cat.append(cols_cat_test).drop_duplicates()
+                continue
+        # Convert columns to categorical for each of the dataframes
+        for n, df_n in tqdm(enumerate(path_list)):
+            path_list[n][cols_cat] = path_list[n][cols_cat].astype('category')
+
+        # Optional testing
+        # dd_all = dd.concat(tc.path_list)
+        return path_list
 
 
 
