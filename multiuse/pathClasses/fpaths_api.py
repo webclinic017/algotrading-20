@@ -63,8 +63,8 @@ class FpathsAPI():
         bdir = Path(baseDir().path, 'ml_data', 'ml_training')
 
         ml_dict = ({
-            'df_catkeys': bdir.joinpath('_df_catkeys.parquet'),
-            'df_processed': bdir.joinpath('_df_processed.parquet')
+            'subset_ref': bdir.joinpath('_df_catkeys.parquet'),
+            'subset': bdir.joinpath('_df_processed.parquet')
         })
 
         pre = 'ml'
