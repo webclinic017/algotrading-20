@@ -33,7 +33,9 @@ class TdmaMaster(TD_API):
     @classmethod
     def _call_batch_method(cls, self, batch_method, **kwargs):
         """Call a batch method for the td api."""
-        kwargs['use_dask'] = True
+        if batch_method == 'combine_options':
+            kwargs['use_dask'] = True
+            kwargs['method'] = 'options_chain'
         self.batch_dict[batch_method](**kwargs)
 
 
