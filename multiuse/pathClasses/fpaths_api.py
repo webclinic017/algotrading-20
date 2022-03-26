@@ -31,10 +31,9 @@ class FpathsAPI():
     @classmethod
     def _ref_data_fpath(cls, self, **kwargs):
         """Get ref data fpaths."""
-        pre = 'ref_data'
         gs_path = Path(baseDir().path, 'errors/gz_sizes.parquet')
         ref_dict = ({
-            'get_sizes': pd.read_parquet(gs_path).to_json(orient='records'),
+            'get_sizes': gs_path,
             'data_files_sizes': Path(baseDir().path, 'logs', 'file_sizes.txt'),
         })
 
