@@ -17,29 +17,33 @@ except ModuleNotFoundError:
 class FpathsAPI():
     """Get and return fpath for each API function."""
 
-    keyword_dict = {}
+    key_dict = {}
 
     def __init__(self, keyword, origin, **kwargs):
-        if origin == 'ref_data':
-            self.fpath = self._ref_data_fpath(self, keyword, **kwargs)
-        elif origin == 'iex_hist':
-            self.fpath = self._iex_hist_fpath(self, keyword, **kwargs)
+        key = f"{origin}_{keyword}"
+
+        self._ref_data_fpath(self, **kwargs)
+        self._iex_hist_fpath(self, **kwargs)
+        self._ml_fpath(self, **kwargs)
+
+        self.fpath = self.key_dict[key]
 
     @classmethod
-    def _ref_data_fpath(cls, self, keyword, **kwargs):
+    def _ref_data_fpath(cls, self, **kwargs):
         """Get ref data fpaths."""
+        pre = 'ref_data'
         gs_path = Path(baseDir().path, 'errors/gz_sizes.parquet')
         ref_dict = ({
             'get_sizes': pd.read_parquet(gs_path).to_json(orient='records'),
             'data_files_sizes': Path(baseDir().path, 'logs', 'file_sizes.txt'),
         })
 
-        self.keyword_dict = self.keyword_dict | ref_dict
-        fpath = ref_dict[keyword]
-        return fpath
+        pre = 'ref_data'
+        ref_dict = {f"{pre}_{k}": v for k, v in ref_dict.items()}
+        self.key_dict = self.key_dict | ref_dict
 
     @classmethod
-    def _iex_hist_fpath(cls, self, keyword, **kwargs):
+    def _iex_hist_fpath(cls, self, **kwargs):
         """Iex historical data fpaths."""
         bdir = Path(baseDir().path, 'StockEOD/combined')
 
@@ -49,6 +53,39 @@ class FpathsAPI():
                        bdir.parent.joinpath(bdir.stem + '_all')))
         })
 
-        self.keyword_dict = self.keyword_dict | iex_hdict
-        fpath = iex_hdict[keyword]
-        return fpath
+        pre = 'iex_hist'
+        iex_hdict = {f"{pre}_{k}": v for k, v in iex_hdict.items()}
+        self.key_dict = self.key_dict | iex_hdict
+
+    @classmethod
+    def _ml_fpath(cls, self, **kwargs):
+        """Fpaths for machine learning files."""
+        bdir = Path(baseDir().path, 'ml_data', 'ml_training')
+
+        ml_dict = ({
+            'df_catkeys': bdir.joinpath('_df_catkeys.parquet'),
+            'df_processed': bdir.joinpath('_df_processed.parquet')
+        })
+
+        pre = 'ml'
+        ml_dict = {f"{pre}_{k}": v for k, v in ml_dict.items()}
+        self.key_dict = self.key_dict | ml_dict
+
+
+
+
+
+
+# %% codecell
+
+
+
+
+
+
+
+
+
+
+
+# %% codecell
