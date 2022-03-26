@@ -110,9 +110,13 @@ class DfHelpers():
             if not cols_cat.equals(cols_cat_test):
                 cols_cat = cols_cat.append(cols_cat_test).drop_duplicates()
                 continue
-        # Convert columns to categorical for each of the dataframes
+
         for n, df_n in tqdm(enumerate(path_list)):
-            path_list[n][cols_cat] = path_list[n][cols_cat].astype('category')
+            cols_cat_test = df_n.dtypes[df_n.dtypes == 'category'].index
+            # Convert columns to categorical for each of the dataframes
+            if not cols_cat.equals(cols_cat_test):
+                path_list[n][cols_cat] = (path_list[n][cols_cat]
+                                          .astype('category'))
 
         # Optional testing
         # dd_all = dd.concat(tc.path_list)
