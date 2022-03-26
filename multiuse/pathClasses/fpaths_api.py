@@ -19,12 +19,10 @@ class FpathsAPI():
 
     keyword_dict = {}
 
-    def __init__(self, keyword, **kwargs):
-        if 'ref_data_' in keyword:
-            keyword = keyword.replace('ref_data_', '')
+    def __init__(self, keyword, origin, **kwargs):
+        if origin == 'ref_data':
             self.fpath = self._ref_data_fpath(self, keyword, **kwargs)
-        elif 'iex_hist_' in keyword:
-            keyword = keyword.replace('iex_hist_', '')
+        elif origin == 'iex_hist':
             self.fpath = self._iex_hist_fpath(self, keyword, **kwargs)
 
     @classmethod
