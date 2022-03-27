@@ -56,12 +56,13 @@ class TdmaCombine(ClsHelp):
     def _options_vars(cls, self):
         """Get fpaths, other for tdma options."""
         self.bdir_dervs = Path(baseDir().path, 'derivatives', 'tdma')
-        self.fdir_series = self.bdir_dervs.joinpath('series', str(self.yr))
+        self.fdir_series = self.bdir_dervs.joinpath('series', 'combined')
 
-        self.fpath_combined = (self.fdir_series.parent
-                               .joinpath('combined', f"_{self.dt}.parquet"))
+        self.fpath_combined = (self.fdir_series.joinpath(str(self.yr),
+                               f"_{self.dt}.parquet"))
         self.fpath_combined_all = (self.fdir_series.parent.joinpath
-                                   ('combined_all', f'_{self.yr}.parquet'))
+                                   ('combined_all', f'_{str(self.yr)}.parquet')
+                                   )
         # Get all paths ending in .parquet for directory
         self.paths = list(self.fdir_series.rglob('*.parquet'))
 
