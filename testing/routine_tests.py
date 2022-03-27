@@ -5,6 +5,7 @@ import os.path
 from datetime import date
 import pandas as pd
 from pathlib import Path
+from collections import defaultdict
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate
@@ -42,6 +43,7 @@ class FpathsTest():
         self.check_nasdaq(self)
         self.check_bz_recs(self)
         self.check_yfinance_options(self)
+        self.check_tdma(self)
 
     @classmethod
     def get_all_syms(cls, self):
@@ -236,3 +238,21 @@ class FpathsTest():
             self.sys_dict['Yoptions combined'] = True
         else:
             self.sys_dict['Yoptions combined'] = False
+
+    @classmethod
+    def check_tdma(cls, self):
+        """Check TD Ameritrade fpaths."""
+        dt = getDate.query('mkt_open')
+        year = str(dt.year)
+        fsuf = f"_{dt}.parquet"
+
+        fdir_options = Path(baseDir().path, 'derivatives', 'tdma', 'series')
+        # Fpath combined options
+        fpath_comb = fdir_options.joinpath('combined', year, fsuf)
+        # Fpath combined all options
+        fpath_call = fdir_options.joinpath('combined_all', f"_{year}.parquet")
+
+        if fpath_comb.exists():
+            self.sys_dict['TDMA Options Combined'] = True
+        else:
+            self.sys_dict['TDMA Options Combined'] = False
