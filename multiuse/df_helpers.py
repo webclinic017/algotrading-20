@@ -120,7 +120,7 @@ class DfHelpers():
 
         for n, df_n in tqdm(enumerate(df_list)):
             cols_cat_test = df_n.dtypes[df_n.dtypes == 'category'].index
-            cols_diff = cols_cat.difference(cols_cat_test)
+            cols_diff = cols_cat.difference(cols_cat_test).tolist()
             # Convert columns to categorical for each of the dataframes
             if not cols_cat.empty and not cols_diff.empty:
                 df_list[n][cols_diff] = (df_list[n][cols_diff]
