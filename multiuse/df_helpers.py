@@ -122,7 +122,7 @@ class DfHelpers():
             cols_cat_test = df_n.dtypes[df_n.dtypes == 'category'].index
             cols_diff = cols_cat.difference(cols_cat_test)
             # Convert columns to categorical for each of the dataframes
-            if not cols_cat.empty:
+            if not cols_cat.empty and not cols_diff.empty:
                 df_list[n][cols_diff] = (df_list[n][cols_diff]
                                          .astype('category'))
 
