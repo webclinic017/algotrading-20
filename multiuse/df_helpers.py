@@ -97,30 +97,39 @@ class DfHelpers():
         return df
 
     @staticmethod
-    def standardize_path_list(path_list):
-        """Standardize data types (categorical) in path_list."""
-        # In preparation for dask
+    def standardize_df_list(df_list, **kwargs):
+        """Standardize data types (categorical) in df_list."""
+        # In preparation for dask, but with a list of dataframes pre concat
+        verbose = kwargs.get('verbose', False)
 
-        df0 = path_list[0]
+        df0 = df_list[0]
         cols_cat = df0.dtypes[df0.dtypes == 'category'].index
-        for df_n in tqdm(path_list):
+        df_list_fine = []
+
+        for n, df_n in tqdm(enumerate(df_list)):
             cols_cat_test = df_n.dtypes[df_n.dtypes == 'category'].index
 
             # Get master list of all category columns
             if not cols_cat.equals(cols_cat_test):
                 cols_cat = cols_cat.append(cols_cat_test).drop_duplicates()
                 continue
+            else:
+                df_list_fine.append(df_n)
+                # Remove dataframe by index position
+                df_list.pop(n)
 
-        for n, df_n in tqdm(enumerate(path_list)):
+        for n, df_n in tqdm(enumerate(df_list)):
             cols_cat_test = df_n.dtypes[df_n.dtypes == 'category'].index
+            cols_diff = cols_cat.difference(cols_cat_test)
             # Convert columns to categorical for each of the dataframes
-            if not cols_cat.equals(cols_cat_test):
-                path_list[n][cols_cat] = (path_list[n][cols_cat]
-                                          .astype('category'))
+            if not cols_cat.empty:
+                df_list[n][cols_diff] = (df_list[n][cols_diff]
+                                         .astype('category'))
 
+        df_list = df_list + df_list_fine
         # Optional testing
         # dd_all = dd.concat(tc.path_list)
-        return path_list
+        return df_list
 
 
 
