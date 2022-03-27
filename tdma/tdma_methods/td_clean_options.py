@@ -108,8 +108,15 @@ class TD_Clean_Write_Options():
         # drop based on it
         td_df['dt_symbol'] = (td_df['quoteTimeInLong'].dt.strftime('%Y%m%d')
                               + '_' + td_df['symbol'])
+
+        # Columns to convert to categorical
+        cols_to_cat = (['putCall', 'symbol', 'description', 'exchangeName',
+                        'bidAskSize', 'optionDeliverablesList',
+                        'expirationType', 'settlementType', 'deliverableNote',
+                        'underlying', 'dt_symbol', 'date'])
+        td_df[cols_to_cat] = td_df[cols_to_cat].astype('category')
         # Write dataframe to local file
-        kwargs = {'cols_to_drop': ['dt_symbol']}
+        kwargs = {'cols_to_drop': ['dt_symbol'], 'cols_to_cat': cols_to_cat}
         write_to_parquet(td_df, self.fpath, combine=True, **kwargs)
 
         return td_df
