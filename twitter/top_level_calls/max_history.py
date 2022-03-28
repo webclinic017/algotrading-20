@@ -44,6 +44,8 @@ class TwitterMaxHistory():
     @classmethod
     def _tweet_max_hist(cls, self, **kwargs):
         """Get twitter max historical tweets for a username."""
+        # Call user_ref to add username, details to main ref file
+        TwitterAPI('user_ref', username=self.username)
         kwargs = ({'username': self.username, 'get_max_hist': True,
                    'params': {'max_results': 100,
                               'exclude': 'retweets,replies'}})
