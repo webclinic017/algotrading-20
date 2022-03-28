@@ -30,8 +30,16 @@ class TwitterMethods(ClsHelp):
             method = self._determine_method(self, rep)
 
         self.get_max_hist = kwargs.get('get_max_hist', False)
-        self.fpath = TwitterHelpers.twitter_fpaths(method, user_id=user_id)
+        self.fpath = self._get_fpath(self, method, user_id)
         self.df = self._call_matching_func(self, rep, method, user_id, **kwargs)
+
+    @classmethod
+    def _get_fpath(cls, self, method, user_id):
+        """Get and return fpath."""
+        if method == 'get_max_hist':
+            return TwitterHelpers.tf('user_tweets', user_id=user_id)
+        else:
+            return TwitterHelpers.tf(method, user_id=user_id)
 
     @classmethod
     def _determine_method(cls, self, rep):

@@ -26,13 +26,14 @@ except ModuleNotFoundError:
 class GetTimestampsForEachRelTweet():
     """Get timestamps for any relevant tweets."""
 
+    testing = False
+
     def __init__(self, user_id, **kwargs):
-        self.testing = kwargs.get('testing', False)
-        self.verbose = kwargs.get('verbose', False)
-        # skip_write historical combined dataframe
-        self.skip_write = kwargs.get('skip_write', False)
+        self._get_class_vars(self, **kwargs)
         # For get_max_history method, pass in dataframe through kwargs
-        self.df = kwargs.get('df', self._get_relevant_tweets(self, user_id))
+        self.df = kwargs.get('df', False)
+        if not isinstance(self.df, pd.DataFrame):
+            self.df = self._get_relevant_tweets(self, user_id)
 
         if not self.df.empty and not self.testing:
             self._call_tweets_by_id(self, self.df)
@@ -42,6 +43,14 @@ class GetTimestampsForEachRelTweet():
             # Need to run TwitterUserExtract again to get the timestamps
             # ^ Double check this
             TwitterUserExtract(user_id)
+
+    @classmethod
+    def _get_class_vars(cls, self, **kwargs):
+        """Unpack kwargs and get class variables."""
+        self.testing = kwargs.get('testing', False)
+        self.verbose = kwargs.get('verbose', False)
+        # skip_write historical combined dataframe
+        self.skip_write = kwargs.get('skip_write', False)
 
     @classmethod
     def _get_relevant_tweets(cls, self, user_id):
