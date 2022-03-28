@@ -26,18 +26,19 @@ class TdmaCombine(ClsHelp):
 
     def __init__(self, method, **kwargs):
         self._get_class_vars(self, **kwargs)
-        if method == 'options_chain':
+        if method in ['options_chain', 'combine_options']:
             self._options_vars(self)
             if self.fix_local_dtypes:
                 self._fix_local_tdma_options(self, **kwargs)
             else:
                 self._combine_options_chain(self, self.paths)
-
-        self.sdict = ({
-            'df_list': self.df_list,
-            'f_combined': self.fpath_combined,
-            'f_combined_all': self.fpath_combined_all,
-            'use_dask': self.use_dask})
+                self.sdict = ({
+                    'df_list': self.df_list,
+                    'f_combined': self.fpath_combined,
+                    'f_combined_all': self.fpath_combined_all,
+                    'use_dask': self.use_dask})
+        else:
+            help_print_arg(f"TdmaCombine: no matching method. You put {str(method)}")
 
         if self.df_list:
             self.df_list_err = (concat_and_combine(method, self.sdict))
@@ -53,17 +54,19 @@ class TdmaCombine(ClsHelp):
         self.dt = kwargs.get('dt', getDate.query('mkt_open'))
         self.yr = self.dt.year
 
+        if self.verbose and self.fix_local_dtypes:
+            help_print_arg(f"TdmaCombine: fix_local_dtypes {str(self.fix_local_dtypes)}")
+
     @classmethod
     def _options_vars(cls, self):
         """Get fpaths, other for tdma options."""
         self.bdir_dervs = Path(baseDir().path, 'derivatives', 'tdma')
-        self.fdir_series = self.bdir_dervs.joinpath('series', 'combined')
+        self.fdir_series = self.bdir_dervs.joinpath('series')
 
-        self.fpath_combined = (self.fdir_series.joinpath(str(self.yr),
-                               f"_{self.dt}.parquet"))
-        self.fpath_combined_all = (self.fdir_series.parent.joinpath
-                                   ('combined_all', f'_{str(self.yr)}.parquet')
-                                   )
+        self.fpath_combined = (self.fdir_series.joinpath('combined',
+                               str(self.yr), f"_{self.dt}.parquet"))
+        self.fpath_combined_all = (self.fdir_series.joinpath(
+                                   'combined_all', f'_{str(self.yr)}.parquet'))
         # Get all paths ending in .parquet for directory
         self.paths = list(self.fdir_series.rglob('*.parquet'))
         self.df_list = []
@@ -72,6 +75,9 @@ class TdmaCombine(ClsHelp):
             help_print_arg(f"TdmaCombine: path_dir = {str(self.fdir_series)}")
             msg1 = f"TdmaCombine {str(self.fpath_combined)}"
             help_print_arg(f"{msg1} {str(self.fpath_combined_all)}")
+
+            if not self.paths:
+                help_print_arg("TdmaCombine paths empty")
 
     @classmethod
     def _fix_local_tdma_options(cls, self, **kwargs):
@@ -159,22 +165,33 @@ def concat_and_combine(method, sdict):
                     if len(df_list_err) < 50:
                         continue
                     else:
+                        help_print_arg(f"concat_and_combine: reached > 50 errors")
                         return df_list_err
 
         if 'date' not in dd_all.columns:
             dd_all['date'] = dd_all['quoteTimeInLong'].dt.date
-        dates = dd_all['date'].unique().compute().tolist()
+        try:
+            dates = dd_all['date'].unique().compute().tolist()
+        except TypeError as te:
+            help_print_arg("TypeError: dates = dd_all['date'].unique().compute().tolist()")
+            help_print_arg("concat_and_combine: could not compute dd_all")
+            return dd_all
     else:
         df_all = pd.concat(df_list)
         if 'date' not in df_all.columns:
             df_all['date'] = df_all['quoteTimeInLong'].dt.date
-        dates = df_all['date'].unique()
+        dates = df_all['date'].unique().tolist()
 
     # Iterate through unique dates, if date list exists
-    if dates.size >= 1:  # np.array format
+    if len(dates) >= 1:  # list rather than np.array
         for dt in tqdm(dates):
             if use_dask:
-                write_each_date(dt, dd_all, f_combined, use_dask)
+                try:
+                    write_each_date(dt, dd_all, f_combined, use_dask)
+                except Exception as e:
+                    help_print_arg(f"Error: write_each_date: {type(e)} {str(e)}")
+                    help_print_arg(f"date: {str(dt)}. Returning dd_all")
+                    return dd_all
             else:
                 write_each_date(dt, df_all, f_combined, use_dask)
     else:  # Print to console that the date list doesn't exist
@@ -200,6 +217,8 @@ def write_each_date(dt, df_all, f_combined, use_dask):
 
     if use_dask:
         df = df.compute()
+        # There may be an option to specify the number of categories
+        # categories={'name':80000}
 
     if not df.empty:
         write_to_parquet(df, f_date)
