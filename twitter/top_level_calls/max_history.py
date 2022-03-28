@@ -10,6 +10,7 @@ try:
     from scripts.dev.twitter.user_tweets.part3_trade_df import CreateTradeDfV2
     from scripts.dev.twitter.top_level_calls.tweet_timestamps import GetTimestampsForEachRelTweet
     from scripts.dev.multiuse.help_class import help_print_arg, write_to_parquet
+    from scripts.dev.multiuse.df_helpers import DfHelpers
 except ModuleNotFoundError:
     from twitter.twitter_api import TwitterAPI
     from twitter.methods.helpers import TwitterHelpers
@@ -17,6 +18,7 @@ except ModuleNotFoundError:
     from twitter.user_tweets.part3_trade_df import CreateTradeDfV2
     from twitter.top_level_calls.tweet_timestamps import GetTimestampsForEachRelTweet
     from multiuse.help_class import help_print_arg, write_to_parquet
+    from multiuse.df_helpers import DfHelpers
 
 # %% codecell
 
@@ -94,19 +96,28 @@ class TwitterMaxHistory():
         """Merge meta tweets with normal historical tweets."""
         df_tref = (TwitterHelpers.tf('tweet_by_id',
                                      self.user_id, return_df=True))
-        df_tref['created_at'] = (pd.to_datetime(df_tref['created_at'],
-                                                errors='ignore'))
-        df_hist = (TwitterHelpers.tf('user_tweets', username=self.username,
-                                     return_df=True))
+        df_tref['created_at'] = (pd.to_datetime(
+                                 df_tref['created_at'],
+                                 errors='ignore'))
+        df_hist = (DfHelpers.combine_duplicate_columns(
+                  (TwitterHelpers.tf(
+                   'user_tweets',
+                   user_id=self.user_id,
+                   return_df=True))))
 
         hcols, rcols = df_hist.columns, df_tref.columns
         cols_to_drop = (hcols.intersection(rcols)
-                             .drop('id', errors='ignore'))
-        df_hist = df_hist.loc[:, hcols.difference(cols_to_drop)]
-        df_hist_comb = df_hist.merge(df_tref, on='id', how='left')
+                             .drop(['id', 'text'], errors='ignore'))
 
-        f_hist = TwitterHelpers.tf('user_tweets', username=self.username)
-        write_to_parquet(df_hist_comb, f_hist)
+        df_hist = df_hist.loc[:, hcols.difference(cols_to_drop)]
+        df_hist_comb = (df_hist.merge(df_tref.drop(columns='text'),
+                                      on='id', how='left')
+                               .drop_duplicates(subset='id')
+                               .reset_index(drop=True))
+
+        f_hist = TwitterHelpers.tf('user_tweets', user_id=self.user_id)
+        if not self.skip_write:
+            write_to_parquet(df_hist_comb, f_hist)
 
     @classmethod
     def _run_p2_trade_extract(cls, self, **kwargs):
