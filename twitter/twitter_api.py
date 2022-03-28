@@ -45,28 +45,6 @@ class TwitterAPI():
         self.get = self._call_twitter_api(self, url, params)
         self.df = self._call_twitter_methods(self, self.get, method, user_id, **kwargs)
 
-    @staticmethod
-    def tweet_max_hist(username):
-        """Get twitter max historical tweets for a username."""
-        kwargs = ({'username': username, 'get_max_hist': True,
-                   'params': {'max_results': 100,
-                              'exclude': 'retweets,replies'}})
-        # First call gets the first round of results - includes pag token
-        call = TwitterAPI(method='user_tweets', **kwargs)
-        next_token = call.get.json()['meta']['next_token']
-
-        for n in range(31):
-            try:
-                kwargs['params']['pagination_token'] = next_token
-                call = TwitterAPI(method='user_tweets', **kwargs)
-                next_token = call.get.json()['meta']['next_token']
-            except Exception as e:
-                msg1 = "TwitterAPI.tweet_max_hist: "
-                msg2 = f"encountered error {str(e)} {type(e)}. Breaking"
-                help_print_arg(f"{msg1}{msg2}")
-                help_print_arg(f"{str(call.get.json()['meta'])}")
-                break
-
     @classmethod
     def _get_class_vars(cls, self, **kwargs):
         """Get class variables."""
@@ -74,7 +52,6 @@ class TwitterAPI():
         self.burl = "https://api.twitter.com"
 
         self.username = kwargs.get('username', None)
-
         self.verbose = kwargs.get('verbose', False)
         if self.verbose:
             help_print_arg(kwargs)
@@ -97,6 +74,11 @@ class TwitterAPI():
 
         elif 'author_id' in kwargs.keys():
             return kwargs['author_id']
+        elif 'user_id' in kwargs.keys():
+            msg1 = "TwitterAPI - user_id can't be a kwarg. Either username"
+            msg2 = f" or key 'author_id' - you passed {str(kwargs['user_id'])}"
+            help_print_arg(f"{msg1} {msg2}")
+            return kwargs['user_id']
 
     @classmethod
     def _check_for_params(cls, self, method, **kwargs):
@@ -125,8 +107,8 @@ class TwitterAPI():
             msg1 = "TwitterAPI no methods matched for _construct_url. "
             msg2 = f"method: {str(method)}"
             print(f"{msg1}{msg2}")
-        else:
-            return url
+        # Return URL for self._call_twitter_api
+        return url
 
     @classmethod
     def _call_twitter_api(cls, self, url, params):

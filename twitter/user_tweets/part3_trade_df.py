@@ -26,6 +26,7 @@ class CreateTradeDfV2(TwitterHelpers, ClsHelp):
     r_syms = r'\$[A-Z]+'
     r_cp = r' [0-9]+\.?\d{1}([cp]{1}| call | put)'
     r_exp = r'(\d{1,2}[/]\d{1,2}[/]?\d{0,4})'
+    df_pre, df_wExps, df_trades = [pd.DataFrame() for x in range(3)]
 
     def __init__(self, user_id=None, **kwargs):
         self.fpath = self._get_class_vars(self, user_id, **kwargs)
@@ -33,10 +34,13 @@ class CreateTradeDfV2(TwitterHelpers, ClsHelp):
         self.df_fc = self._ctd_filter_clean(self, self.df_m)
         # Dataframe pre merge
         self.df_pre = self._df_symbol_call_put(self, self.df_fc)
-        # Df exps
-        self.df_wExps = self.add_exp_dates(self.df_pre, tcode=True)
-        self._entries_non_combined(self, self.df_wExps, self.df_m)
-        self._write_to_parquet(self)
+        if not self.df_pre.empty:
+            # Df exps
+            self.df_wExps = self.add_exp_dates(self.df_pre, tcode=True)
+        if not self.df_wExps.empty:
+            self._entries_non_combined(self, self.df_wExps, self.df_m)
+        if not self.df_trades.empty:
+            self._write_to_parquet(self)
 
     @classmethod
     def _get_class_vars(cls, self, user_id, **kwargs):
@@ -63,6 +67,9 @@ class CreateTradeDfV2(TwitterHelpers, ClsHelp):
             df_tweet_ref = df_tweet_ref[df_tweet_ref['author_id'] == user_id]
         else:
             print('CreateTradeDfV2: no user_id passed')
+        # Check if server has any data for user
+        if df_hist.empty and df_tweet_ref.empty:
+            help_print_arg(f"No server data for user_id {str(user_id)}")
 
         df_prem = (df_hist[pd.Index(['id', 'text'])
                    .append(df_hist.columns
@@ -114,10 +121,14 @@ class CreateTradeDfV2(TwitterHelpers, ClsHelp):
                        .rename(columns={0: 'symbol', 1: 'strikeCP'})
                        .join(s_r_exp))
 
+        if self.verbose:
+            help_print_arg(f"CreateTradeDfV2: {str(df_sym_cp.head(1))}")
         df_st_side = (df_sym_cp['strikeCP'].str
                       .split('(c|p)', expand=True)
-                      .drop(columns=[2])
+                      .drop(columns=[2], errors='ignore')
                       .rename(columns={0: 'strike', 1: 'side'}))
+        if self.verbose:
+            help_print_arg(f"CreateTradeDfV2: {str(df_st_side.head(1))}")
 
         df_trade = (df_sym_cp.join(df_st_side)
                              .drop(columns='strikeCP')

@@ -7,14 +7,14 @@ try:
     from scripts.dev.twitter.twitter_api import TwitterAPI
     from scripts.dev.twitter.methods.helpers import TwitterHelpers
     from scripts.dev.twitter.user_tweets.part2_clean_extract import TwitterUserExtract
-    from scripts.dev.twitter.user_tweets.part3_trade_df import CreateTradeRef
+    from scripts.dev.twitter.user_tweets.part3_trade_df import CreateTradeDfV2
     from scripts.dev.twitter.top_level_calls.tweet_timestamps import GetTimestampsForEachRelTweet
     from scripts.dev.multiuse.help_class import help_print_arg, write_to_parquet
 except ModuleNotFoundError:
     from twitter.twitter_api import TwitterAPI
     from twitter.methods.helpers import TwitterHelpers
     from twitter.user_tweets.part2_clean_extract import TwitterUserExtract
-    from twitter.user_tweets.part3_trade_df import CreateTradeRef
+    from twitter.user_tweets.part3_trade_df import CreateTradeDfV2
     from twitter.top_level_calls.tweet_timestamps import GetTimestampsForEachRelTweet
     from multiuse.help_class import help_print_arg, write_to_parquet
 
@@ -114,4 +114,4 @@ class TwitterMaxHistory():
     @classmethod
     def _run_p3_trade_df(cls, self, **kwargs):
         """Part 3 - create trade ref class."""
-        return CreateTradeRef(self.user_id, **kwargs)
+        return CreateTradeDfV2(self.user_id, **kwargs)
