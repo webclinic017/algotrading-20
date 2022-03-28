@@ -30,7 +30,8 @@ class TdmaCombine(ClsHelp):
             self._options_vars(self)
             if self.fix_local_dtypes:
                 self._fix_local_tdma_options(self, **kwargs)
-            self._combine_options_chain(self, self.paths)
+            else:
+                self._combine_options_chain(self, self.paths)
 
         self.sdict = ({
             'df_list': self.df_list,
@@ -65,6 +66,7 @@ class TdmaCombine(ClsHelp):
                                    )
         # Get all paths ending in .parquet for directory
         self.paths = list(self.fdir_series.rglob('*.parquet'))
+        self.df_list = []
 
         if self.verbose:
             help_print_arg(f"TdmaCombine: path_dir = {str(self.fdir_series)}")
