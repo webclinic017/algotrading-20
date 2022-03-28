@@ -48,7 +48,7 @@ class TwitterMaxHistory():
                    'params': {'max_results': 100,
                               'exclude': 'retweets,replies'}})
         # First call gets the first round of results - includes pag token
-        call = TwitterAPI(method='user_tweets', **kwargs)
+        call = TwitterAPI(method='get_max_hist', **kwargs)
         next_token = call.get.json()['meta']['next_token']
 
         for n in range(31):

@@ -109,19 +109,24 @@ class TwitterAPI():
         """Construct url to use for the get request."""
         udict = ({'user_ref': f"{self.burl}/2/users/by/username",
                   'user_tweets': f"{self.burl}/2/users/{str(user_id)}/tweets",
+                  'get_max_hist': f"{self.burl}/2/users/{str(user_id)}/tweets",
                   'tweet_by_id': f"{self.burl}/2/tweets"})
 
+        url = None
         if method == 'user_ref' and 'username' in kwargs.keys():
             username = kwargs['username']
-            return f"{udict[method]}/{username}"
-        elif method == 'user_tweets' and user_id:
-            return udict[method]
+            url = f"{udict[method]}/{username}"
         elif method == 'tweet_by_id' and 'tweet_id' in kwargs.keys():
-            return f"{udict[method]}/{str(kwargs['tweet_id'])}"
+            url = f"{udict[method]}/{str(kwargs['tweet_id'])}"
         else:
+            url = udict.get(method, False)
+
+        if not url:
             msg1 = "TwitterAPI no methods matched for _construct_url. "
             msg2 = f"method: {str(method)}"
             print(f"{msg1}{msg2}")
+        else:
+            return url
 
     @classmethod
     def _call_twitter_api(cls, self, url, params):
