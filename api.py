@@ -85,6 +85,7 @@ def make_url_dict():
         'st_trend_all': '/stocktwits/trending/all',
         'st_trend_today': '/stocktwits/trending/today/explore',
         'st_watch': '/stocktwits/watchlist',
+        'reddit_data': '/data/reddit', # /{subreddit}/{method}
         'twitter_get_max': '/redo/twitter/max_hist',
         'twitter_errors': '/data/twitter/errors',
         'twitter_hist_all': '/data/twitter/tweets/all',
@@ -141,7 +142,7 @@ class serverAPI():
 
             self.url_dict[which] = f"/redo/functions/{val}"
 
-        elif which in ('stock_data', 'yoptions_stock') and 'symbol' in kwargs.keys():
+        elif which in ('stock_data', 'yoptions_stock') and kwargs.get('symbol', False):
             symbol = kwargs['symbol']
             self.url_dict[which] = f"{self.url_dict[which]}/{symbol}"
 
@@ -151,6 +152,15 @@ class serverAPI():
                 pass
             else:
                 self.url_dict[which] = f"{self.url_dict[which]}/{username}"
+
+
+        # Apply default params for reddit api call
+        elif which == 'reddit_data':
+            subreddit = kwargs.get('subreddit', 'wallstreetbets')
+            method = kwargs.get('method', 'sub_comments')
+
+            if self.url_dict[which] == '/data/reddit':
+                self.url_dict[which] = f"{self.url_dict[which]}/{subreddit}/{method}"
 
     @classmethod
     def get_data(cls, self, which):

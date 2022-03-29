@@ -30,7 +30,7 @@ from multiuse.api_helpers import get_sock5_nord_proxies
 
 from data_collect.yfinance_funcs import clean_yfinance_options, get_cboe_ref, return_yoptions_temp_all, yoptions_combine_last
 from data_collect.iex_class import urlData, get_options_symbols
-from data_collect.sec_rss import SecRssFeed, AnalyzeSecRss
+from data_collect.sec.sec_rss import SecRssFeed, AnalyzeSecRss
 from data_collect.reference_data import IntSyms
 
 from workbooks_yfinance.merge_yoptions_hist import analyze_iex_ytd, get_clean_yoptions, get_clean_all_st_data
@@ -48,7 +48,7 @@ importlib.reload(sys.modules['api'])
 
 importlib.reload(sys.modules['master_funcs.master_iex_stats'])
 
-importlib.reload(sys.modules['data_collect.sec_rss'])
+importlib.reload(sys.modules['data_collect.sec.sec_rss'])
 
 
 # %% codecell

@@ -28,15 +28,15 @@ from bs4 import BeautifulSoup
 import bs4.element
 from charset_normalizer import CharsetNormalizerMatches as CnM
 
-from data_collect.sec_routines import secInsiderTrans, secMasterIdx
-importlib.reload(sys.modules['data_collect.sec_routines'])
+from data_collect.sec.sec_routines import secInsiderTrans, secMasterIdx
+importlib.reload(sys.modules['data_collect.sec.sec_routines'])
 
 
 importlib.reload(sys.modules['api'])
 
-from data_collect.sec_rss import SecRssFeed
-importlib.reload(sys.modules['data_collect.sec_rss'])
-from data_collect.sec_rss import SecRssFeed
+from data_collect.sec.sec_rss import SecRssFeed
+importlib.reload(sys.modules['data_collect.sec.sec_rss'])
+from data_collect.sec.sec_rss import SecRssFeed
 
 # Display max 50 columns
 pd.set_option('display.max_columns', None)

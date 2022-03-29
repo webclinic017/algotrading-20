@@ -28,19 +28,15 @@ from yahoofinancials import YahooFinancials
 try:
     from scripts.dev.data_collect.options import DerivativeExpirations, DerivativesHelper
     from scripts.dev.multiuse.help_class import baseDir, dataTypes, getDate, write_to_parquet
-    from scripts.dev.file_storage import fileOps, blockPrinting
 
 except ModuleNotFoundError:
     from data_collect.options import DerivativesHelper, DerivativesStats
-    from file_storage import fileOps, blockPrinting
     from multiuse.help_class import baseDir, dataTypes, getDate, write_to_parquet
 
     importlib.reload(sys.modules['data_collect.options'])
-    importlib.reload(sys.modules['file_storage'])
     importlib.reload(sys.modules['multiuse.help_class'])
 
     from data_collect.options import DerivativesHelper, DerivativesStats
-    from file_storage import fileOps, blockPrinting
     from multiuse.help_class import baseDir, dataTypes, getDate
 
 # %% codecell

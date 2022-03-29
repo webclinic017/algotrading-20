@@ -4,18 +4,20 @@ from pathlib import Path
 from time import sleep
 import importlib
 import sys
+from datetime import date
+
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
 
 try:
-    from scripts.dev.data_collect.sec_routines import secMasterIdx
+    from scripts.dev.data_collect.sec.sec_routines import secMasterIdx
     from scripts.dev.missing_data.missing_sec_masteridx import get_missing_sec_master_idx
     from scripts.dev.missing_data.missing_dates import get_missing_dates
     from scripts.dev.multiuse.help_class import getDate, baseDir, write_to_parquet
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
-    from data_collect.sec_routines import secMasterIdx
+    from data_collect.sec.sec_routines import secMasterIdx
     from missing_data.missing_sec_masteridx import get_missing_sec_master_idx
     from missing_data.missing_dates import get_missing_dates
     from multiuse.help_class import getDate, baseDir, write_to_parquet
@@ -28,15 +30,15 @@ serverAPI('redo', val='combine_all_sec_masters')
 # %% codecell
 
 
+
+
 # %% codecell
 
 
-sma_api = serverAPI('sec_master_all')
-sma_df = sma_api.df.copy()
-sma_df['date'] = pd.to_datetime(sma_df['date'], unit='ms')
+# %% codecell
 
-sma_df.shape
-sma_df.head()
+
+
 # %% codecell
 
 

@@ -14,12 +14,12 @@ from bs4 import BeautifulSoup
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, getDate, write_to_parquet, help_print_arg
-    from scripts.dev.multiuse.path_helpers import path_or_yr_direct
+    from scripts.dev.multiuse.pathClasses.construct_paths import PathConstructs
     from scripts.dev.data_collect.iex_class import urlData
     from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, getDate, write_to_parquet, help_print_arg
-    from multiuse.path_helpers import path_or_yr_direct
+    from multiuse.pathClasses.construct_paths import PathConstructs
     from data_collect.iex_class import urlData
     from api import serverAPI
 
