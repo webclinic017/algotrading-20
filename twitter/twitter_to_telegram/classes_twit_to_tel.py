@@ -57,7 +57,7 @@ class TwitterRecentMessagesUser():
                 if self.verbose:
                     help_print_arg('')
                     help_print_arg(f'TwitterRecentMessagesUser failed for {uname}')
-                self.elog(self, e)
+                self.elog(self, e, suppress=self.verbose)
                 continue
 
     @classmethod
@@ -114,7 +114,7 @@ class TwitterUnsentTelegramMsgs():
                 if self.verbose:
                     help_print_arg('')
                     help_print_arg(f'TwitterUnsentTelegramMsgs failed for {uname}')
-                self.elog(self, e)
+                self.elog(self, e, suppress=self.verbose)
                 continue
 
     @classmethod
@@ -191,7 +191,7 @@ class MakeTradeableMessages():
                 if self.verbose:
                     help_print_arg('')
                     help_print_arg(f'MakeTradeableMessages failed for {uname}')
-                self.elog(self, e)
+                self.elog(self, e, suppress=self.verbose)
                 continue
 
     @classmethod
@@ -283,7 +283,7 @@ class SendTelegramPollFromTrade():
                 if self.verbose:
                     help_print_arg('')
                     help_print_arg(f'SendTelegramPollFromTrade failed for {uname}')
-                self.elog(self, e)
+                self.elog(self, e, suppress=self.verbose)
                 continue
 
     @classmethod
