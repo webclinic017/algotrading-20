@@ -27,20 +27,16 @@ import datetime
 from datetime import date, timedelta, time
 import pytz
 
-# from options import DerivativeExpirations
 from all_tickers import read_symbols
 
 # Derivatives data
 from options import DerivativesHelper, DerivativesStats
-from file_storage import fileOps, blockPrinting
 from economic_data import read_tdata
 
 importlib.reload(sys.modules['options'])
-importlib.reload(sys.modules['file_storage'])
 importlib.reload(sys.modules['economic_data'])
 
 from options import DerivativesHelper, DerivativesStats
-from file_storage import fileOps, blockPrinting
 from economic_data import read_tdata
 
 # Display max 50 columns
@@ -472,19 +468,6 @@ DerivativesHelper.which_fname_date()
 # %% codecell
 ##############################################################
 
-# Unusual volume for all third fridays
-
-# third_fridays_20y = DerivativesHelper.get_all_third_fridays()
-third_fridays_20y
-
-# Only get option data for the monthly expirations to calulate mean volume
-monthlies = options_subset[options_subset['expirationDate'].isin(third_fridays_20y)].groupby(by=['expirationDate', 'side']).sum()
-# Calculate mean volume for monthlies
-monthlies['meanVolume'] = monthlies['volume'].mean()
-
-monthlies.shape
-
-monthlies
 
 
 # %% codecell
@@ -498,46 +481,6 @@ monthlies
 # %% codecell
 #############################################################################
 
-type(options_subset)
-type(p_c_group)
-
-p_c_group.columns
-
-
-p_c_group.head(50)
-
-
-options_subset.head(10)
-
-
-
-options_subset[(options_subset['strikePrice'].isin([26.0]))]
-
-options_subset['p/c'].value_counts()
-
-
-p_c_group
-
-
-test_der_data = json.load(test_der_data)
-json.load(test_der_data)
-# %% codecell
-##########################################################
-
-test_path = '/Users/unknown1/Algo/data/derivatives/EOD_prices/f/_FEYE_2021-02-11'
-
-with open(test_path) as json_file:
-    # test_der_data = json.load(json_file)
-
-for exp in test_der_data:
-    print(test_der_data[str(exp)])
-    print(len(test_der_data[str(exp)]))
-# json.loads(Path(test_path).read_bytes().decode("utf-8")[1:-1])
-pd.json_normalize(test_der_data, record_prefix='2021').T
-
-
-tech_stocks['primaryExchange'].value_counts()
-tech_stocks.head(10)
 
 # %% codecell
 ##########################################################

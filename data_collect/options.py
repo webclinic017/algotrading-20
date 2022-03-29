@@ -17,10 +17,8 @@ import glob
 
 try:
     from scripts.dev.multiuse.help_class import baseDir, write_to_parquet
-    from scripts.dev.file_storage import fileOps
 except ModuleNotFoundError:
     from multiuse.help_class import baseDir, write_to_parquet
-    from file_storage import fileOps
 
 # %% codecell
 ##########################################################

@@ -10,9 +10,9 @@ from io import BytesIO
 import importlib
 import sys
 
-from data_collect.sec_routines import form_4, secCompanyIdx, secMasterIdx
-importlib.reload(sys.modules['data_collect.sec_routines'])
-from data_collect.sec_routines import form_4, secCompanyIdx, secMasterIdx
+from data_collect.sec.sec_routines import form_4, secCompanyIdx, secMasterIdx
+importlib.reload(sys.modules['data_collect.sec.sec_routines'])
+from data_collect.sec.sec_routines import form_4, secCompanyIdx, secMasterIdx
 
 from api import serverAPI
 from multiuse.help_class import baseDir, getDate
@@ -171,9 +171,9 @@ mast_cs_4.iloc[0]['File Name']
 
 test2_4_url = f"{sec_burl}/{mast_cs_4.iloc[0]['File Name']}"
 
-from data_collect.sec_routines import form_4, secCompanyIdx, secMasterIdx
-importlib.reload(sys.modules['data_collect.sec_routines'])
-from data_collect.sec_routines import form_4, secCompanyIdx, secMasterIdx
+from data_collect.sec.sec_routines import form_4, secCompanyIdx, secMasterIdx
+importlib.reload(sys.modules['data_collect.sec.sec_routines'])
+from data_collect.sec.sec_routines import form_4, secCompanyIdx, secMasterIdx
 
 test2_4_url
 
@@ -223,9 +223,9 @@ test_4_url = f"{sec_burl}/{mast_cs_4.iloc[0]['File Name']}"
 test1_4_url = f"{sec_burl}/{mast_cs_4.iloc[1]['File Name']}"
 test1_4_get = requests.get(test1_4_url)
 
-from data_collect.sec_routines import form_4, form_8k
-importlib.reload(sys.modules['data_collect.sec_routines'])
-from data_collect.sec_routines import form_4, form_8k
+from data_collect.sec.sec_routines import form_4, form_8k
+importlib.reload(sys.modules['data_collect.sec.sec_routines'])
+from data_collect.sec.sec_routines import form_4, form_8k
 
 
 test_8k_df = form_8k(test_8k_get)

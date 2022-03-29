@@ -10,43 +10,128 @@ import pandas as pd
 import numpy as np
 
 
-from data_collect.sec_rss import SecRssFeed, AnalyzeSecRss
-importlib.reload(sys.modules['data_collect.sec_rss'])
-from data_collect.sec_rss import SecRssFeed, AnalyzeSecRss
+from data_collect.sec.sec_rss import SecRssFeed, AnalyzeSecRss
+importlib.reload(sys.modules['data_collect.sec.sec_rss'])
+from data_collect.sec.sec_rss import SecRssFeed, AnalyzeSecRss
 
 from api import serverAPI
+importlib.reload(sys.modules['api'])
+from api import serverAPI
+
+from telegram.methods.push import telegram_push_message
+importlib.reload(sys.modules['telegram.methods.push'])
+from telegram.methods.push import telegram_push_message
+
+from multiuse.help_class import getDate, baseDir, write_to_parquet
+importlib.reload(sys.modules['multiuse.help_class'])
+from multiuse.help_class import getDate, baseDir, write_to_parquet
+
+from telegram.methods.push import telegram_push_message
+
+import logging
+logging.basicConfig(level=logging.DEBUG)
+# %% codecell
+
+serverAPI('redo', val='sec_rss_task')
+
+# %% codecell
+bdir = Path(baseDir().path, 'social', 'telegram', 'sec')
+fpath = bdir.joinpath('_sec_rss_sent.parquet')
+df_smsgs = pd.read_parquet(fpath)
+
+tz = 'US/Eastern'
+pd.to_datetime(df_smsgs['dt'], tz)
+
+df_smsgs
 
 # %% codecell
 
-srf = SecRssFeed()
-srf_df = srf.df
+kwargs = {'verbose': True, 'testing': True}
+srf = SecRssFeed(**kwargs)
+srf.df['pubDate'].max()
+srf.df
 
+
+kwargs = {'verbose': True, 'testing': False}
+asr = AnalyzeSecRss(**kwargs)
+
+
+# %% codecell
+
+sec_ref = serverAPI('sec_ref').df
+# Get all symbols (IEX ref)
 all_syms = serverAPI('all_symbols').df
-ocgn_df = all_syms[all_syms['symbol'] == 'OCGN']
+all_syms.drop_duplicates(subset='cik', inplace=True)
+df_ref = (sec_ref.merge(
+          all_syms[['symbol', 'cik', 'type']],  on='cik'))
 
-srf_df.info()
+df_latest = serverAPI('sec_rss_latest').df
+df_latest[['guid', 'description']].value_counts()
+df_latest['guid'].value_counts()
 
-srf_df['dt'] = pd.to_datetime(srf_df['pubDate'])
+df_latest['dt'].max()
+df_latest['pubDate'].max()
 
-prev_15 = (datetime.now() - timedelta(minutes=60)).time()
-sec_df = (srf_df[(srf_df['dt'].dt.time > prev_15)
-          & (srf_df['dt'].dt.date == date.today())]
-          .copy())
+df_latest
 
 
-sec_df
+sec_all = df.merge(df_ref, on='cik')
 
-srf_df[srf_df['CIK'] == ocgn_df['cik'].iloc[0]]
-srf_df.df
+
+
+
+
 # %% codecell
+
+dft = pd.DataFrame()
+
+stamp = pd.Timestamp(datetime.now())
+dft['stamp'] = [stamp, stamp]
+
+dft['stamp'].apply(lambda x: x.value)
+
+dir(dft['stamp'].dt)
+
+value
+
+dir(dft['stamp'])
+stamp.to_pydatetime().
+
+stamp.isoformat()
+dir(stamp)
+utcfromtimestamp()
+dir(stamp.to_pydatetime())
+
+# %% codecell
+fpath = '/Users/eddyt/Downloads/_2022-03-10.parquet'
+dft = pd.read_parquet(fpath)
+
+
+infer_dtype(dft['dt'].dtype)
+
+dft.drop_duplicates('guid')
 
 latest = serverAPI('sec_rss_latest').df
+df_rss = latest.drop_duplicates('guid')
+f_test =
+from multiuse.fpaths import FindTheFpath
+
+ff = FindTheFpath(category='sec', keyword='latest')
+# We can hopefully assume at this point that the df_msgs_today is not empty
+
+dt = getDate.query('iex_eod')
+fpath = Path(baseDir().path, 'sec', 'rss', '2022', f"_{dt}.parquet")
+
+write_to_parquet(df_rss, fpath)
+
+ff.options
+ff.cat_dict
+dir(ff)
+# %% codecell
 
 # %% codecell
 
-latest['description'].value_counts()
 
-sec_all = serverAPI('sec_rss_all').df
 
 # %% codecell
 import requests
