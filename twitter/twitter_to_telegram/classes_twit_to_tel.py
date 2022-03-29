@@ -148,16 +148,15 @@ class TwitterUnsentTelegramMsgs():
             rows = df_reft[cond_dt]
         rows_na = rows.dropna(subset='tcode')
 
-        if not rows.empty and rows_na.empty:
+        if not rows.empty and rows_na.empty and self.verbose:
             help_print_arg("No valid tcodes in rows")
 
         self.user_dict[user_id]['rows'] = rows
         self.user_dict[user_id]['tids'] = rows['id'].tolist()
-        if rows.empty:
-            if self.verbose:
-                msg = "Rows empty"
-                isp = inspect.stack()
-                help_print_arg(msg, isp=isp)
+        if rows.empty and self.verbose:
+            msg = "Rows empty"
+            isp = inspect.stack()
+            help_print_arg(msg, isp=isp)
 
 
 class MakeTradeableMessages():
