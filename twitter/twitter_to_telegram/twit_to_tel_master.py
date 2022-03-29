@@ -75,7 +75,7 @@ class TwitterToTelegram(TwitterRecentMessagesUser, TwitterUnsentTelegramMsgs,
         try:
             TwitterRecentMessagesUser.__init__(self, **kwargs)
         except Exception as e:
-            self.elog(self, e)
+            self.elog(self, e, suppress=self.verbose)
         # self.call_list should now contain all dfs
 
     @classmethod
@@ -84,7 +84,7 @@ class TwitterToTelegram(TwitterRecentMessagesUser, TwitterUnsentTelegramMsgs,
         try:
             TwitterUnsentTelegramMsgs.__init__(self, **kwargs)
         except Exception as e:
-            self.elog(self, e)
+            self.elog(self, e, suppress=self.verbose)
 
     @classmethod
     def _make_tradeable_messages(cls, self, **kwargs):
@@ -92,7 +92,7 @@ class TwitterToTelegram(TwitterRecentMessagesUser, TwitterUnsentTelegramMsgs,
         try:
             MakeTradeableMessages.__init__(self, **kwargs)
         except Exception as e:
-            self.elog(self, e)
+            self.elog(self, e, suppress=self.verbose)
 
     @classmethod
     def _send_telegram_polls_from_trade(cls, self, **kwargs):
@@ -100,4 +100,4 @@ class TwitterToTelegram(TwitterRecentMessagesUser, TwitterUnsentTelegramMsgs,
         try:
             SendTelegramPollFromTrade.__init__(self, **kwargs)
         except Exception as e:
-            self.elog(self, e)
+            self.elog(self, e, suppress=self.verbose)
