@@ -103,10 +103,17 @@ class TwitterUnsentTelegramMsgs():
         for index, row in self.df_uref.iterrows():
             udict = self.user_dict[row['id']]
             uname = udict['username']
-            if self.verbose:
+            try:
+                self._tutm_check_tweet_ref_trades(self, row['id'])
+                if self.verbose:
+                    help_print_arg('')
+                    help_print_arg(f"{uname}: TwitterUnsentTelegramMsgs")
+            except Exception as e:
+                uname = udict['username']
                 help_print_arg('')
-                help_print_arg(f"{uname}: TwitterUnsentTelegramMsgs")
-            self._tutm_check_tweet_ref_trades(self, row['id'])
+                help_print_arg(f'TwitterUnsentTelegramMsgs failed for {uname}')
+                self.elog(self, e)
+                continue
 
     @classmethod
     def _tutm_check_tweet_ref_trades(cls, self, user_id, **kwargs):
@@ -129,12 +136,14 @@ class TwitterUnsentTelegramMsgs():
             test_dt = (dt.date() - timedelta(days=7))
             cond_dt = (df_reft['created_at'].dt.date >= test_dt)
             # Not used
-            secs = self.time_filter
+            # secs = self.time_filter
 
         # Only messages that haven't been sent
         cond_sent = (df_reft['telegram_sent'] == 0)
 
         rows = df_reft[cond_dt & cond_sent]
+        if self.send_anyway:  # For testing purposes, resend sent messages
+            rows = df_reft[cond_dt]
         rows_na = rows.dropna(subset='tcode')
 
         if not rows.empty and rows_na.empty:
@@ -162,18 +171,25 @@ class MakeTradeableMessages():
         for index, row in self.df_uref.iterrows():
             udict = self.user_dict[row['id']]
             uname = udict['username']
-            if self.verbose:
-                help_print_arg('')
-                help_print_arg(f"{uname}: MakeTradeableMessages")
+            try:
+                if self.verbose:
+                    help_print_arg('')
+                    help_print_arg(f"{uname}: MakeTradeableMessages")
 
-            if not udict['rows'].empty:
-                self._mtm_get_mod_df_rows(self, row['id'], **kwargs)
-            elif self.verbose:
+                if not udict['rows'].empty:
+                    self._mtm_get_mod_df_rows(self, row['id'], **kwargs)
+                elif self.verbose:
+                    uname = udict['username']
+                    msg = "MakeTradeableMessages: skipping loop: self.rows empty"
+                    help_print_arg(f"{uname} {msg}")
+                else:
+                    pass
+            except Exception as e:
                 uname = udict['username']
-                msg = "MakeTradeableMessages: skipping loop: self.rows empty"
-                help_print_arg(f"{uname} {msg}")
-            else:
-                pass
+                help_print_arg('')
+                help_print_arg(f'MakeTradeableMessages failed for {uname}')
+                self.elog(self, e)
+                continue
 
     @classmethod
     def _mtm_get_mod_df_rows(cls, self, user_id, **kwargs):
@@ -204,7 +220,8 @@ class MakeTradeableMessages():
         df_msgs = self._mtm_df_buy_sell_all(self, df_t1, tids, **kwargs)
         self.user_dict[user_id]['df_msgs'] = df_msgs
         if self.verbose:
-            help_print_arg(f"make_tradeable_messages df_msgs: {str(df_msgs.head(1))}")
+            # help_print_arg(f"make_tradeable_messages df_msgs: {str(df_msgs.head(1))}")
+            help_print_arg(f"make_tradeable_messages df_msgs: {str(df_msgs.shape[0])}")
 
     @classmethod
     def _mtm_df_buy_sell_all(cls, self, df, tids, **kwargs):
@@ -212,7 +229,7 @@ class MakeTradeableMessages():
         # Reduce to trade "entries"
         df_buys = df[df['entry']].copy()
         if self.verbose:
-            help_print_arg(f"make_tradeable_messages df_buys: {str(df_buys.head(1))}")
+            help_print_arg(f"make_tradeable_messages df_msgs: {str(df_buys.shape[0])}")
         if not df_buys.empty:
             df_buys['message'] = (df_buys.apply(lambda row: f"Buy {row['symbol']} "
                                    f"${str(row['strike'])} {row['side']}: OG Tweet: "
@@ -228,8 +245,8 @@ class MakeTradeableMessages():
         if tids:  # If list of twitter ids, keep only rows with recent tids
             df_all = df_all[df_all['id'].isin(tids)]
             if self.verbose:
-                msg1 = "MakeTradeableMessages._df_buy_sell_all"
-                help_print_arg(f"{msg1}: user tids (twitter ids) applied")
+                help_print_arg("""MakeTradeableMessages._df_buy_sell_all :
+                               user tids (twitter ids) applied""")
 
         return df_all
 
@@ -247,16 +264,23 @@ class SendTelegramPollFromTrade():
         for index, row in self.df_uref.iterrows():
             udict = self.user_dict[row['id']]
             uname = udict['username']
-            if self.verbose:
-                help_print_arg('')
-                help_print_arg(f"{uname}: SendTelegramPollFromTrade")
+            try:
+                if self.verbose:
+                    help_print_arg('')
+                    help_print_arg(f"{uname}: SendTelegramPollFromTrade")
 
-            if not udict['df_msgs'].empty:
-                self._stpft_get_df_trades(self, row['id'], **kwargs)
-            else:
+                if not udict['df_msgs'].empty:
+                    self._stpft_get_df_trades(self, row['id'], **kwargs)
+                else:
+                    uname = udict['username']
+                    help_print_arg(f"""{uname} SendTelegramPollFromTrade:
+                                   skipping loop: df_msgs empty""")
+            except Exception as e:
                 uname = udict['username']
-                msg = "SendTelegramPollFromTrade: skipping loop: df_msgs empty"
-                help_print_arg(f"{uname} {msg}")
+                help_print_arg('')
+                help_print_arg(f'SendTelegramPollFromTrade failed for {uname}')
+                self.elog(self, e)
+                continue
 
     @classmethod
     def _stpft_get_df_trades(cls, self, user_id, **kwargs):
@@ -308,11 +332,14 @@ class SendTelegramPollFromTrade():
                 if self.verbose:
                     msg1 = "send_telegram_trade_record_msg_sent"
                     help_print_arg(f"{msg1}: id {str(row['id'])} already sent")
-                continue  # Check if this message has already been sent
+                # If self.send_anyway - resend message to testing channel
+                if not self.send_anyway:
+                    continue  # Check if this message has already been sent
             elif row['tcode'] not in tcode_idx and row['exit']:
                 if self.verbose:
-                    msg1 = "send_telegram_trade_record_msg_sent"
-                    help_print_arg(f"{msg1}: no entry signal for {str(row['id'])}")
+                    help_print_arg(f"""send_telegram_trade_record_msg_sent
+                                   {msg1}: no entry signal for
+                                   {str(row['id'])}""")
                 continue  # Check if this is a sell msg, but buy was missed
 
             result = telegram_push_poll(tid=row['id'], text=row['message'], **kwargs)
@@ -320,8 +347,6 @@ class SendTelegramPollFromTrade():
             if result:
                 # Set the "df trade" position to 1, meaning sent
                 df_reft.at[index, 'telegram_sent'] = 1
-                if not self.testing:
-                    write_to_parquet(df_reft, udict['fpath_reft'], combine=True)
 
                 # Parse json data, convert to df
                 df_tgrams = pd.json_normalize(result.json()['result'])
@@ -330,10 +355,8 @@ class SendTelegramPollFromTrade():
                 df_tgrams.drop(columns='entities', inplace=True, errors='ignore')
                 df_tgrams['date'] = pd.to_datetime(df_tgrams['date'], unit='s')
                 # Combine with local file, if it exists
-                write_to_parquet(df_tgrams, udict['fpath_tgrams'], combine=True)
-
-            if self.testing:
-                udict['tgram_results'].append(result)
-
-        if not self.testing:
-            write_to_parquet(df_reft, udict['fpath_reft'])
+                if not self.testing:
+                    write_to_parquet(df_reft, udict['fpath_reft'], combine=True)
+                    write_to_parquet(df_tgrams, udict['fpath_tgrams'], combine=True)
+                if self.testing:
+                    udict['tgram_results'].append(result)

@@ -43,6 +43,7 @@ class TwitterToTelegram(TwitterRecentMessagesUser, TwitterUnsentTelegramMsgs,
         self.telegram = kwargs.get('telegram', False)
         self.testing = kwargs.get('testing', False)
         self.verbose = kwargs.get('verbose', False)
+        self.send_anyway = kwargs.get('send_anyway', False)
         # Max number of tweets to get from twitter
         self.max_results = kwargs.get('max_results', 5)
         # Default 75 seconds in the past - pull all tweets

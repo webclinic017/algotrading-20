@@ -85,7 +85,7 @@ def make_url_dict():
         'st_trend_all': '/stocktwits/trending/all',
         'st_trend_today': '/stocktwits/trending/today/explore',
         'st_watch': '/stocktwits/watchlist',
-        'reddit_data': '/data/reddit', # /{subreddit}/{method}
+        'reddit_data': '/data/reddit',  # /{subreddit}/{method}
         'twitter_get_max': '/redo/twitter/max_hist',
         'twitter_errors': '/data/twitter/errors',
         'twitter_hist_all': '/data/twitter/tweets/all',
@@ -133,9 +133,9 @@ class serverAPI():
                 val = kwargs['val']
 
             self.url_dict[which] = f"/sec/data/master_idx/{val}/{refresh}"
+        # Redo (views_misc) test param addition
         elif which == 'redo' and 'val' in kwargs.keys():
             val = kwargs['val']
-
             if 'test' in kwargs.keys():
                 print('Test in kwargs.keys()')
                 val = f"{val}_test_task_redo"
@@ -146,13 +146,12 @@ class serverAPI():
             symbol = kwargs['symbol']
             self.url_dict[which] = f"{self.url_dict[which]}/{symbol}"
 
+        # Twitter get_max_history with parameter addition
         elif which == 'twitter_get_max' and 'username' in kwargs.keys():
             username = kwargs['username']
-            if username in self.url_dict[which]:
-                pass
-            else:
-                self.url_dict[which] = f"{self.url_dict[which]}/{username}"
 
+            if username not in self.url_dict[which]:
+                self.url_dict[which] = f"{self.url_dict[which]}/{username}"
 
         # Apply default params for reddit api call
         elif which == 'reddit_data':
@@ -161,6 +160,7 @@ class serverAPI():
 
             if self.url_dict[which] == '/data/reddit':
                 self.url_dict[which] = f"{self.url_dict[which]}/{subreddit}/{method}"
+            print(self.url)
 
     @classmethod
     def get_data(cls, self, which):
