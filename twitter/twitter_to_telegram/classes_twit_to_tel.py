@@ -54,8 +54,9 @@ class TwitterRecentMessagesUser():
                     self.user_dict[row['id']]['tweet_by_id'] = pd.read_parquet(udict['fpath_reft'])
             except Exception as e:
                 uname = udict['username']
-                help_print_arg('')
-                help_print_arg(f'TwitterRecentMessagesUser failed for {uname}')
+                if self.verbose:
+                    help_print_arg('')
+                    help_print_arg(f'TwitterRecentMessagesUser failed for {uname}')
                 self.elog(self, e)
                 continue
 
@@ -110,8 +111,9 @@ class TwitterUnsentTelegramMsgs():
                     help_print_arg(f"{uname}: TwitterUnsentTelegramMsgs")
             except Exception as e:
                 uname = udict['username']
-                help_print_arg('')
-                help_print_arg(f'TwitterUnsentTelegramMsgs failed for {uname}')
+                if self.verbose:
+                    help_print_arg('')
+                    help_print_arg(f'TwitterUnsentTelegramMsgs failed for {uname}')
                 self.elog(self, e)
                 continue
 
@@ -186,8 +188,9 @@ class MakeTradeableMessages():
                     pass
             except Exception as e:
                 uname = udict['username']
-                help_print_arg('')
-                help_print_arg(f'MakeTradeableMessages failed for {uname}')
+                if self.verbose:
+                    help_print_arg('')
+                    help_print_arg(f'MakeTradeableMessages failed for {uname}')
                 self.elog(self, e)
                 continue
 
@@ -277,8 +280,9 @@ class SendTelegramPollFromTrade():
                                    skipping loop: df_msgs empty""")
             except Exception as e:
                 uname = udict['username']
-                help_print_arg('')
-                help_print_arg(f'SendTelegramPollFromTrade failed for {uname}')
+                if self.verbose:
+                    help_print_arg('')
+                    help_print_arg(f'SendTelegramPollFromTrade failed for {uname}')
                 self.elog(self, e)
                 continue
 
