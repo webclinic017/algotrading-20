@@ -101,8 +101,7 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams):
                     help_print_arg(str(data))
                 data = json.loads(data)
                 if data.get('notify', False):
-                    if self.verbose:
-                        help_print_arg(str(data))
+                    help_print_arg(str(data))
                     continue
                 elif 'headline' in data.keys():
                     df = pd.json_normalize(data)
@@ -113,7 +112,9 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams):
                                data, meta=[['data', 'timestamp']],
                                record_path=['data', ['content']],
                                errors='ignore')).set_index('key'))
-                    df_new = df_all.groupby(level=0).ffill().copy()
+                    df_new = (df_all.groupby(level=0)
+                                    .ffill()
+                                    .reset_index().copy())
 
                     service = data['data'][0]['service']
                     fpath = fpaths[service]
