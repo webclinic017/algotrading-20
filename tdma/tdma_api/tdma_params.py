@@ -31,7 +31,7 @@ class TDMA_Param_Dicts():
     param: self.td_clean_write : dict of functions to clean data
     """
     klist = (['get_transactions', 'get_accounts', 'get_principals',
-              'get_orders', 'get_quotes'])
+              'get_orders', 'get_quotes', 'get_sub_keys'])
 
     def __init__(self, **kwargs):
         self._construct_class_params(self)
@@ -61,6 +61,7 @@ class TDMA_Param_Dicts():
             'get_orders': f'{burl}/accounts/{accountId}/orders',
             'get_transactions': f"{burl}/accounts/{accountId}/transactions",
             'get_principals': f"{burl}/userprincipals",
+            'get_sub_keys': f"{burl}/userprincipals/streamersubscriptionkeys",
             'get_instruments': f"{burl}/instruments",
             'get_movers': f"{burl}/marketdata/{sector}/movers",
             'cancel_order': f"{burl}/accounts/{accountId}/orders/{orderId}",
@@ -99,7 +100,11 @@ class TDMA_Param_Dicts():
             'get_orders':  # Only get orders for today
             {'maxResults': '10', 'fromEnteredTime': str(self.dt)},
             'get_instruments':
-            {'symbol': 'OCGN', 'projection': 'symbol-search'}
+            {'symbol': 'OCGN', 'projection': 'symbol-search'},
+            'get_principals':
+            {'fields':
+             'streamerSubscriptionKeys,streamerConnectionInfo'}
+            # 'streamerSubscriptionKeys,streamerConnectionInfo,preferences,surrogateIds'
         })
 
         self.td_params = td_params

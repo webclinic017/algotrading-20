@@ -3,7 +3,9 @@
 
 from pathlib import Path
 import pprint
+from collections import defaultdict
 import pandas as pd
+
 
 try:
     from scripts.dev.multiuse.help_class import baseDir
@@ -38,11 +40,17 @@ class RedditHelpers():
         subreddit = kwargs.get('subreddit', 'wallstreetbets')
         return_df = kwargs.get('return_df', False)
 
-        mdict = ({
+        mdict_base = ({
             'ref_subs': bdir.joinpath('ref', '_subreddits.parquet'),
             'sub_comments': bdir.joinpath('subs', subreddit, '_comments.parquet'),
-            'sub_authors': bdir.joinpath('subs', subreddit, '_authors.parquet')
+            'sub_authors': bdir.joinpath('subs', subreddit, '_authors.parquet'),
+            '': Path()
         })
+
+        def default_path():
+            return Path()
+
+        mdict = defaultdict(default_path, mdict_base).copy()
 
         fpath = mdict[method]
         if fpath.exists() and return_df:
