@@ -68,8 +68,14 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams):
     @classmethod
     async def _tdma_streaming(cls, self, uri, request_list):
         """TD Ameritrade Streaming."""
-        fdir_test = Path(baseDir().path, 'tdma', 'test_dump')
-        f_test = fdir_test.joinpath('test_tdma_all_write')
+        fdir = Path(baseDir().path, 'tdma', 'test_dump')
+        fpaths = ({
+            'QUOTE': fdir.joinpath('quote.parquet'),
+            'OPTION': fdir.joinpath('option.parquet'),
+            'TIMESALE_EQUITY': fdir.joinpath('timesale_equity.parquet'),
+            'TIMESALE_OPTIONS': fdir.joinpath('timesale_options.parquet')
+        })
+
         for rq in request_list:
             rq = {"request": [rq]}
 
@@ -81,12 +87,12 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams):
                     sa = await ws.send(json.dumps(rq))
                     print(str(await ws.recv()))
 
-                msg = await self._process_message(self, ws, f_test)
+                msg = await self._process_message(self, ws, fpaths)
             except websockets.ConnectionClosed:
                 break
 
     @classmethod
-    async def _process_message(cls, self, ws, f_test):
+    async def _process_message(cls, self, ws, fpaths):
         """Process message and write to dataframe."""
         while True:
             data = await ws.recv()
@@ -108,7 +114,11 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams):
                                record_path=['data', ['content']],
                                errors='ignore')).set_index('key'))
                     df_new = df_all.groupby(level=0).ffill().copy()
-                    write_to_parquet(df_new, f_test, combine=True)
+
+                    service = data['data'][0]['service']
+                    fpath = fpaths[service]
+                    write_to_parquet(df_new, fpath, combine=True)
+
                 else:
                     pass
             except AttributeError as ae:
