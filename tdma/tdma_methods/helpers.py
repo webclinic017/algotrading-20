@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pandas as pd
 try:
-    from scripts.dev.multiuse.help_class import getDate, baseDir
+    from scripts.dev.multiuse.help_class import getDate, baseDir, help_print_arg
 except ModuleNotFoundError:
-    from multiuse.help_class import getDate, baseDir
+    from multiuse.help_class import getDate, baseDir, help_print_arg
 
 # %% codecell
 
@@ -27,6 +27,8 @@ class TDMA_Paths():
 
         if method == 'options_chain' and symbol:
             fpath = self.option_fpath(symbol, **kwargs)
+            if verbose:
+                help_print_arg(f"TDMA_Paths: fpath {str(fpath)}")
             if return_df:
                 if fpath.exists():
                     return pd.read_parquet(fpath)

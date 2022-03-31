@@ -20,6 +20,7 @@ class SymbolRefMetaInfo():
     var : self.all_symbols : ref data for symbol type, identifier code
     var : self.stats : basic financial/technical stats
     """
+    # df_all : if true, combine all separate dataframes
 
     def __init__(self, df_all=None, **kwargs):
         self.meta = self._call_stock_meta_info(self)

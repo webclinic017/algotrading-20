@@ -1,5 +1,6 @@
 """Master methods class."""
 # %% codecell
+import pandas as pd
 
 try:
     from scripts.dev.reddit.methods.r_data_process import RedditDataProcess
@@ -57,9 +58,9 @@ class RedditMethods(RedditDataProcess):
     @classmethod
     def _write_to_parquet(cls, self, method, **kwargs):
         """Write to parquet with optional space for more params."""
-        self.df_write = self.df_dp.copy()
+        self.df_write = getattr(self, 'df_dp', {}).copy()
         # Create another dataframe to modify before writing, if needed
-        if not self.skip_write:
+        if not self.skip_write and isinstance(self.df_write, pd.DataFrame):
             # Specify columns to drop_duplicates on
             if method == 'ref_subs':
                 kwargs['cols_to_drop'] = ['name']
