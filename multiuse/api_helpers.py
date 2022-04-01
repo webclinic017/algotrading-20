@@ -10,10 +10,10 @@ import pandas as pd
 import requests
 
 try:
-    from scripts.dev.multiuse.help_class import baseDir, help_print_arg, write_to_parquet
+    from scripts.dev.multiuse.help_class import baseDir, help_print_arg, write_to_parquet, write_to_pickle
     from scripts.dev.multiuse.class_methods import ClsHelp
 except ModuleNotFoundError:
-    from multiuse.help_class import baseDir, help_print_arg, write_to_parquet
+    from multiuse.help_class import baseDir, help_print_arg, write_to_parquet, write_to_pickle
     from multiuse.class_methods import ClsHelp
 
 # %% codecell
@@ -75,7 +75,7 @@ class RecordAPICalls(ClsHelp):
             help_print_arg(f"RecordAPICalls: {name}: {str(fpath)}")
 
         try:
-            write_to_parquet(df, fpath, combine=True)
+            write_to_pickle(df, fpath, combine=True)
         except Exception as e:
             self.elog(self, e)
 
