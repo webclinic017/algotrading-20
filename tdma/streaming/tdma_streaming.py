@@ -123,18 +123,18 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams, ClsHelp):
                     write_to_parquet(df_new, fpath, combine=True)
 
                 else:
-                    pass
+                    help_print_arg(str(data))
+                    continue
             except AttributeError as ae:
                 if self.verbose:
-                    help_print_arg(str(ae))
-                    help_print_arg(str(data))
+                    self.elog(self, ae, text=data)
 
                 try:
                     df = pd.DataFrame(json.load(BytesIO(data)))
                     # kwargs = {'cols_to_drop': 'id'}
                     # write_to_parquet(df, self.fpath, combine=True, **kwargs)
                 except Exception as e:
-                    print(f"{str(e)} {type(e)}")
+                    self.elog(self, e, text=f"json.load(BytesIO(data)) data: {data}")
                 continue
             except json.JSONDecodeError as jde:
                 self.elog(self, jde)
