@@ -12,11 +12,11 @@ except ModuleNotFoundError:
 class ClsHelp():
     # sf is the class object that's calling ClsHelp
 
-    def elog(self, sf, e, text=None, suppress=False):
+    def elog(self, sf, e, text=None, verbose=False):
         """Error log."""
         name = self.cnames(sf)
         ename = self.ename(e)
-        if not suppress:
+        if verbose:
             help_print_arg(f"{name} {ename} {str(text)}")
 
     def isp(self, sf, e):
