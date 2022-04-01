@@ -24,6 +24,7 @@ class RecordAPICalls(ClsHelp):
     """Record API calls."""
 
     def __init__(self, rep, name, **kwargs):
+        self.verbose = kwargs.get('verbose', False)
         self.fpath = self._get_fpath(self, name)
         self.df = self._base_parse_response(self, rep, name, **kwargs)
         self._write_to_file(self, self.df, self.fpath, name, **kwargs)
@@ -70,8 +71,7 @@ class RecordAPICalls(ClsHelp):
     @classmethod
     def _write_to_file(cls, self, df, fpath, name, **kwargs):
         """Write df to local parquet file."""
-        verbose = kwargs.get('verbose', None)
-        if verbose:
+        if self.verbose:
             help_print_arg(f"RecordAPICalls: {name}: {str(fpath)}")
 
         try:
