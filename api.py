@@ -95,6 +95,7 @@ def make_url_dict():
         'twitter_logs': '/data/twitter/logs',
         'telegram_polls': '/data/telegram/polls',
         'tdma_movers': '/data/tdma/movers',
+        'tdma_streaming': '/data/tdma/streaming',
         'tdma_logs': '/data/tdma/logs',
         'redo': ''
     })
@@ -152,6 +153,15 @@ class serverAPI():
 
             if username not in self.url_dict[which]:
                 self.url_dict[which] = f"{self.url_dict[which]}/{username}"
+        # Tdma streaming with added service
+        elif which == 'tdma_streaming' and 'service' in kwargs.keys():
+            service = kwargs.get('service', False)
+            slist = ['quote', 'options', 'timesale_equity', 'timesale_options']
+            if service.lower() not in slist:
+                help_print_arg(f"tdma_streaming service: {service} not in slist")
+
+            if service not in self.url_dict[which]:
+                self.url_dict[which] = f"{self.url_dict[which]}/{service}"
 
         # Apply default params for reddit api call
         elif which == 'reddit_data':

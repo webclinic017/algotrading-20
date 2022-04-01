@@ -11,17 +11,19 @@ import pandas as pd
 try:
     from scripts.dev.tdma.streaming.streaming_login import TdmaStreamingLoginParams
     from scripts.dev.tdma.streaming.streaming_params import TdmaStreamingParams
+    from scripts.dev.multiuse.class_methods import ClsHelp
     from scripts.dev.multiuse.help_class import write_to_parquet, getDate, baseDir, help_print_arg
 except ModuleNotFoundError:
     from tdma.streaming.streaming_params import TdmaStreamingParams
     from tdma.streaming.streaming_login import TdmaStreamingLoginParams
+    from multiuse.class_methods import ClsHelp
     from multiuse.help_class import write_to_parquet, getDate, baseDir, help_print_arg
 
 
 # %% codecell
 
 
-class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams):
+class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams, ClsHelp):
     """For the actual streaming."""
 
     def __init__(self, **kwargs):
@@ -133,4 +135,10 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams):
                     # write_to_parquet(df, self.fpath, combine=True, **kwargs)
                 except Exception as e:
                     print(f"{str(e)} {type(e)}")
+                continue
+            except json.JSONDecodeError as jde:
+                self.elog(self, jde)
+                continue
+            except Exception as e:
+                self.elog(self, e)
                 continue
