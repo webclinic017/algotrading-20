@@ -37,15 +37,15 @@ class RecordAPICalls(ClsHelp):
             return f"{key}/api_calls.parquet"
 
         fdict = ({
-            'twitter': 'twitter/api_calls.parquet',
-            'celery': 'celery/api_calls.parquet',
-            'etrade': 'etrade/api_calls.parquet',
-            'tdma': 'tdma/api_calls.parquet',
-            'stocktwits_trend': 'stocktwits/trend_api_calls.parquet'
+            'twitter': 'twitter/api_calls.pickle',
+            'celery': 'celery/api_calls.pickle',
+            'etrade': 'etrade/api_calls.pickle',
+            'tdma': 'tdma/api_calls.pickle',
+            'stocktwits_trend': 'stocktwits/trend_api_calls.pickle'
         })
 
         if name not in fdict.keys():
-            fdict[name] = f"{name}/api_calls.parquet"
+            fdict[name] = f"{name}/api_calls.pickle"
 
         fpath = bpath.joinpath(fdict[name])
         return fpath
