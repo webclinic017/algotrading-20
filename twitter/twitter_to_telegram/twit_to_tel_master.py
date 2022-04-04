@@ -40,7 +40,7 @@ class TwitterToTelegram(TwitterRecentMessagesUser, TwitterUnsentTelegramMsgs,
         # All twitter users reference dataframe
         self.df_uref = kwargs.get('df_uref', pd.read_parquet(th('user_ref')))
 
-        names_to_exclude = (kwargs.get('names_to_exclude', ['TheRealNasa00']))
+        names_to_exclude = (kwargs.get('names_to_exclude', []))
         if names_to_exclude:
             self.df_uref = (self.df_uref[
                             ~self.df_uref['username'].isin(names_to_exclude)])

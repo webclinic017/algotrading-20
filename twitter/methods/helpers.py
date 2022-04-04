@@ -126,7 +126,7 @@ class TwitterHelpers():
             msg2 = f"{msg1} df_tcode cols: {str(df_tcode.columns)}"
 
             tcodes = df['tcode'].tolist()
-            help_print_arg(f"{msg1} {msg2} tcode: {str(tcodes)}")
+            help_print_arg(f"{msg1} \n {msg2} \n tcode: {str(tcodes)}")
 
         df = df.join(df_tcode).copy()
 
