@@ -39,7 +39,8 @@ class GetTimestampsForEachRelTweet():
             self._call_tweets_by_id(self, self.df)
             # Write/update local hist with timestamps
             self.df_hist_cb = self._merge_tweet_meta_with_hist(self, user_id)
-            print('Historical combined available under: self.df_hist_cb')
+            if self.verbose:
+                print('Historical combined available under: self.df_hist_cb')
             # Need to run TwitterUserExtract again to get the timestamps
             # ^ Double check this
             TwitterUserExtract(user_id)

@@ -199,7 +199,12 @@ class MakeTradeableMessages():
         tids = self.user_dict[user_id]['tids']
         df = self.user_dict[user_id]['rows']
 
-        df = TwitterHelpers.parse_tcode(df)
+        # Only parse tcode if it exists, and they aren't all NaNs
+        # Ex. Watchlists that don't have tcodes but have timestamp meta data
+        if 'tcode' in df.columns:
+            if not df.dropna(subset='tcode').empty:
+                df = TwitterHelpers.parse_tcode(df)
+
         cols = df.columns
         if 'entry' not in cols and 'exit' not in cols:
             df_view = TwitterUserExtract(user_id).df_view[['id', 'entry', 'exit']]

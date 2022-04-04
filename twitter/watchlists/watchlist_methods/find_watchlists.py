@@ -16,11 +16,13 @@ class TwitterWatchlists():
     """Get twitter watchlists from historical data."""
 
     def __init__(self, df=None, **kwargs):
+        self.verbose = kwargs.get('verbose', False)
         df = self._get_dataframe(self, df, **kwargs)
         self.df_tw = self._exclude_sym_hash_cols(self, df, **kwargs)
         self.df_watch = self._isolate_watchlists(self, self.df_tw, **kwargs)
         self.df_allW = self._create_df_splits(self, self.df_watch, **kwargs)
-        print('Final df accessible under TwitterWatchlists.df_allW')
+        if self.verbose:
+            print('Final df accessible under TwitterWatchlists.df_allW')
 
     @classmethod
     def _get_dataframe(cls, self, df, **kwargs):

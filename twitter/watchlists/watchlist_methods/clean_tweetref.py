@@ -19,13 +19,15 @@ class TwitterTweetRefCleanParse():
     """Clean and parse twitter tweetfref."""
 
     def __init__(self, **kwargs):
+        self.verbose = kwargs.get('verbose', False)
         self.df_twit_tsignals = self._get_df_return_copy(self)
         self.df_ref_clean = (self._tweetref_initial_clean(self,
                              self.df_twit_tsignals, **kwargs))
         # self.df = self._parse_tcode(self, self.df_iclean, **kwargs)
         self.df_ctweetref = TwitterHelpers.parse_tcode(self.df_ref_clean)
 
-        print('Final df accessible under self.df_ctweetref')
+        if self.verbose:
+            print('Final df accessible under self.df_ctweetref')
 
     @classmethod
     def _get_df_return_copy(cls, self, **kwargs):

@@ -42,7 +42,8 @@ class TwitterUserExtract():
         self.df_view = self._add_tcode(self, self.df)
         # Updated dataframe for user reference tweets
         self.df_ref = self._update_tweet_ref_with_tcode(self, user_id, self.df_view)
-        print('TwitterUserExtract: final df: self.df_ref')
+        if self.verbose:
+            print('TwitterUserExtract: final df: self.df_ref')
 
     @classmethod
     def _get_class_vars(cls, self, user_id, **kwargs):

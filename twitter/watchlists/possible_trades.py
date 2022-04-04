@@ -24,7 +24,8 @@ class TwitterPossibleTrades(TwitterWatchlists, TwitterTweetRefCleanParse):
         self.df_pos_trades = self._wlist_to_pos_trades(self, **kwargs)
         self._convert_datetimes(self, **kwargs)
         self.df_atrades = self._merge_and_clean(self, **kwargs)
-        print('TwitterPossibleTrades: Final dataframe self.df_atrades')
+        if self.verbose:
+            print('TwitterPossibleTrades: Final dataframe self.df_atrades')
 
     @classmethod
     def _get_tweet_ref(cls, self, **kwargs):
