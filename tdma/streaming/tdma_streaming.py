@@ -27,18 +27,18 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams, ClsHelp):
     """For the actual streaming."""
 
     def __init__(self, **kwargs):
-        self._tsp_get_class_vars(self, **kwargs)
+        self._ts_get_class_vars(self, **kwargs)
         self._instantiate_streaming_logins(self, **kwargs)
         self._instantiate_streaming_params(self, **kwargs)
         if not self.check_vars_before_stream:
             self._start_tdma_streaming(self, self.uri, self.request_list)
 
     def __call__(self, **kwargs):
-        self._tsp_get_class_vars(self, **kwargs)
+        self._ts_get_class_vars(self, **kwargs)
         self._start_tdma_streaming(self, self.uri, self.request_list)
 
     @classmethod
-    def _tsp_get_class_vars(cls, self, **kwargs):
+    def _ts_get_class_vars(cls, self, **kwargs):
         """Get class variables and unpack kwargs."""
         self.verbose = kwargs.get('verbose', False)
         self.testing = kwargs.get('testing', False)
@@ -75,7 +75,8 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams, ClsHelp):
             'QUOTE': fdir.joinpath('quote.parquet'),
             'OPTION': fdir.joinpath('option.parquet'),
             'TIMESALE_EQUITY': fdir.joinpath('timesale_equity.parquet'),
-            'TIMESALE_OPTIONS': fdir.joinpath('timesale_options.parquet')
+            'TIMESALE_OPTIONS': fdir.joinpath('timesale_options.parquet'),
+            'ACTIVES_OPTIONS': fdir.joinpath('actives_options.parquet')
         })
 
         for rq in request_list:
@@ -89,20 +90,24 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams, ClsHelp):
                     sa = await ws.send(json.dumps(rq))
                     print(str(await ws.recv()))
 
-                msg = await self._process_message(self, ws, fpaths)
+                msg = await self._process_message(self, ws, fdir, fpaths)
             except websockets.ConnectionClosed:
                 break
 
     @classmethod
-    async def _process_message(cls, self, ws, fpaths):
+    async def _process_message(cls, self, ws, fdir, fpaths):
         """Process message and write to dataframe."""
         while True:
             data = await ws.recv()
             try:
                 if self.verbose:
                     help_print_arg(str(data))
+
                 data = json.loads(data)
-                if data.get('notify', False):
+                if data.get('notify', False) and not self.verbose:
+                    help_print_arg(str(data))
+                    continue
+                elif data.get('response', False) and not self.verbose:
                     help_print_arg(str(data))
                     continue
                 elif 'headline' in data.keys():
@@ -110,20 +115,31 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams, ClsHelp):
                     # kwargs = {'cols_to_drop': 'id'}
                     # write_to_parquet(df, self.fpath, combine=True, **kwargs)
                 elif 'data' in data.keys():
-                    df_all = ((pd.json_normalize(
-                               data, meta=[['data', 'timestamp']],
-                               record_path=['data', ['content']],
-                               errors='ignore')).set_index('key'))
-                    df_new = (df_all.groupby(level=0)
-                                    .ffill()
-                                    .reset_index().copy())
+                    if len(data['data']) == 1:
+                        df_all = ((pd.json_normalize(
+                                   data, meta=[['data', 'timestamp']],
+                                   record_path=['data', ['content']],
+                                   errors='ignore')).set_index('key'))
+                        df_new = (df_all.groupby(level=0)
+                                        .ffill()
+                                        .reset_index().copy())
 
-                    service = data['data'][0]['service']
-                    fpath = fpaths[service]
-                    write_to_parquet(df_new, fpath, combine=True)
+                        service = data['data'][0]['service']
+                        fpath = fpaths.get(service, fdir.joinpath(f"{service.lower()}.parquet"))
+                        write_to_parquet(df_new, fpath, combine=True)
+                    else:
+                        for n, row in enumerate(data):
+                            df_all = ((pd.json_normalize(
+                                       data['data'][n], meta=['timestamp'],
+                                       record_path=['content'],
+                                       errors='ignore')))
 
+                            service = data['data'][n]['service']
+                            fpath = fpaths.get(service, fdir.joinpath(f"{service.lower()}.parquet"))
+                            write_to_parquet(df_new, fpath, combine=True)
                 else:
-                    help_print_arg(str(data))
+                    if not self.verbose:
+                        help_print_arg(str(data))
                     continue
             except AttributeError as ae:
                 if self.verbose:
@@ -142,3 +158,20 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams, ClsHelp):
             except Exception as e:
                 self.elog(self, e)
                 continue
+
+    # Cancel local streaming task
+    @staticmethod
+    def cancel_local_background_task():
+        """Cancel asyncio local background task."""
+        pending = list(asyncio.all_tasks())
+        help_print_arg(f"asyncio background tasks: {str(pending)}")
+
+        tdma_streaming_task = []
+        for n, tk in enumerate(pending):
+            if 'tdma_streaming' in str(pending[n]):
+                tdma_streaming_task.append(pending[n])
+                break
+
+        if tdma_streaming_task:
+            tdma_streaming_task = tdma_streaming_task[0]
+            tdma_streaming_task.cancel()
