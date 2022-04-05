@@ -297,6 +297,14 @@ class getDate():
     """Get the right query date."""
 
     @staticmethod
+    def daterange(days=4, *args, **kwargs):
+        # dt_prev, dt
+        dt = kwargs.get('dt', getDate.query('iex_close'))
+        dt_prev = kwargs.get('date_prev', (dt - timedelta(days=days)))
+        for n in range(int((dt - dt_prev).days)+1):
+            yield dt_prev + timedelta(n)
+
+    @staticmethod
     def time_cutoff(cutoff_hm=9.55):
         """Calculate cutoff with default at 9:30."""
         nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))

@@ -82,6 +82,7 @@ def make_url_dict():
         'sector_perf': '/data/hist/sector_perf/mr',
         'stats_combined': '/data/stats/combined',
         'st_stream': '/stocktwits/user_stream',
+        'st_trending': '/data/stocktwits/trending',
         'st_trend_all': '/stocktwits/trending/all',
         'st_trend_today': '/stocktwits/trending/today/explore',
         'st_watch': '/stocktwits/watchlist',
@@ -171,6 +172,11 @@ class serverAPI():
             if self.url_dict[which] == '/data/reddit':
                 self.url_dict[which] = f"{self.url_dict[which]}/{subreddit}/{method}"
             print(self.url)
+
+        elif which == 'st_trending':
+            days = kwargs.get('days', 5)
+            if self.url_dict[which] == '/data/stocktwits/trending':
+                self.url_dict[which] = f"{self.url_dict[which]}/{days}"
 
     @classmethod
     def get_data(cls, self, which):
