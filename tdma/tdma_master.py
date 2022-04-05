@@ -3,25 +3,20 @@
 
 try:
     from scripts.dev.tdma.tdma_api.td_api import TD_API
-    from scripts.dev.tdma.batches.daily_options import GetTMDADailyOptions
-    from scripts.dev.tdma.tdma_methods.tdma_options_combine import TdmaCombine
+    from scripts.dev.tdma.batches.batch_master import TdmaBatchMaster
     from scripts.dev.tdma.streaming.tdma_streaming import TdmaStreaming
     from scripts.dev.multiuse.help_class import help_print_arg
 except ModuleNotFoundError:
     from tdma.tdma_api.td_api import TD_API
-    from tdma.batches.daily_options import GetTMDADailyOptions
-    from tdma.tdma_methods.tdma_options_combine import TdmaCombine
+    from tdma.batches.batch_master import TdmaBatchMaster
     from tdma.streaming.tdma_streaming import TdmaStreaming
     from multiuse.help_class import help_print_arg
 
 # %% codecell
 
 
-class TdmaMaster(TD_API, TdmaStreaming):
+class TdmaMaster(TD_API, TdmaStreaming, TdmaBatchMaster):
     """TDMA API Top Level."""
-
-    batch_dict = ({'daily_opts': GetTMDADailyOptions,
-                   'combine_options': TdmaCombine})
 
     def __init__(self, api_val=None, batch_method=None, streaming=None, **kwargs):
         if api_val:
@@ -32,7 +27,7 @@ class TdmaMaster(TD_API, TdmaStreaming):
             self._call_streaming(self, streaming, **kwargs)
 
         if not api_val and not batch_method and not streaming:
-            help_print_arg(f"TdmaMaster: no method selected")
+            help_print_arg("TdmaMaster: no method selected")
 
     @classmethod
     def _call_td_api(cls, self, api_val, **kwargs):
@@ -45,7 +40,8 @@ class TdmaMaster(TD_API, TdmaStreaming):
         if batch_method == 'combine_options':
             kwargs['use_dask'] = True
             kwargs['method'] = 'options_chain'
-        self.batch_dict[batch_method](**kwargs)
+
+        TdmaBatchMaster.__init__(self, batch_method, **kwargs)
 
     @classmethod
     def _call_streaming(cls, self, streaming, **kwargs):

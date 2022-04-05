@@ -87,13 +87,19 @@ class TD_API(ClsHelp, TDMA_Param_Dicts):
                 gjson = resp.json()
                 sym = gjson['symbol']
                 result = self.clean_func(gjson, sym).df
+            elif api_val == 'get_accounts':
+                # self.TdmaDefault.__init__(self, api_val, resp, **kwargs)
+                self.clean_func.__init__(self, api_val, resp, **kwargs)
+                result = self.df
+                # result = self.clean_func(gjson, sym)
+                # Add df_pos (dataframe of positions) -
+                # self.df_pos = result.df_pos
+                # result = result.df
             elif api_val in self.req_keys:
                 help_print_arg(f"{api_val} {str(resp.status_code)}")
             else:
                 result = self.clean_func(api_val, resp).df
         except Exception as e:
-            if self.verbose:
-                help_print_arg(f"{str(e)} {type(e)}")
             self.elog(self, e)
 
         return result

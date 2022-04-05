@@ -21,7 +21,7 @@ except ModuleNotFoundError:
 # %% codecell
 
 
-class TDMA_Param_Dicts():
+class TDMA_Param_Dicts(TdmaDefault):
     """Dictionaries of TDMA Parameters."""
 
     """
@@ -54,6 +54,7 @@ class TDMA_Param_Dicts():
         orderId = kwargs.get('orderId', False)
         sector = kwargs.get('sector', False)
 
+
         tdma_api_endpoints = ({
             'options_chain': f'{burl}/marketdata/chains',
             'get_quotes': f"{burl}/marketdata/quotes",
@@ -63,6 +64,7 @@ class TDMA_Param_Dicts():
             'get_principals': f"{burl}/userprincipals",
             'get_sub_keys': f"{burl}/userprincipals/streamersubscriptionkeys",
             'get_instruments': f"{burl}/instruments",
+            'get_watchlists': f"{burl}/accounts/{accountId}/watchlists",
             'get_movers': f"{burl}/marketdata/{sector}/movers",
             'cancel_order': f"{burl}/accounts/{accountId}/orders/{orderId}",
             'place_order': f"{burl}/accounts/{accountId}/orders"
