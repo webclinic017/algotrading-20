@@ -76,7 +76,11 @@ def make_emas(df, combine=True):
         if isinstance(val, pd.Series):
             ema_s_list.append(val)
 
-    df_emas = pd.concat(ema_s_list, axis=1)
+    df_emas = None
+    try:
+        df_emas = pd.concat(ema_s_list, axis=1)
+    except ValueError:
+        df_emas = ema_s_list[0].to_frame().join(ema_s_list[1:])
 
     col_crossovers = []
     cross_dict = {}
