@@ -25,13 +25,14 @@ except ModuleNotFoundError:
 def make_url_dict():
     """Make the url dict."""
     url_dict = ({
+        'all_symbols': '/symbols/all',
         'apca_all': '/data/apca/all',
         'apca_news_realtime': '/data/apca/news/realtime',
         'analyst_recs_all': '/data/company_stats/analyst_recs/all',  # Obsolete
         'analyst_recs_mr': '/data/company_stats/analyst_recs/most_recent',  # Obsolete
         'analyst_recs_scraped': '/data/company_stats/analyst_recs/scraped',
         'analyst_ests_all': '/data/company_stats/analyst_ests/all',
-        'treasuries': '/econ/treasuries',
+        'cs_top_vol': '/scans/vol/avg',
         'cboe_mmo_raw': '/cboe/mmo/raw',
         'cboe_mmo_top': '/cboe/mmo/top',
         'cboe_mmo_syms': '/cboe/mmo/syms',
@@ -44,12 +45,6 @@ def make_url_dict():
         'cboe_intraday_eod': '/data/cboe/intraday/eod/last',
         'cboe_intraday_intra': '/data/cboe/intraday/intraday/last',
         'company_meta': '/data/companies/meta',
-        'yoptions_daily': '/data/yfinance/derivs/combined/daily',
-        'yoptions_all': '/data/yfinance/derivs/combined/all',
-        'yoptions_temp': '/data/yfinance/derivs/temp',
-        'yoptions_unfin': '/data/yfinance/derivs/unfinished',
-        'yoptions_stock': '/data/yfinance/derivs/stock',
-        'yinfo_all': '/data/yfinance/info/all',
         'e_fix_intraday_dataframes': '/data/errors/fix_intraday_dataframes',
         'errors_iex_intraday_1min': '/data/errors/clean_iex_1min',
         'iex_quotes_raw': '/prices/eod/all',
@@ -65,14 +60,8 @@ def make_url_dict():
         'my_symbols': '/data/my/symbols',
         'new_syms_today': '/symbols/new/today',
         'new_syms_all': '/symbols/new/all',
-        'stock_data': '/symbols/data',
-        'stock_close_prices': '/data/hist/daily/all',
-        'stock_close_cb_all': '/data/hist/daily/cb_all',
-        'stock_close_test': '/data/hist/daily/test',
-        'all_symbols': '/symbols/all',
         'otc_syms': '/symbols/otc',
         'syms_new_mr': '/data/symbols/new/mr',
-        'cs_top_vol': '/scans/vol/avg',
         'sec_ref': '/data/sec/ref',
         'sec_inst_holdings': '/data/sec/institutions',
         'sec_master_mr': '',
@@ -82,11 +71,19 @@ def make_url_dict():
         'sector_perf': '/data/hist/sector_perf/mr',
         'stats_combined': '/data/stats/combined',
         'st_stream': '/stocktwits/user_stream',
-        'st_trending': '/data/stocktwits/trending',
+        'stocktwits_trending': '/data/stocktwits/trending',
         'st_trend_all': '/stocktwits/trending/all',
         'st_trend_today': '/stocktwits/trending/today/explore',
         'st_watch': '/stocktwits/watchlist',
+        'stock_data': '/symbols/data',
+        'stock_close_prices': '/data/hist/daily/all',
+        # Stocks EOD combined all
+        'stock_close_cb_all': '/data/hist/daily/cb_all',
+        # Stocks EOD combined all column subset
+        'stock_close_cols_subset': '/data/hist/daily/cols_subset',
+        'stock_close_test': '/data/hist/daily/test',
         'reddit_data': '/data/reddit',  # /{subreddit}/{method}
+        'treasuries': '/econ/treasuries',
         'twitter_get_max': '/redo/twitter/max_hist',
         'twitter_errors': '/data/twitter/errors',
         'twitter_hist_all': '/data/twitter/tweets/all',
@@ -98,6 +95,12 @@ def make_url_dict():
         'tdma_movers': '/data/tdma/movers',
         'tdma_streaming': '/data/tdma/streaming',
         'tdma_logs': '/data/tdma/logs',
+        'yoptions_daily': '/data/yfinance/derivs/combined/daily',
+        'yoptions_all': '/data/yfinance/derivs/combined/all',
+        'yoptions_temp': '/data/yfinance/derivs/temp',
+        'yoptions_unfin': '/data/yfinance/derivs/unfinished',
+        'yoptions_stock': '/data/yfinance/derivs/stock',
+        'yinfo_all': '/data/yfinance/info/all',
         'redo': ''
     })
 
@@ -110,13 +113,15 @@ class serverAPI():
     url, df, get = None, None, None
     base_url = "https://algotrading.ventures/api/v1"
     url_dict = make_url_dict()
+    params = {}
 
     # Data to conacatenate
     concat = ['st_trend', 'cboe_mmo_top']
 
     def __init__(self, which, **kwargs):
-        self.check_params(self, which, **kwargs)
-        df = self.get_data(self, which)
+        self._api_unpack_kwargs(self, **kwargs)
+        self._api_check_params(self, which, **kwargs)
+        df = self._api_get_data(self, which)
 
         if isinstance(df, pd.DataFrame):
             if df.shape[0] == 0:
@@ -125,7 +130,15 @@ class serverAPI():
         self.df = df
 
     @classmethod
-    def check_params(cls, self, which, **kwargs):
+    def _api_unpack_kwargs(cls, self, **kwargs):
+        """Unpack kwargs and class variables."""
+        self.verbose = kwargs.get('verbose')
+        self.symbol = kwargs.get('symbol')
+
+        self.service = kwargs.get('service')
+
+    @classmethod
+    def _api_check_params(cls, self, which, **kwargs):
         """Check passed parameters and urls."""
         refresh, val = None, None
         if which in ('sec_master_mr'):
@@ -144,9 +157,8 @@ class serverAPI():
 
             self.url_dict[which] = f"/redo/functions/{val}"
 
-        elif which in ('stock_data', 'yoptions_stock') and kwargs.get('symbol', False):
-            symbol = kwargs['symbol']
-            self.url_dict[which] = f"{self.url_dict[which]}/{symbol}"
+        elif which in ('stock_data', 'yoptions_stock') and self.symbol:
+            self.url_dict[which] = f"{self.url_dict[which]}/{self.symbol}"
 
         # Twitter get_max_history with parameter addition
         elif which == 'twitter_get_max' and 'username' in kwargs.keys():
@@ -154,13 +166,15 @@ class serverAPI():
 
             if username not in self.url_dict[which]:
                 self.url_dict[which] = f"{self.url_dict[which]}/{username}"
+
         # Tdma streaming with added service
-        elif which == 'tdma_streaming' and 'service' in kwargs.keys():
-            service = kwargs.get('service', False)
+        elif which == 'tdma_streaming' and self.service:
+            service = self.service  # redefine service for convenience
             slist = ['quote', 'options', 'timesale_equity', 'timesale_options']
+            # Validate service against possible options
             if service.lower() not in slist:
                 help_print_arg(f"tdma_streaming service: {service} not in slist")
-
+            # If service not in url, add it
             if service not in self.url_dict[which]:
                 self.url_dict[which] = f"{self.url_dict[which]}/{service}"
 
@@ -173,17 +187,33 @@ class serverAPI():
                 self.url_dict[which] = f"{self.url_dict[which]}/{subreddit}/{method}"
             print(self.url)
 
-        elif which == 'st_trending':
+        elif which == 'stocktwits_trending':
             days = kwargs.get('days', 5)
             if self.url_dict[which] == '/data/stocktwits/trending':
                 self.url_dict[which] = f"{self.url_dict[which]}/{days}"
 
+        elif which in ('stock_close_test', 'stock_close_cols_subset'):
+            default_cols = (['date', 'symbol', 'fOpen', 'fHigh',
+                             'fLow', 'fClose', 'fVolume'])
+            columns = kwargs.get('columns', default_cols)
+            self.params['columns'] = json.dumps(columns)
+
+
+
     @classmethod
-    def get_data(cls, self, which):
+    def _api_get_data(cls, self, which):
         """Get data from server."""
         df, get_json = None, None
         url = f"{self.base_url}{self.url_dict[which]}"
-        get = requests.get(url)
+
+        if self.params and self.verbose:  # Print parameters if they exist
+            print(f"serverAPI: {str(which)} {str(self.params)}")
+            # self.params = json.dumps(self.params)
+        # Submit get request
+        get = requests.get(url, params=self.params)
+        # Store get request under class variable
+        self.get = get
+
         if get.status_code < 400:
             try:
                 get_json = json.load(BytesIO(get.content))

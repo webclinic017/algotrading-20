@@ -1,12 +1,14 @@
 """Fib funcs master sequence."""
 # %% codecell
 from pathlib import Path
+from datetime import date
 
 import pandas as pd
 from tqdm import tqdm
 
 try:
-    from scripts.dev.multiuse.help_class import write_to_parquet, baseDir, help_print_arg
+    from scripts.dev.multiuse.help_class import (write_to_parquet, baseDir,
+                                                 help_print_arg, getDate)
     from scripts.dev.workbooks_fib.fib_funcs import (
         get_max_rows, get_rows,
         get_fib_dict, get_diff_dict,
@@ -14,7 +16,8 @@ try:
         write_fibs_to_parquet
     )
 except ModuleNotFoundError:
-    from multiuse.help_class import write_to_parquet, baseDir, help_print_arg
+    from multiuse.help_class import (write_to_parquet, baseDir,
+                                     help_print_arg, getDate)
     from workbooks_fib.fib_funcs import (
         get_max_rows, get_rows,
         get_fib_dict, get_diff_dict,
@@ -25,10 +28,16 @@ except ModuleNotFoundError:
 # %% codecell
 
 
-def fib_master(dt=None, verbose=False):
+def fib_master(**kwargs):
     """Full fibonacci sequence function."""
+    dt_yr = getDate.query('iex_eod').year
+    # Default to the first day of this past year
+    dt = kwargs.get('dt', date(dt_yr, 1, 1))
+    verbose = kwargs.get('verbose', False)
+    # Would probably be for my symbols - not currently used
+    only_syms = kwargs.get('only_syms', [])
 
-    df_all = read_clean_combined_all(local=False, dt=dt)
+    df_all = read_clean_combined_all(local=False, **kwargs)
 
     mrow_empty_list = []
     mrows_empty_list = []
@@ -62,7 +71,6 @@ def fib_master(dt=None, verbose=False):
         # I'd like to see all max_row possibilities
         if not max_rows.empty:
             mrows_list.append(max_rows)
-
 
         rows = get_rows(df_sym, max_row, verb=False)
         # If rows is empty

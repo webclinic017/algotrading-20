@@ -190,7 +190,7 @@ class FpathsTest():
 
         st_path_dict = ({
             'Stocktwits: trending': f"{st_base}/trending/{dt}.parquet",
-            'Stocktwits: my watchlist': f"{st_base}/me/_watch_{dt}.parquet"
+            # 'Stocktwits: my watchlist': f"{st_base}/me/_watch_{dt}.parquet"
 
         })
 

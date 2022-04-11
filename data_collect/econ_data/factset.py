@@ -18,15 +18,15 @@ class FactSetSources():
 
     def __init__(self, method, **kwargs):
         self.verbose = kwargs.get('verbose', False)
-        self.fpath = self._get_fpaths(self, method, **kwargs)
-        self.url = self._get_url(self, method, **kwargs)
+        self.fpath = self._fss_get_fpaths(self, method, **kwargs)
+        self.url = self._fss_get_url(self, method, **kwargs)
         if self.fpath and self.url:
-            self.get = self._get_data(self, method, **kwargs)
-            self.df = self._process_data(self, method, **kwargs)
-            self._write_to_parquet(self, method, **kwargs)
+            self.get = self._fss_get_data(self, method, **kwargs)
+            self.df = self._fss_process_data(self, method, **kwargs)
+            self._fss_write_to_parquet(self, method, **kwargs)
 
     @classmethod
-    def _get_fpaths(cls, self, method, **kwargs):
+    def _fss_get_fpaths(cls, self, method, **kwargs):
         """Get fpath dict for factset dataframes."""
         bdir = Path(baseDir().path, 'economic_data', 'factset')
 
@@ -42,7 +42,7 @@ class FactSetSources():
         return fpath
 
     @classmethod
-    def _get_url(cls, self, method, **kwargs):
+    def _fss_get_url(cls, self, method, **kwargs):
         """Get url from options."""
         udict = ({
             'covid': 'https://media-cdn.factba.se/rss/json/coronavirus.json',
@@ -54,13 +54,13 @@ class FactSetSources():
         return url
 
     @classmethod
-    def _get_data(cls, self, method, **kwargs):
+    def _fss_get_data(cls, self, method, **kwargs):
         """Get data from url and return the response object."""
         get = requests.get(self.url)
         return get
 
     @classmethod
-    def _process_data(cls, self, method, **kwargs):
+    def _fss_process_data(cls, self, method, **kwargs):
         """Process data and return dataframe."""
         df = None  # Assign empty variable
         if method == 'covid':
@@ -83,7 +83,7 @@ class FactSetSources():
         return df
 
     @classmethod
-    def _write_to_parquet(cls, self, method, **kwargs):
+    def _fss_write_to_parquet(cls, self, method, **kwargs):
         """Write to parquet, insert any method dependent kwargs if needed."""
         if method == 'biden':
             write_to_parquet(self.df[0], self.fpath, combine=True)

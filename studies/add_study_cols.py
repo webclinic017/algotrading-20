@@ -7,10 +7,56 @@ import pandas as pd
 from tqdm import tqdm
 import talib
 
+from multiuse.pd_funcs import mask
+pd.DataFrame.mask = mask
+
+try:
+    from scripts.dev.multiuse.help_class import getDate
+except ModuleNotFoundError:
+    from multiuse.help_class import getDate
+
 # %% codecell
 
 
 # %% codecell
+
+
+def first_cleanup_basic_cols(df_all, **kwargs):
+    """Cleanup data then add fRange and other cols."""
+    dt = kwargs.get('dt', getDate.query('iex_eod'))
+    if type(dt) is bool:
+        dt = getDate.query('iex_eod')
+
+    if df_all['date'].dtype == 'object':
+        df_all['date'] = pd.to_datetime(df_all['date'])
+    # Drop duplicates on symbol and date
+    df_all = (df_all.drop_duplicates(subset=['symbol', 'date'])
+                    .reset_index(drop=True)
+                    .copy())
+
+    # Get rid of all symbols that only have 1 day of data
+    df_vc = df_all['symbol'].value_counts()
+    df_vc_1 = df_vc[df_vc == 1].index.tolist()
+    df_all = (df_all[~df_all['symbol'].isin(df_vc_1)]
+              .reset_index(drop=True)
+              .copy())
+
+    # Sort by symbol, date ascending
+    df_all = df_all.sort_values(by=['symbol', 'date'], ascending=True)
+
+    # Exclude all dates from before this year
+    df_all = (df_all[df_all['date'] >= str(dt.year)]
+              .dropna(subset=['fVolume'])
+              .reset_index(drop=True)
+              .copy())
+
+    df_all['fRange'] = (df_all['fHigh'] - df_all['fLow'])
+    df_all['vol/mil'] = (df_all['fVolume'].div(1000000))
+    df_all['prev_close'] = df_all['fClose'].shift(periods=1, axis=0)
+    df_all['prev_symbol'] = df_all['symbol'].shift(periods=1, axis=0)
+
+    return df_all
+
 
 
 def add_fChangeP_col(df_all):
@@ -101,6 +147,9 @@ def make_moving_averages(df_all):
                                              .mean().to_numpy())
 
     df_all['prev_symbol'] = df_all['symbol'].shift(periods=1, axis=0)
+    cols_to_cat = ['symbol', 'prev_symbol']
+    df_all[cols_to_cat] = df_all[cols_to_cat].astype("category")
+    # Convert back to category ^
     df_all['up50'] = (df_all.mask('symbol', df_all['prev_symbol'])
                       ['sma_50'].diff())
     df_all['up200'] = (df_all.mask('symbol', df_all['prev_symbol'])

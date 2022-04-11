@@ -46,6 +46,8 @@ class FpathsAPI():
         """Iex historical data fpaths."""
         bdir = Path(baseDir().path, 'StockEOD/combined')
 
+        # 'all' is misleading - this is really just the most recent
+        # combined version. Whereas 'cb_all' is all combined stock data
         iex_hdict = ({
             'all': get_most_recent_fpath(bdir),
             'cb_all': (get_most_recent_fpath(
