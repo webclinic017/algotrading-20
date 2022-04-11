@@ -91,7 +91,7 @@ def read_clean_combined_all(**kwargs):
         # Define base bpath for 2015-2020 stock data
         bpath = Path(baseDir().path, 'historical/each_sym_all')
         path = get_most_recent_fpath(bpath.joinpath('each_sym_all', 'combined_all'))
-        if path.exists():
+        if path:
             df_hist = pd.read_parquet(path)
             # Combine 2015-2020 stock data with ytd
             df_all = pd.concat([df_hist, df_all]).copy()
