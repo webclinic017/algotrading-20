@@ -7,14 +7,15 @@ import pandas as pd
 from tqdm import tqdm
 import talib
 
-from multiuse.pd_funcs import mask
-pd.DataFrame.mask = mask
-
 try:
+    from scripts.dev.multiuse.pd_funcs import mask
     from scripts.dev.multiuse.help_class import getDate
 except ModuleNotFoundError:
+    from multiuse.pd_funcs import mask
     from multiuse.help_class import getDate
 
+
+pd.DataFrame.mask = mask
 # %% codecell
 
 
