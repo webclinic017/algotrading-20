@@ -38,16 +38,23 @@ importlib.reload(sys.modules['studies.ta_lib_studies'])
 importlib.reload(sys.modules['ref_data.symbol_meta_stats'])
 importlib.reload(sys.modules['workbooks_ml.ml_funcs_data_summary'])
 importlib.reload(sys.modules['pre_process_data.transform_dt_cat'])
+
+# %% codecell
+from workbooks_ml.make_full_dataset_V2 import MlTrainingMakeFullDataset
 # %% codecell
 
+mltm = MlTrainingMakeFullDataset()
+
+
+# %% codecell
+dt = date(2021, 1, 1)
 # Step #1 - run fib sequence
-fib_master(verbose=False)
+fib_master(verbose=True)
 
 # path = Path(baseDir().path, 'studies/fibonacci', 'fib_vals.parquet')
 # df = pd.read_parquet(path)
 
 # %% codecell
-dt = date(2022, 1, 1)
 df_all = fib_all_clean_combine_write(dt=dt)
 
 df_peak_troughs = add_fib_peaks_troughs_diffs(read=False).copy()
