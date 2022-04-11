@@ -1,6 +1,6 @@
 """Store commonly used functions for dataframes in a class."""
 # %% codecell
-
+from io import StringIO
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
@@ -130,6 +130,35 @@ class DfHelpers():
         # Optional testing
         # dd_all = dd.concat(tc.path_list)
         return df_list
+
+    @staticmethod
+    def df_info_to_df_info(df):
+        """Dataframe info to returnable dataframe."""
+
+        buf = StringIO()
+        df.info(buf=buf, verbose=True, show_counts=True)
+        s = buf.getvalue()
+        lines = buf.getvalue().splitlines()
+
+        dft1 = pd.DataFrame(lines[5:-2])[0].str.split(' ', expand=True)
+        s = dft1.to_numpy()
+        orders = np.argsort(s == '', axis=1, kind='mergesort')
+        dft1[:] = s[np.arange(len(s))[:, None], orders]
+
+        dft2 = (dft1.replace(['None', ''], np.NaN)
+                    .dropna(how='all', axis=1)
+                    .drop(columns=[5], errors='ignore'))
+
+        cols = list(filter(None, lines[3].split(' ')))
+        dft2.columns = cols
+        dft2.drop(columns=['#'], errors='ignore', inplace=True)
+
+        dft2['Non-Null'] = dft2['Non-Null'].astype('int')
+
+        dfl = dft2['Non-Null'].max()
+        dft2['null%'] = dft2['Non-Null'].div(dfl)
+
+        return dft2
 
 
 

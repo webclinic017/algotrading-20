@@ -17,20 +17,30 @@ import talib
 
 try:
     from scripts.dev.data_collect.iex_class import urlData
-    from scripts.dev.studies.add_study_cols import add_gap_col, calc_rsi, make_moving_averages, add_fChangeP_col, add_fHighMax_col
-    from scripts.dev.multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
+    from scripts.dev.studies.add_study_cols import (add_gap_col, calc_rsi,
+                                                    make_moving_averages,
+                                                    add_fChangeP_col,
+                                                    add_fHighMax_col,
+                                                    first_cleanup_basic_cols)
+    from scripts.dev.multiuse.help_class import (baseDir, scriptDir, dataTypes,
+                                                 getDate, help_print_error,
+                                                 help_print_arg,
+                                                 write_to_parquet)
     from scripts.dev.multiuse.df_helpers import DfHelpers
-    from scripts.dev.multiuse.create_file_struct import makedirs_with_permissions
     from scripts.dev.multiuse.path_helpers import get_most_recent_fpath
     from scripts.dev.multiuse.pd_funcs import mask, chained_isin
     from scripts.dev.api import serverAPI
     from scripts.dev.multiuse.symbol_ref_funcs import remove_funds_spacs
 except ModuleNotFoundError:
     from data_collect.iex_class import urlData
-    from studies.add_study_cols import add_gap_col, calc_rsi, make_moving_averages, add_fChangeP_col, add_fHighMax_col
-    from multiuse.help_class import baseDir, scriptDir, dataTypes, getDate, help_print_error, help_print_arg, write_to_parquet
+    from studies.add_study_cols import (add_gap_col, calc_rsi,
+                                        make_moving_averages, add_fChangeP_col,
+                                        add_fHighMax_col,
+                                        first_cleanup_basic_cols)
+    from multiuse.help_class import (baseDir, scriptDir, dataTypes, getDate,
+                                     help_print_error, help_print_arg,
+                                     write_to_parquet)
     from multiuse.df_helpers import DfHelpers
-    from multiuse.create_file_struct import makedirs_with_permissions
     from multiuse.path_helpers import get_most_recent_fpath
     from multiuse.pd_funcs import mask, chained_isin
     from api import serverAPI
@@ -43,22 +53,34 @@ pd.DataFrame.chained_isin = chained_isin
 # %% codecell
 
 
-def read_clean_combined_all(local=False, dt=None, filter_syms=True):
+def read_clean_combined_all(**kwargs):
     """Read, clean, and add columns to StockEOD combined all."""
     df_all = None
+
+    dt = kwargs.get('dt', getDate.query('iex_eod'))
+    local = kwargs.get('local', False)
+    only_syms = kwargs.get('only_syms', [])
+    filter_syms = kwargs.get('filter_syms', True)
+
+    if type(dt) is bool:
+        dt = getDate.query('iex_eod')
+
+    cols_to_use = (['date', 'symbol', 'fOpen', 'fHigh',
+                    'fLow', 'fClose', 'fVolume'])
 
     if local:
         bpath = Path(baseDir().path, 'StockEOD/combined_all')
         fpath = get_most_recent_fpath(bpath)
-        cols_to_read = ['date', 'symbol', 'fOpen', 'fHigh', 'fLow', 'fClose', 'fVolume']
-        df_all = pd.read_parquet(fpath, columns=cols_to_read)
-        if df_all['date'].dtype == 'object':
-            df_all['date'] = pd.to_datetime(df_all['date'])
-        df_all.drop_duplicates(subset=['symbol', 'date'], inplace=True)
+        df_all = pd.read_parquet(fpath, columns=cols_to_use)
+    elif only_syms:
+        df_all = serverAPI('stock_close_cols_subset').df
+        df_all = df_all[cols_to_use].copy()
+
+        df_all = (df_all[df_all['symbol']
+                  .isin(only_syms)])
     else:
-        cols_to_read = ['date', 'symbol', 'fOpen', 'fHigh', 'fLow', 'fClose', 'fVolume']
-        df_all = serverAPI('stock_close_cb_all').df
-        df_all = df_all[cols_to_read]
+        df_all = serverAPI('stock_close_cols_subset').df
+        df_all = df_all[cols_to_use]
 
         if filter_syms:
             all_cs_syms = remove_funds_spacs()
@@ -73,28 +95,9 @@ def read_clean_combined_all(local=False, dt=None, filter_syms=True):
         # Combine 2015-2020 stock data with ytd
         df_all = pd.concat([df_hist, df_all]).copy()
 
-        df_all.drop_duplicates(subset=['symbol', 'date'], inplace=True)
-        df_all.reset_index(drop=True, inplace=True)
-
-    if not dt:
-        dt = getDate.query('iex_eod')
-    # Exclude all dates from before this year
-    df_all = (df_all[df_all['date'] >= str(dt.year)]
-              .dropna(subset=['fVolume'])
-              .copy())
-
-    # Get rid of all symbols that only have 1 day of data
-    df_vc = df_all['symbol'].value_counts()
-    df_vc_1 = df_vc[df_vc == 1].index.tolist()
-    df_all = (df_all[~df_all['symbol'].isin(df_vc_1)]
-              .reset_index(drop=True).copy())
-    # Sort by symbol, date ascending
-    df_all = df_all.sort_values(by=['symbol', 'date'], ascending=True)
-
-    df_all['fRange'] = (df_all['fHigh'] - df_all['fLow'])
-    df_all['vol/mil'] = (df_all['fVolume'].div(1000000))
-    df_all['prev_close'] = df_all['fClose'].shift(periods=1, axis=0)
-    df_all['prev_symbol'] = df_all['symbol'].shift(periods=1, axis=0)
+    # Basic cleanup columns
+    print('Fib funcs: first_cleanup_basic_cols')
+    df_all = first_cleanup_basic_cols(df_all, dt=dt)
 
     # Add fChangeP col
     print('Fib funcs: adding fChangeP column')
@@ -482,9 +485,9 @@ def make_confirm_df(rows, cutoff, diff_dict, fib_dict, df_confirm_all):
         confirm_df = pd.DataFrame(confirm_list, columns=confirm_cols)
         confirm_df['date'] = pd.to_datetime(confirm_df['date'])
         confirm_df['fib_val'] = confirm_df['fib'].map(fib_dict)
-        # .round(2)
         # Append rows to df_confirm_all
-        df_confirm_all = df_confirm_all.append(confirm_df)
+        # df_confirm_all = df_confirm_all.append(confirm_df)
+        df_confirm_all = pd.concat([df_confirm_all, confirm_df])
     return df_confirm_all
 
 

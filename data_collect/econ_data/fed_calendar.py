@@ -20,22 +20,22 @@ class FedResCal():
     """Federal reserve calendar events."""
 
     def __init__(self):
-        fpath = self._get_fpath(self)
-        self._get_params(self)
-        self.get = self._call_api(self)
-        df = self._make_df_transform_data(self, self.get)
-        self.df = self._convert_time_data(self, df)
+        fpath = self._frc_get_fpath(self)
+        self._frc_get_params(self)
+        self.get = self._frc_call_api(self)
+        df = self._frc_make_df_transform_data(self, self.get)
+        self.df = self._frc_convert_time_data(self, df)
         write_to_parquet(self.df, fpath, combine=True, drop_duplicates=True)
 
     @classmethod
-    def _get_fpath(cls, self):
+    def _frc_get_fpath(cls, self):
         """Get fpath for read/writing."""
         bpath = Path(baseDir().path, 'economic_data', 'FED')
         fpath = bpath.joinpath('calendar.parquet')
         return fpath
 
     @classmethod
-    def _get_params(cls, self):
+    def _frc_get_params(cls, self):
         """Get parameters for API call."""
         url = 'https://www.federalreserve.gov/data/statcalendar.json'
 
@@ -57,7 +57,7 @@ class FedResCal():
         self.headers = headers
 
     @classmethod
-    def _call_api(cls, self):
+    def _frc_call_api(cls, self):
         """Call API and return get request."""
         get = requests.get(self.url, headers=self.headers)
 
@@ -68,14 +68,14 @@ class FedResCal():
         return get
 
     @classmethod
-    def _make_df_transform_data(cls, self, get):
+    def _frc_make_df_transform_data(cls, self, get):
         """Make dataframe and start data transformation."""
         data = json.loads(get.content.decode('utf-8-sig'))['events']
         df = pd.DataFrame(data)
         return df
 
     @classmethod
-    def _convert_time_data(cls, self, df):
+    def _frc_convert_time_data(cls, self, df):
         """Convert time data and return dataframe."""
         df.dropna(subset='time', inplace=True)
         df['time'] = df['time'].str.replace('.', '', regex=False)
