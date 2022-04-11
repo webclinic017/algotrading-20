@@ -500,7 +500,7 @@ def write_fibs_to_parquet(df_confirm_all, fib_dict_list):
     fib_df = pd.DataFrame.from_records(fib_dict_list)
     (fib_df.insert(2, "date_range",
      getDate.get_bus_day_diff(fib_df, 'start_date', 'end_date')))
-    path = Path(baseDir().path, 'studies/fibonacci', 'fib_vals_test.parquet')
+    path = Path(baseDir().path, 'studies/fibonacci', 'fib_vals.parquet')
     write_to_parquet(fib_df, path)
 
 
