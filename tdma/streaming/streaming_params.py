@@ -30,8 +30,8 @@ class TdmaStreamingParams():
         self.cboe_sym_list = self._tsp_cboe_symlist(self)
         self.sp_dict['sub_quote'] = self._tsp_sub_quotes(self, df_gpf, "QUOTE")
         self.sp_dict['sub_timesale_equity'] = self._tsp_sub_quotes(self, df_gpf, "TIMESALE_EQUITY")
-        self.sp_dict['sub_option'] = self._tsp_sub_options(self, df_gpf, "OPTION")
-        self.sp_dict['sub_timesale_options'] = self._tsp_sub_options(self, df_gpf, "TIMESALE_OPTIONS")
+        # self.sp_dict['sub_option'] = self._tsp_sub_options(self, df_gpf, "OPTION")
+        # self.sp_dict['sub_timesale_options'] = self._tsp_sub_options(self, df_gpf, "TIMESALE_OPTIONS")
         self.sp_dict = self.sp_dict | self._tsp_sub_actives(self, df_gpf)
 
         self.request_list = self._tsp_make_request_list(self, **kwargs)
@@ -224,7 +224,6 @@ class TdmaStreamingParams():
             all_actives_dict[f"sub_{service.lower()}_60"] = sub_dict
 
         return all_actives_dict
-
 
     @classmethod
     def _tsp_make_request_list(cls, self, **kwargs):

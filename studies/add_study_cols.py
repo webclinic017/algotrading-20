@@ -8,14 +8,15 @@ from tqdm import tqdm
 import talib
 
 try:
-    from scripts.dev.multiuse.pd_funcs import mask
+    from scripts.dev.multiuse.pd_funcs import mask, perc_change
     from scripts.dev.multiuse.help_class import getDate
 except ModuleNotFoundError:
-    from multiuse.pd_funcs import mask
+    from multiuse.pd_funcs import mask, perc_change
     from multiuse.help_class import getDate
 
 
 pd.DataFrame.mask = mask
+pd.DataFrame.perc_change = perc_change
 # %% codecell
 
 
@@ -59,22 +60,37 @@ def first_cleanup_basic_cols(df_all, **kwargs):
     return df_all
 
 
-
 def add_fChangeP_col(df_all):
     """Add percent change under the column fChangeP."""
     df_mod = df_all[['symbol', 'date', 'fClose']].copy()
-    df_mod_1 = (df_mod.pivot(index=['symbol'],
-                             columns=['date'],
-                             values=['fClose']))
-    df_mod_2 = (df_mod_1.pct_change(axis='columns',
-                                    fill_method='bfill',
-                                    limit=1))
-    df_mod_3 = (df_mod_2.stack()
-                        .reset_index()
-                        .rename(columns={'fClose': 'fChangeP'}))
-    df_all = (pd.merge(df_all, df_mod_3,
-                       how='left',
-                       on=['date', 'symbol']))
+    try:
+        df_mod_1 = (df_mod.pivot(index=['symbol'],
+                                 columns=['date'],
+                                 values=['fClose']))
+        df_mod_2 = (df_mod_1.pct_change(axis='columns',
+                                        fill_method='bfill',
+                                        limit=1))
+        df_mod_3 = (df_mod_2.stack()
+                            .reset_index()
+                            .rename(columns={'fClose': 'fChangeP'}))
+        df_all = (pd.merge(df_all, df_mod_3,
+                           how='left',
+                           on=['date', 'symbol']))
+    except ValueError:
+        df_mod['fCloseS1'] = df_mod['fClose'].shift(1)
+        df_mod['prev_symbol'] = df_mod['symbol'].shift(1)
+
+        df_mod = (df_mod.join(
+                   df_mod.perc_change('fCloseS1', 'fClose')
+                         .rename('fChangeP'))
+                  .copy())
+
+        sym_not_prev_idx = (df_mod[df_mod['symbol'] !=
+                            df_mod['prev_symbol']].index)
+        df_mod.loc[sym_not_prev_idx, 'fChangeP'] = 0
+
+        cols_to_drop = ['date', 'symbol', 'fClose', 'fCloseS1', 'prev_symbol']
+        df_all = df_all.join(df_mod.drop(columns=cols_to_drop)).copy()
 
     return df_all
 

@@ -71,12 +71,13 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams, ClsHelp):
     async def _tdma_streaming(cls, self, uri, request_list):
         """TD Ameritrade Streaming."""
         fdir = Path(baseDir().path, 'tdma', 'test_dump')
+        dt = getDate.query('iex_close')
         fpaths = ({
-            'QUOTE': fdir.joinpath('quote.parquet'),
-            'OPTION': fdir.joinpath('option.parquet'),
-            'TIMESALE_EQUITY': fdir.joinpath('timesale_equity.parquet'),
-            'TIMESALE_OPTIONS': fdir.joinpath('timesale_options.parquet'),
-            'ACTIVES_OPTIONS': fdir.joinpath('actives_options.parquet')
+            'QUOTE': fdir.joinpath(f'quote_{dt}.parquet'),
+            'OPTION': fdir.joinpath(f'option_{dt}.parquet'),
+            'TIMESALE_EQUITY': fdir.joinpath(f'timesale_equity_{dt}.parquet'),
+            'TIMESALE_OPTIONS': fdir.joinpath(f'timesale_options_{dt}.parquet'),
+            'ACTIVES_OPTIONS': fdir.joinpath(f'actives_options_{dt}.parquet')
         })
 
         for rq in request_list:

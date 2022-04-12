@@ -112,12 +112,15 @@ def write_to_parquet(df, fpath, combine=False, drop_duplicates=False, **kwargs):
     cols_to_cat = kwargs.get('cols_to_cat', False)
     cols = df.columns
     for col in cols:  # If datatype is mixed. Convert to str
-        if infer_dtype(col) in ['mixed', 'mixed-integer']:
-            df[col] = df[col].astype('str')
-        elif isinstance(df[col], pd.Timestamp):
-            df[col] = df[col].apply(lambda x: x.value)
-        elif infer_dtype(col) in 'datetime64':
-            df[col] = df[col].apply(lambda x: x.value)
+        try:
+            if infer_dtype(col) in ['mixed', 'mixed-integer']:
+                df[col] = df[col].astype('str')
+            elif isinstance(df[col], pd.Timestamp):
+                df[col] = df[col].apply(lambda x: x.value)
+            elif infer_dtype(col) in 'datetime64':
+                df[col] = df[col].apply(lambda x: x.value)
+        except TypeError:
+            pass
 
     df = dataTypes(df, parquet=True).df
     fpath = Path(fpath)

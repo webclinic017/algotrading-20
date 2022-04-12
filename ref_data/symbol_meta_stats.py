@@ -23,6 +23,7 @@ class SymbolRefMetaInfo():
     # df_all : if true, combine all separate dataframes
 
     def __init__(self, df_all=None, **kwargs):
+        self.dropcols = kwargs.get('dropcols', True)
         self.meta = self._call_stock_meta_info(self)
         self.all_symbols = self._get_all_symbols(self)
         self.stats = self._get_stats_info(self)
@@ -57,6 +58,7 @@ class SymbolRefMetaInfo():
         """Get and clean company stats info from server."""
         stats = serverAPI('stats_combined').df
         stats_dt = stats[stats['date'] == stats['date'].max()].copy()
+        df_stats = None
 
         all_symbols = serverAPI('all_symbols').df
         all_syms = (all_symbols[['symbol', 'name']]
@@ -68,7 +70,11 @@ class SymbolRefMetaInfo():
                          'nextEarningsDate', 'day30ChangePercent',
                          'month6ChangePercent', 'year1ChangePercent'])
 
-        df_stats = ntest[cols_to_keep].set_index('symbol')
+        if self.dropcols:
+            df_stats = ntest[cols_to_keep].set_index('symbol')
+        else:
+            df_stats = ntest.set_index('symbol')
+
         df_stats['nextEarningsDate'] = (pd.to_datetime(
                                         df_stats['nextEarningsDate']))
         df_stats['dt'] = pd.to_datetime(getDate.query('iex_eod'))
