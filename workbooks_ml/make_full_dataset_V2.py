@@ -18,6 +18,7 @@ try:
     from scripts.dev.pre_process_data.sec_daily_index import get_collect_prep_sec_data
     from scripts.dev.pre_process_data.pre_analyst_ratings import PreProcessAnalystRatings
     from scripts.dev.ref_data.symbol_meta_stats import SymbolRefMetaInfo
+    from scripts.dev.api import serverAPI
 except ModuleNotFoundError:
     from multiuse.help_class import getDate, baseDir, write_to_parquet
     from workbooks_fib.fib_funcs_master import fib_master
@@ -26,6 +27,7 @@ except ModuleNotFoundError:
     from pre_process_data.sec_daily_index import get_collect_prep_sec_data
     from pre_process_data.pre_analyst_ratings import PreProcessAnalystRatings
     from ref_data.symbol_meta_stats import SymbolRefMetaInfo
+    from api import serverAPI
 
 
 # %% codecell
@@ -49,6 +51,8 @@ class MlTrainingMakeFullDataset():
         """Get class variables and unpack kwargs."""
         self.verbose = kwargs.get('verbose')
         self.dt = kwargs.get('dt', date(2021, 1, 1))
+        # List of all my symbols
+        self.my_syms = serverAPI("my_symbols").df['symbol'].tolist()
 
     @classmethod
     def _mtmfd_fib_functions(cls, self, **kwargs):
@@ -121,5 +125,11 @@ class MlTrainingMakeFullDataset():
         bpath = Path(baseDir().path, 'ml_data', 'ml_training')
         fpath = bpath.joinpath('_ml_training_full.parquet')
         write_to_parquet(self.ppa_df, fpath)
-
         print(f'MlTrainingMakeFullDataset finished. fpath is {str(fpath)}')
+
+        f_me = bpath.joinpath('ml_training_subset.parquet')
+        df_my_syms = (self.ppa_df[self.ppa_df['symbol']
+                      .isin(self.my_syms)]
+                      .reset_index(drop=True)
+                      .copy())
+        write_to_parquet(df_my_syms, f_me)
