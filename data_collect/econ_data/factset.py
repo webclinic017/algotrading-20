@@ -39,6 +39,12 @@ class FactSetSources():
         fpath = fdict.get(method, False)
         if self.verbose:
             help_print_arg(f"FactSetSources: {method} {str(fpath)}")
+
+        if getattr(self, 'fdict', False):
+            self.fdict = self.fdict | fdict
+        else:
+            self.fdict = fdict
+
         return fpath
 
     @classmethod
