@@ -16,8 +16,8 @@ class ClsHelp():
         """Error log."""
         name = self.cnames(sf)
         ename = self.ename(e)
-    
-        verbose = getattr(sf, 'verbose')
+
+        verbose = getattr(sf, 'verbose', False)
         if verbose:
             help_print_arg(f"{name} {ename} {str(text)}")
 
