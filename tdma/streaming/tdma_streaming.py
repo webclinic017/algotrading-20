@@ -70,15 +70,19 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams, ClsHelp):
     @classmethod
     async def _tdma_streaming(cls, self, uri, request_list):
         """TD Ameritrade Streaming."""
-        fdir = Path(baseDir().path, 'tdma', 'test_dump')
+        fdir = Path(baseDir().path, 'tdma', 'test_dump1')
         dt = getDate.query('iex_close')
         fpaths = ({
             'QUOTE': fdir.joinpath(f'quote_{dt}.parquet'),
             'OPTION': fdir.joinpath(f'option_{dt}.parquet'),
             'TIMESALE_EQUITY': fdir.joinpath(f'timesale_equity_{dt}.parquet'),
             'TIMESALE_OPTIONS': fdir.joinpath(f'timesale_options_{dt}.parquet'),
+            'ACTIVES_OTCBB': fdir.joinpath(f'actives_otcbb_{dt}.parquet'),
             'ACTIVES_OPTIONS': fdir.joinpath(f'actives_options_{dt}.parquet')
         })
+
+        if self.verbose:
+            help_print_arg(f"Tdma - streaming fpaths - {str(fpaths)}")
 
         for rq in request_list:
             rq = {"request": [rq]}
@@ -91,12 +95,12 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams, ClsHelp):
                     sa = await ws.send(json.dumps(rq))
                     print(str(await ws.recv()))
 
-                msg = await self._process_message(self, ws, fdir, fpaths)
+                msg = await self._process_message(self, ws, fdir, dt, fpaths)
             except websockets.ConnectionClosed:
                 break
 
     @classmethod
-    async def _process_message(cls, self, ws, fdir, fpaths):
+    async def _process_message(cls, self, ws, fdir, dt, fpaths):
         """Process message and write to dataframe."""
         while True:
             data = await ws.recv()
@@ -116,6 +120,7 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams, ClsHelp):
                     # kwargs = {'cols_to_drop': 'id'}
                     # write_to_parquet(df, self.fpath, combine=True, **kwargs)
                 elif 'data' in data.keys():
+
                     if len(data['data']) == 1:
                         df_all = ((pd.json_normalize(
                                    data, meta=[['data', 'timestamp']],
@@ -126,38 +131,51 @@ class TdmaStreaming(TdmaStreamingLoginParams, TdmaStreamingParams, ClsHelp):
                                         .reset_index().copy())
 
                         service = data['data'][0]['service']
-                        fpath = fpaths.get(service, fdir.joinpath(f"{service.lower()}.parquet"))
+                        # Check if service in in fpaths.keys
+                        if service not in fpaths.keys() and self.verbose:
+                            help_print_arg(f"Service {service} not in fpaths")
+                        fpath = fpaths.get(service, fdir.joinpath(f"{service.lower()}_{dt}.parquet"))
                         write_to_parquet(df_new, fpath, combine=True)
+
+                        if self.verbose:
+                            help_print_arg(f"Wrote single length data service {service} to fpath {str(fpath)}")
                     else:
                         for n, row in enumerate(data):
-                            df_all = ((pd.json_normalize(
+                            df_service = (pd.json_normalize(
                                        data['data'][n], meta=['timestamp'],
                                        record_path=['content'],
-                                       errors='ignore')))
+                                       errors='ignore')
+                                       .copy())
 
                             service = data['data'][n]['service']
-                            fpath = fpaths.get(service, fdir.joinpath(f"{service.lower()}.parquet"))
-                            write_to_parquet(df_new, fpath, combine=True)
+                            if service not in fpaths.keys() and self.verbose:
+                                help_print_arg(f"Service {service} not in fpaths")
+                            fpath = fpaths.get(service, fdir.joinpath(f"{service.lower()}_{dt}.parquet"))
+                            write_to_parquet(df_service, fpath, combine=True)
+
+                            if self.verbose:
+                                help_print_arg(f"Wrote service {service} to fpath {str(fpath)}")
                 else:
                     if not self.verbose:
-                        help_print_arg(str(data))
+                        help_print_arg(f"""No tdma streaming method matched
+                                        - data: {str(data)}""")
                     continue
             except AttributeError as ae:
                 if self.verbose:
-                    self.elog(self, ae, text=data)
+                    self.elog(self, ae, text=data, verbose=self.verbose)
 
                 try:
                     df = pd.DataFrame(json.load(BytesIO(data)))
                     # kwargs = {'cols_to_drop': 'id'}
                     # write_to_parquet(df, self.fpath, combine=True, **kwargs)
                 except Exception as e:
-                    self.elog(self, e, text=f"json.load(BytesIO(data)) data: {data}")
+                    self.elog(self, e, text=f"json.load(BytesIO(data)) data: {data}", verbose=self.verbose)
                 continue
             except json.JSONDecodeError as jde:
-                self.elog(self, jde)
+                self.elog(self, jde, verbose=self.verbose)
                 continue
             except Exception as e:
-                self.elog(self, e)
+                self.elog(self, e, verbose=self.verbose)
                 continue
 
     # Cancel local streaming task
