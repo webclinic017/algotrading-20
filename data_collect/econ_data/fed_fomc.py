@@ -48,8 +48,8 @@ class FedFomc():
     @classmethod
     def _ffomc_get_data(cls, self):
         """Get data from fed, parse into basic dataframe."""
-        furl = '''https://www.federalreserve.gov
-               /monetarypolicy/fomccalendars.htm'''
+        burl = 'https://www.federalreserve.gov'
+        furl = f'{burl}/monetarypolicy/fomccalendars.htm'
         # Request data
         get = requests.get(furl)
         # Initialize beautiful soup object
