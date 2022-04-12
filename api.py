@@ -57,6 +57,7 @@ def make_url_dict():
         'missing_dates_all': '/data/hist/missing_dates/all',
         'missing_dates_null': '/data/hist/missing_dates/null',
         'ml_training': '/data/ml/subset',
+        'ml_training_mysyms': '/data/ml/training/mysyms',
         'my_symbols': '/data/my/symbols',
         'new_syms_today': '/symbols/new/today',
         'new_syms_all': '/symbols/new/all',
