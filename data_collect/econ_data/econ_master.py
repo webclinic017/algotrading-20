@@ -4,23 +4,27 @@
 try:
     from scripts.dev.data_collect.econ_data.factset import FactSetSources
     from scripts.dev.data_collect.econ_data.fed_fomc import FedFomc
+    from scripts.dev.data_collect.econ_data.fed_rss import FedPressRss
     from scripts.dev.multiuse.class_methods import ClsHelp
 except ModuleNotFoundError:
     from data_collect.econ_data.factset import FactSetSources
     from data_collect.econ_data.fed_fomc import FedFomc
+    from data_collect.econ_data.fed_rss import FedPressRss
     from multiuse.class_methods import ClsHelp
 
 
 # %% codecell
 
 
-class EconMaster(FactSetSources, FedFomc, ClsHelp):
+class EconMaster(FactSetSources, FedFomc, FedPressRss, ClsHelp):
     """Econ master class for FED/covid/pres announcements."""
 
     # Factset methods: covid, biden, white_house_news
     factset_methods = ['covid', 'biden', 'white_house_news']
     # FOMC Calendar: fomc_calendar
     fomc_methods = ['fomc_calendar']
+    # FED speeches + calendar
+    fpr_methods = ['fed_speeches', 'fed_press']
 
     def __init__(self, method, **kwargs):
         self._em_class_vars(self, method, **kwargs)
@@ -29,6 +33,8 @@ class EconMaster(FactSetSources, FedFomc, ClsHelp):
             self._em_instantiate_factset_class(self, method, **kwargs)
         elif method in self.fomc_methods:
             self._em_instantiate_fomc_calendar(self, **kwargs)
+        elif method in self.fpr_methods:
+            self._em_instantiate_fpr_speeches(self, method, **kwargs)
 
         if self.testing_all:
             self._em_test_all_methods(self, **kwargs)
@@ -53,6 +59,10 @@ class EconMaster(FactSetSources, FedFomc, ClsHelp):
         FedFomc.__init__(self, **kwargs)
 
     @classmethod
+    def _em_instantiate_fpr_speeches(cls, self, method, **kwargs):
+        FedPressRss.__init__(self, method, **kwargs)
+
+    @classmethod
     def _em_test_all_methods(cls, self, **kwargs):
         """Econ master - test all methods."""
         kwargs['verbose'], self.verbose = True, True
@@ -66,5 +76,11 @@ class EconMaster(FactSetSources, FedFomc, ClsHelp):
         for m in self.fomc_methods:
             try:
                 FedFomc.__init__(self, **kwargs)
+            except Exception as e:
+                self.elog(self, e)
+
+        for m in self.fpr_methods:
+            try:
+                FedPressRss.__init__(self, m, **kwargs)
             except Exception as e:
                 self.elog(self, e)

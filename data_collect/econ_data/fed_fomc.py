@@ -45,6 +45,11 @@ class FedFomc():
         bpath = Path(baseDir().path, 'economic_data', 'FED')
         self.fpath = bpath.joinpath('fomc.parquet')
 
+        if getattr(self, 'fdict', False):
+            self.fdict['fomc_calendar'] = self.fpath
+        else:
+            self.fidct = {'fomc_calendar': self.fpath}
+
     @classmethod
     def _ffomc_get_data(cls, self):
         """Get data from fed, parse into basic dataframe."""
