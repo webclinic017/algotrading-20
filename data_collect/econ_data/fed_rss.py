@@ -15,6 +15,8 @@ except ModuleNotFoundError:
 
 class FedPressRss():
     """Federal reserve speeches rss feed."""
+    # https://www.federalreserve.gov/feeds/feeds.htm
+    # Other Fed RSS feeds ^
 
     def __init__(self, method, **kwargs):
         self._fpr_class_vars(self, method, **kwargs)
@@ -37,15 +39,21 @@ class FedPressRss():
         burl = 'https://www.federalreserve.gov/feeds'
         udict = ({
             'fed_speeches': f'{burl}/speeches.xml',
-            'fed_press': f'{burl}/press_all.xml'
+            'fed_testimony': f'{burl}/testimony.xml',
+            'fed_press': f'{burl}/press_all.xml',
+            # Commercial paper outstanding
+            'comm_paper_out': f'{burl}/Data/CP_OUTST.xml',
+            # Commercial paper rates
+            'comm_paper_rates': f'{burl}/Data/CP_RATES.xml',
+            # Selected interest rates
+            'select_rates': f'{burl}/Data/H15_H15.XML'
         })
         self.url = udict.get(method, 'No method selected for url')
 
+        # Create fdict from udict keys
         bpath = Path(baseDir().path, 'economic_data', 'FED')
-        fdict = ({
-            'fed_speeches': bpath.joinpath('fed_speeches.parquet'),
-            'fed_press': bpath.joinpath('fed_press.parquet')
-        })
+        fdict = {k: bpath.joinpath(f"{k}.parquet") for k in udict.keys()}
+
         self.fpath = fdict.get(method, 'No method selected for fpath')
 
         if self.verbose:

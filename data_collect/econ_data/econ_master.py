@@ -18,13 +18,14 @@ except ModuleNotFoundError:
 
 class EconMaster(FactSetSources, FedFomc, FedPressRss, ClsHelp):
     """Econ master class for FED/covid/pres announcements."""
+    # Test all methods with method == 'testing_all'
 
     # Factset methods: covid, biden, white_house_news
     factset_methods = ['covid', 'biden', 'white_house_news']
     # FOMC Calendar: fomc_calendar
     fomc_methods = ['fomc_calendar']
     # FED speeches + calendar
-    fpr_methods = ['fed_speeches', 'fed_press']
+    fpr_methods = ['fed_speeches', 'fed_testimony', 'fed_press']
 
     def __init__(self, method, **kwargs):
         self._em_class_vars(self, method, **kwargs)
