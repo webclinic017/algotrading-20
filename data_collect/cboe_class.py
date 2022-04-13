@@ -158,8 +158,8 @@ class cleanMmo():
                                      nopop_vol_sums['Cboe ADV']).astype(np.float32)
 
         # Get top 2000 for vol/avg
-        nopop_top_2000 = nopop_vol_sums.sort_values(by=['vol/avg', 'liq_opp'], ascending=False).head(2000)
-        return nopop_top_2000
+        nopop_top_5000 = nopop_vol_sums.sort_values(by=['vol/avg', 'liq_opp'], ascending=False).head(5000)
+        return nopop_top_5000
 
     @classmethod
     def _create_time_frames(cls, self):
@@ -272,21 +272,6 @@ class cboeData():
     @classmethod
     def date_to_use(cls, self):
         """Get the right date to use."""
-
-        """
-        nyc_datetime = datetime.datetime.now(pytz.timezone('US/Eastern'))
-        nyc_hm = nyc_datetime.hour + (nyc_datetime.minute/60)
-        cutoff_hm, weekend = 16.30, False
-        # Check if today is a weekend
-        if date.today().weekday() in (5, 6):
-            weekend = True
-        # While current hh.mm < cuttoff
-        if (nyc_hm < cutoff_hm) or (weekend):
-            self.date = (date.today() - BusinessDay(n=1)).date()
-        else:
-            self.date = (date.today() - BusinessDay(n=0)).date()
-        return self.date
-        """
         self.date = getDate.query('cboe')
         return self.date
 
@@ -350,7 +335,6 @@ class cboeData():
                 sym_df = self.get_symref(self)
         else:
             sym_df = self.get_symref(self)
-
 
         if 'symbol' not in sym_df.columns:
             sym_df = self.symref_format(self, sym_df)
