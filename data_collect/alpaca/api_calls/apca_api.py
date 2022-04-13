@@ -19,10 +19,8 @@ except ModuleNotFoundError:
 
 class ApcaAPI(ApcaPaths, ApcaAuth, ApcaParams, ClsHelp):
     """Base API Caller for Alpaca."""
-    verbose = True
 
     def __init__(self, api_val, **kwargs):
-        ClsHelp.__init__(self)
         self.verbose = kwargs.get('verbose', False)
         only_prepare_req = kwargs.get('only_prepare_req', False)
         self._get_fpaths(self, api_val, **kwargs)
@@ -65,9 +63,8 @@ class ApcaAPI(ApcaPaths, ApcaAuth, ApcaParams, ClsHelp):
             self.payload[k] = params[k]
 
         if self.verbose:
-            print(str(api_val))
-            print(f"url {str(self.url)}")
-            print(f"payload {str(self.payload)}")
+            print(f"""ApcaAPI: {str(api_val)} url {str(self.url)}
+                      payload {str(self.payload)}""")
 
     @classmethod
     def _call_api(cls, self, **kwargs):

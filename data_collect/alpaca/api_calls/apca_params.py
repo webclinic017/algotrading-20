@@ -60,7 +60,6 @@ class ApcaParams():
         """Add default parameters for dictionary."""
         until = pd.Timestamp.now().date()
         since = until - timedelta(days=89)
-        # ca_type_list = ['Dividend', 'Merger', 'Spinoff', 'Split']
 
         apca_params = ({
             'news_historical': ({'limit': 50, 'include_content': True}),

@@ -1,4 +1,6 @@
-"""Alpaca Data Collection Routines."""
+"""Alpaca Data Collection Routines.
+** Deprecated - all methods here are assumed to be outdated **
+"""
 # %% codecell
 ########################################
 import os
