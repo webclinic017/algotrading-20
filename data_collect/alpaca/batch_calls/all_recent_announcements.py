@@ -14,15 +14,14 @@ except ModuleNotFoundError:
 
 class AllRecentAnnouncements():
     """All corporate actions within the last 2 days."""
-    ca_list = ['Dividend', 'Merger', 'Spinoff', 'Split']
 
     def __init__(self, **kwargs):
         self.verbose = kwargs.get('verbose', False)
-        params = self._create_dt_params(self, **kwargs)
-        self._initiate_ca_sequence(self, params, **kwargs)
+        params = self._ara_create_dt_params(self, **kwargs)
+        self._ara_initiate_ca_sequence(self, params, **kwargs)
 
     @classmethod
-    def _create_dt_params(cls, self, **kwargs):
+    def _ara_create_dt_params(cls, self, **kwargs):
         """Create date specific parameters for api calls."""
         params = {}
         since = getDate.query('iex_previous') - timedelta(days=1)
@@ -30,10 +29,14 @@ class AllRecentAnnouncements():
         return params
 
     @classmethod
-    def _initiate_ca_sequence(cls, self, params, **kwargs):
+    def _ara_initiate_ca_sequence(cls, self, params, **kwargs):
         """Start corporate action sequence loop."""
-        for ca in self.ca_list:
+        # Corporate action/announcement list
+        ca_list = ['Dividend', 'Merger', 'Spinoff', 'Split']
+        kwargs['params'] = params
+
+        for ca in ca_list:
             params['ca_types'] = [ca]
-            ApcaAPI(api_val='announcements', **{'params': params})
+            ApcaAPI(api_val='announcements', **kwargs)
 
 # %% codecell

@@ -15,6 +15,8 @@ except ModuleNotFoundError:
 
 class ApcaMaster(ApcaAPI):
     """Master Alpaca class to instantiate everything else."""
+    # ToDo: this needs to be rewritten for the methods to make more sense
+    # replacing the batch_ with '' is stupid
 
     def __init__(self, method, **kwargs):
         if 'stream' in method:
@@ -32,16 +34,18 @@ class ApcaMaster(ApcaAPI):
             apca_news_streaming.delay()
         except ModuleNotFoundError:
             from data_collect.alpaca.news.real_time import ApcaNewsStream
-            ApcaNewsStream.__init__()
+            ApcaNewsStream.__init__(**kwargs)
 
     @classmethod
     def _master_batch_calls(cls, self, method, **kwargs):
         """Call master class with api method."""
         method = method.replace('batch_', '')
+        # batch_recent_announcements
         if method == 'recent_announcements':
-            AllRecentAnnouncements()
+            AllRecentAnnouncements(**kwargs)
+        # batch_historical_news
         elif method == 'historical_news':
-            HistoricalNewsLoop()
+            HistoricalNewsLoop(**kwargs)
 
     @classmethod
     def _master_api_method(cls, self, method, **kwargs):
