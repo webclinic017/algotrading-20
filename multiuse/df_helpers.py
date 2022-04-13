@@ -61,11 +61,35 @@ class DfHelpers():
         """Combine duplicate columns (merging errors)."""
         if isinstance(df.index, pd.Index):
             df.reset_index(drop=True, inplace=True)
+        fname = 'combine_duplicate_columns'
 
         c_all = df.columns
         col_x = c_all[c_all.str.contains('_x', regex=True)]
         col_y = c_all[c_all.str.contains('_y', regex=True)]
         cols_ = col_x.str.replace('_x', '', regex=True)
+
+        cols_to_replace = []
+
+        for col in cols_:
+            colsx = col_x[col_x.str.contains(col)]
+            colsy = col_y[col_y.str.contains(col)]
+
+            if colsx.empty:
+                col_y = col_y.drop(f"{col}_y", errors='ignore')
+                cols_to_replace.append(f"{col}_y")
+                if verbose:
+                    help_print_arg(f"{fname}: dropping {col}_y")
+            elif colsy.empty:
+                col_x = col_x.drop(f"{col}_x", errors='ignore')
+                cols_to_replace.append(f"{col}_x")
+                if verbose:
+                    help_print_arg(f"{fname}: dropping {col}_x")
+
+        ctr = pd.Index(cols_to_replace)
+        ctr = ctr.str.replace('_y|_x', '', regex=True)
+        col_dict = {k: v for k, v in zip(cols_to_replace, ctr)}
+        # Get the difference between teh column indices
+        cols_ = cols_.difference(ctr)
 
         # Check if there are duplicates from merge
         if col_x.empty:
@@ -92,7 +116,8 @@ class DfHelpers():
                             ))
                 df[col] = vals
 
-            df.drop(columns=col_x.append(col_y), inplace=True)
+            df.drop(columns=col_x.append(col_y), errors='ignore', inplace=True)
+            df.rename(columns=col_dict, inplace=True)
 
         return df
 
