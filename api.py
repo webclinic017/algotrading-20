@@ -27,6 +27,7 @@ def make_url_dict():
     url_dict = ({
         'all_symbols': '/symbols/all',
         'apca_all': '/data/apca/all',
+        'apca_recent_announcements': '/data/apca/announcements',
         'apca_news_realtime': '/data/apca/news/realtime',
         'analyst_recs_all': '/data/company_stats/analyst_recs/all',  # Obsolete
         'analyst_recs_mr': '/data/company_stats/analyst_recs/most_recent',  # Obsolete
@@ -57,6 +58,7 @@ def make_url_dict():
         'missing_dates_all': '/data/hist/missing_dates/all',
         'missing_dates_null': '/data/hist/missing_dates/null',
         'ml_training': '/data/ml/subset',
+        # ML training data but just my symbols
         'ml_training_mysyms': '/data/ml/training/mysyms',
         'my_symbols': '/data/my/symbols',
         'new_syms_today': '/symbols/new/today',
@@ -199,7 +201,14 @@ class serverAPI():
             columns = kwargs.get('columns', default_cols)
             self.params['columns'] = json.dumps(columns)
 
-
+        elif which == 'apca_recent_announcements':
+            ca_list = ['dividends', 'mergers', 'spinoffs', 'splits']
+            action = kwargs.get('action')
+            if action not in ca_list:
+                help_print_arg(f"""serverAPI - apca_recent_announcements action
+                               {str(action)} not in {str(ca_list)}""")
+            if self.url_dict[which] == '/data/apca/announcements':
+                self.url_dict[which] = f"{self.url_dict[which]}/{action}"
 
     @classmethod
     def _api_get_data(cls, self, which):
