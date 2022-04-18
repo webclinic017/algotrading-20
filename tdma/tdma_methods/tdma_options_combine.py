@@ -180,8 +180,16 @@ def concat_and_combine(method, sdict):
             # Standardize categorical data types for dask
             df_list = DfHelpers.standardize_df_list(df_list)
             dd_all = df_list[0]
+            # Concat as many dataframes before error
+            for n1, df_n in enumerate(df_list):
+                try:
+                    dd_all = dd.concat([dd_all, df_n])
+                except Exception as e:
+                    help_print_arg(f"""TDMA :concat_and_combine : made it to
+                                   concat iteration {str(n1)} before break""")
+                    break
 
-            for n, df_n in tqdm(enumerate(df_list[1:])):
+            for n2, df_n in tqdm(enumerate(df_list[n1:])):
                 try:
                     dd.concat([dd_all, df_n])
                 except Exception as e:
@@ -189,7 +197,7 @@ def concat_and_combine(method, sdict):
                     # Add to list of errors
                     df_list_err.append(df_n)
                     # Remove dataframe from list
-                    df_list.pop(n)
+                    df_list.pop(n2)
 
                     if len(df_list_err) < 50:
                         continue
