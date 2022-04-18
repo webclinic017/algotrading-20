@@ -37,6 +37,17 @@ class CeleryAPI(ClsHelp, CeleryMethods):
                'stream_queue'])
     """
 
+    @staticmethod
+    def clear_all_active_reserved():
+        """Loop until all active/res tasks in queue are purged."""
+        # Cancel all active streaming tasks, including reserved ones
+        for n in range(20):  # Could also set while True
+            capi = CeleryAPI(cancel_worker_tasks='stream_queue', verbose=True)
+            if capi.df_ar.empty:
+                break
+            else:
+                continue
+
     def __init__(self, method=None, **kwargs):
 
         self._capi_class_vars(self, **kwargs)
