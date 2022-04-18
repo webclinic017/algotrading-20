@@ -10,10 +10,12 @@ try:
     from scripts.dev.data_collect.alpaca.news.historical import ApcaNewsHistorical
     from scripts.dev.data_collect.alpaca.methods.announcements import ApcaAnnouncements
     from scripts.dev.data_collect.alpaca.methods.calendar import ApcaCalendar
+    from scripts.dev.multiuse.help_class import getDate
 except ModuleNotFoundError:
     from data_collect.alpaca.news.historical import ApcaNewsHistorical
     from data_collect.alpaca.methods.announcements import ApcaAnnouncements
     from data_collect.alpaca.methods.calendar import ApcaCalendar
+    from multiuse.help_class import getDate
 
 # %% codecell
 
@@ -37,7 +39,8 @@ class ApcaParams():
         apca_endpoints = ({
             'news_historical': 'https://data.alpaca.markets/v1beta1/news',
             'announcements': f'{self.burl_api}/corporate_actions/announcements',
-            'calendar': f"{self.burl_api}/calendar"
+            'calendar': f"{self.burl_api}/calendar",
+            'historical_trades': f"{self.burl_data}/stocks/trades",
         })
 
         self.apca_endpoints = apca_endpoints
@@ -61,9 +64,15 @@ class ApcaParams():
         until = pd.Timestamp.now().date()
         since = until - timedelta(days=89)
 
+        offset = 30 * 24 * 3600
+        hist_start = getDate.tz_aware_dt_now(rfcc=True, offset=offset)
+
         apca_params = ({
             'news_historical': ({'limit': 50, 'include_content': True}),
-            'announcements': ({'since': since, 'until': until})
+            'announcements': ({'since': since, 'until': until}),
+            'historical_trades': ({'symbols': ['AAPL', 'TSLA', 'SPY', 'GOOGL'],
+                                   'start': hist_start,
+                                   'limit': 10000})
 
         })
 

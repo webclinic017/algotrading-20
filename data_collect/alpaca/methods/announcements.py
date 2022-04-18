@@ -13,6 +13,7 @@ except ModuleNotFoundError:
 
 class ApcaAnnouncements():
     """Alpaca announcements."""
+    # Limited to the last 90 days
 
     def __init__(self, resp, fpath, **kwargs):
         self.verbose = kwargs.get('verbose', False)

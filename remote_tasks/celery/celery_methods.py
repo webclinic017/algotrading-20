@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 
 class CeleryMethods():
     """Class for implementing celery methods."""
-    # Instantiated from celery_api
+    # Instantiated from celery_api. df_ar gets inherited
 
     def __init__(self, **kwargs):
         self._cm_apca_streaming(self, self.df_ar, **kwargs)
@@ -27,28 +27,39 @@ class CeleryMethods():
     def _cm_apca_streaming(cls, self, df_ar, **kwargs):
         """Check that Apca real time news is streaming."""
         # Assume that self.df_ar (active/reserved) is passed in self
-        start_apca_news_streaming = False
-        streaming_condition = ''
-        ans_name = 'app.tasks_stream.apca_news_streaming'
+        start_apca_news_streaming, start_tdma_stream = False, False
+        # Streaming name base
+        sn_base, streaming_conds = 'app.tasks_stream', []
 
+        # Check for active/reserved tasks
         if df_ar.empty:  # If active/reserved empty then start news_streaming
-            start_apca_news_streaming = True
-            streaming_condition = 'Empty Active/Reserved'
+            start_apca_news_streaming = start_tdma_stream = True
+            streaming_conds.append('Empty Active/Reserved')
         else:  # Check if apca news streaming is in active/reserved dataframe
-            ans = df_ar[df_ar['name'] == ans_name]
+            ans = df_ar[df_ar['name'] == f'{sn_base}.apca_news_streaming']
             if ans.empty:
                 start_apca_news_streaming = True
-                streaming_condition = f"Task {ans_name} not in df_ar"
+                streaming_conds.append("apca_news_streaming not in df_ar")
+            tds = df_ar[df_ar['name'] == f'{sn_base}.stream_tdma_streaming']
+            if tds.empty:
+                start_tdma_stream = True
+                streaming_conds.append("stream_tdma_streaming not in df_ar")
 
-        if start_apca_news_streaming and self.check_streaming:
+        # Check if we shoudl initiate streams or just print output
+        if self.check_streaming:
             try:
-                # Then start real time news streaming
-                serverAPI('redo', val='apca_news_streaming')
+                if start_apca_news_streaming:
+                    # Then start real time news streaming
+                    serverAPI('redo', val='apca_news_streaming')
+                if start_tdma_stream:
+                    # Start tdma price/options streaming
+                    serverAPI('redo', val='stream_tdma_streaming')
             except ValueError:
                 pass
 
-        if self.verbose and streaming_condition:
-            help_print_arg(f"_cm_apca_streaming {streaming_condition}")
+        # Automatically print output if not starting remote streams
+        if (self.verbose and streaming_conds) or not self.check_streaming:
+            help_print_arg(f"_cm_apca_streaming {str(streaming_conds)}")
 
     @classmethod
     def _cm_cancel_worker_queue(cls, self, df_ar, **kwargs):
