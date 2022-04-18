@@ -79,9 +79,9 @@ class TdmaCombine(ClsHelp):
         self.df_list = []
 
         if self.verbose:
-            help_print_arg(f"TdmaCombine: path_dir = {str(self.fdir_series)}")
-            msg1 = f"TdmaCombine {str(self.fpath_combined)}"
-            help_print_arg(f"{msg1} {str(self.fpath_combined_all)}")
+            help_print_arg(f"""TdmaCombine: path_dir = {str(self.fdir_series)}
+                           TdmaCombine {str(self.fpath_combined)}
+                           {str(self.fpath_combined_all)}""")
 
             if not self.paths:
                 help_print_arg("TdmaCombine paths empty")
@@ -160,8 +160,8 @@ def concat_and_combine(method, sdict):
     """Concat, combine, and write to local dataframe."""
     # Where sdict is limited dictionary of prev class attributes
     df_list = sdict['df_list']
+    f_combined = sdict['f_combined']
     f_combined_all = sdict['f_combined_all']
-    f_combined = sdict['f_combined_all']
     use_dask = sdict['use_dask']
     verbose = sdict['verbose']
 
