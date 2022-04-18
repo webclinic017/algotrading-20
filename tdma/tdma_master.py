@@ -39,7 +39,7 @@ class TdmaMaster(TD_API, TdmaStreaming, TdmaBatchMaster):
         """Call a batch method for the td api."""
         if batch_method == 'combine_options':
             kwargs['use_dask'] = True
-            kwargs['method'] = 'options_chain'
+            # kwargs['method'] = 'options_chain'
 
         TdmaBatchMaster.__init__(self, batch_method, **kwargs)
 

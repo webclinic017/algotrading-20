@@ -22,6 +22,7 @@ class TdmaBatchMaster(GetTMDADailyOptions, TdmaCombine,
                    'update_my_symbols'])
 
     def __init__(self, method, **kwargs):
+        print(method)
         if method == 'daily_opts':
             self._tbm_instantiate_daily_options(self, **kwargs)
         elif method == 'combine_options':
@@ -35,7 +36,7 @@ class TdmaBatchMaster(GetTMDADailyOptions, TdmaCombine,
         GetTMDADailyOptions.__init__(self, **kwargs)
 
     @classmethod
-    def _tbm_instantiate_combine_options(cls, method, self, **kwargs):
+    def _tbm_instantiate_combine_options(cls, self, method, **kwargs):
         """Instantiate tdma combine options class."""
         TdmaCombine.__init__(self, method, **kwargs)
 
