@@ -138,6 +138,12 @@ class TdmaCombine(ClsHelp):
         # Assign class list to self variable
         self.df_list = df_list
 
+        df_list_cols = []
+        for df_n in self.df_list:
+            df_list_cols.append(df_n.columns)
+
+        self.df_list_cols = df_list_cols
+
 # %% codecell
 
 
@@ -179,17 +185,22 @@ def concat_and_combine(method, sdict):
 
             # Standardize categorical data types for dask
             df_list = DfHelpers.standardize_df_list(df_list)
-            dd_all = df_list[0]
+
+            fdir = Path(baseDir().path, 'derivatives', 'tdma', 'series', '2022')
+            f_t = fdir.joinpath('t', '_TSLA.parquet')
+            dd_all = dd.read_parquet(f_t) if f_t.exists() else df_list[0]
+
+            """
             # Concat as many dataframes before error
             for n1, df_n in enumerate(df_list):
                 try:
                     dd_all = dd.concat([dd_all, df_n])
                 except Exception as e:
-                    help_print_arg(f"""TDMA :concat_and_combine : made it to
-                                   concat iteration {str(n1)} before break""")
+                    # help_print_arg(f"TDMA :concat_and_combine : made it to concat iteration {str(n1)} before break")
                     break
+            """
 
-            for n2, df_n in tqdm(enumerate(df_list[n1:])):
+            for n2, df_n in tqdm(enumerate(df_list)):
                 try:
                     dd.concat([dd_all, df_n])
                 except Exception as e:
