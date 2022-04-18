@@ -433,26 +433,23 @@ class getDate():
         return query_date
 
     @staticmethod
-    def busDays(start_dt, end_dt=date.today(), last_data=True):
-        """Get a list of all business days."""
+    def apca_bus_days(year=None):
+        """Get Alpaca calendar of business days."""
+        bpath = Path(baseDir().path, 'alpaca', 'calendar')
+        fpath = bpath.joinpath('_market_days.parquet')
+        df_days = pd.read_parquet(fpath)
 
-        def daterange(date1, date2):
-            for n in range(int((date2 - date1).days)+1):
-                yield date1 + timedelta(n)
+        # Add column for next date
+        df_days['next_date'] = df_days['date'].shift(-1)
 
-        date_list = []
-        for dt in daterange(start_dt, end_dt):
-            if dt.weekday() not in (5, 6):
-                date_list.append(dt)
-                # print(dt.strftime("%Y-%m-%d"))
+        if year:
+            df_days = df_days[df_days['date'].dt.year == year].copy()
 
-        if last_data and getDate.time_cutoff(cutoff_hm=17):
-            try:
-                date_list.remove(date.today())
-            except ValueError:
-                pass
+        if df_days.empty:
+            print(f"""getDate.apca_bus_days - empty dataframe.
+                   Year passed: {str(year)}""")
 
-        return date_list
+        return df_days
 
     @staticmethod
     def get_bus_day_diff(df, col1, col2):
