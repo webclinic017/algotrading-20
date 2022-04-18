@@ -39,6 +39,16 @@ class PathConstructs():
         return dirs
 
     @staticmethod
+    def glob_all_non_combined(fdir):
+        """Get the file paths of all .parquet files without 'combined'."""
+        paths = fdir.rglob('*.parquet')
+        paths = [f for f in paths if 'combined' not in str(f)]
+
+        if not paths:
+            print('glob_all_non_combined: paths are empty')
+        return paths
+
+    @staticmethod
     def most_recent_fpath(*args, **kwargs):
         """Pass all arguments to get_most_recent_fpath."""
         return get_most_recent_fpath(*args, **kwargs)
