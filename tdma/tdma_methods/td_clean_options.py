@@ -118,7 +118,7 @@ class TD_Clean_Write_Options():
         cols_to_cat = td_df.columns.intersection(cols_to_cat)
         td_df[cols_to_cat] = td_df[cols_to_cat].astype('category')
         # Write dataframe to local file
-        kwargs = {'cols_to_drop': ['dt_symbol'], 'cols_to_cat': cols_to_cat}
+        kwargs = {'cols_to_drop': ['dt_symbol']}
         write_to_parquet(td_df, self.fpath, combine=True, **kwargs)
 
         return td_df

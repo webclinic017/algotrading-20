@@ -39,7 +39,7 @@ class GetTMDADailyOptions():
     @classmethod
     def _gtda_start_loop(cls, self, symbols, **kwargs):
         """Start loop for derivative symbols."""
-        dt = getDate.query('mkt_open')
+        dt = kwargs.get('dt', getDate.query('mkt_open'))
 
         all_sym_list = []
         sym_list = []
