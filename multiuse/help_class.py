@@ -109,6 +109,7 @@ def write_to_pickle(df, fpath, combine=False):
 
 def write_to_parquet(df, fpath, combine=False, drop_duplicates=False, **kwargs):
     """Writing to parquet with error exceptions."""
+    verbose = kwargs.get('verbose', False)
     cols_to_cat = kwargs.get('cols_to_cat', False)
     cols = df.columns
     for col in cols:  # If datatype is mixed. Convert to str
@@ -134,9 +135,12 @@ def write_to_parquet(df, fpath, combine=False, drop_duplicates=False, **kwargs):
         df_old = pd.read_parquet(fpath)
         try:
             if cols_to_cat:  # Convert cols to categorical if they exists
+                cols_to_cat = df_old.columns.intersection(cols_to_cat)
                 df_old[cols_to_cat] = df_old[cols_to_cat]
         except Exception as e:
-            help_print_arg(f"write_to_parquet cols_to_cat fail with cols {cols_to_cat}")
+            if verbose:
+                help_print_arg(f"""write_to_parquet cols_to_cat fail with
+                               cols {str(cols_to_cat)}""")
 
         df = pd.concat([df_old, df]).copy()
 
