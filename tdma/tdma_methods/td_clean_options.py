@@ -29,18 +29,18 @@ class TD_Clean_Write_Options():
 
     def __init__(self, gjson, sym, dt=None, **kwargs):
         self.verbose = kwargs.get('verbose', False)
-        self._add_params(self)
-        self.fpath = self._construct_fpaths(self, dt, sym)
-        self._read_clean_summary_data(self, gjson, sym)
-        self.df = self._read_clean_options_tree(self, gjson, sym)
+        self._tcwo_add_params(self)
+        self.fpath = self._tcwo_construct_fpaths(self, dt, sym)
+        self._tcwo_read_clean_summary_data(self, gjson, sym)
+        self.df = self._tcwo_read_clean_options_tree(self, gjson, sym)
 
     @classmethod
-    def _add_params(cls, self):
+    def _tcwo_add_params(cls, self):
         """Add params if necessary."""
         pass
 
     @classmethod
-    def _construct_fpaths(cls, self, dt, sym):
+    def _tcwo_construct_fpaths(cls, self, dt, sym):
         """Construct fpaths to use for reg/summary."""
         bpath = Path(baseDir().path, 'derivatives', 'tdma')
 
@@ -56,7 +56,7 @@ class TD_Clean_Write_Options():
         return fpath
 
     @classmethod
-    def _read_clean_summary_data(cls, self, gjson, sym):
+    def _tcwo_read_clean_summary_data(cls, self, gjson, sym):
         """Process and write summary data to local file."""
         df_sum = pd.DataFrame(gjson['underlying'], index=range(1))
         df_sum['underlying'] = sym
@@ -70,7 +70,7 @@ class TD_Clean_Write_Options():
         write_to_parquet(df_sum, self.fpath_sum, combine=True)
 
     @classmethod
-    def _read_clean_options_tree(cls, self, gjson, sym):
+    def _tcwo_read_clean_options_tree(cls, self, gjson, sym):
         """For loop for nested json value. Convert to df."""
         opt_names = ['putExpDateMap', 'callExpDateMap']
 
@@ -114,6 +114,8 @@ class TD_Clean_Write_Options():
                         'bidAskSize', 'optionDeliverablesList',
                         'expirationType', 'settlementType', 'deliverableNote',
                         'underlying', 'dt_symbol', 'date'])
+        # Get intersection of columns in dataframe
+        cols_to_cat = td_df.columns.intersection(cols_to_cat)
         td_df[cols_to_cat] = td_df[cols_to_cat].astype('category')
         # Write dataframe to local file
         kwargs = {'cols_to_drop': ['dt_symbol'], 'cols_to_cat': cols_to_cat}

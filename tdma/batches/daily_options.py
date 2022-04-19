@@ -23,11 +23,11 @@ class GetTMDADailyOptions():
     """Get daily derivatives for ~ 4000 symbols."""
 
     def __init__(self, **kwargs):
-        symbols = self._get_symbols(self)
-        self._all_sym_list = self._start_loop(self, symbols, **kwargs)
+        symbols = self._gtda_get_symbols(self)
+        self._all_sym_list = self._gtda_start_loop(self, symbols, **kwargs)
 
     @classmethod
-    def _get_symbols(cls, self):
+    def _gtda_get_symbols(cls, self):
         """Get symbols needed."""
         all_cs = remove_funds_spacs()
         cboe_symref = serverAPI('cboe_symref').df
@@ -37,7 +37,7 @@ class GetTMDADailyOptions():
         return all_cs_opts
 
     @classmethod
-    def _start_loop(cls, self, symbols, **kwargs):
+    def _gtda_start_loop(cls, self, symbols, **kwargs):
         """Start loop for derivative symbols."""
         dt = getDate.query('mkt_open')
 
