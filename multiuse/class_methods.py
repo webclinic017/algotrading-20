@@ -12,7 +12,7 @@ except ModuleNotFoundError:
 class ClsHelp():
     # sf is the class object that's calling ClsHelp
 
-    def elog(self, sf, e, text=None, verbose=False):
+    def elog(self, sf, e, text=None, verbose=True):
         """Error log."""
         name = self.cnames(sf)
         ename = self.ename(e)
