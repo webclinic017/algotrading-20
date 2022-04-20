@@ -39,7 +39,7 @@ class RedditMaster(RedditAPI, RedditAnalysis):
             self.skip_write = True
             self.df_dp = pd.DataFrame()
 
-        if not r_sub_name:
+        if not r_sub_name and self.verbose:
             msg = """RedditMaster: no subreddit name specified.
                   defaulting to WallStreetBets"""
             help_print_arg(msg)
