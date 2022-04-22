@@ -28,6 +28,7 @@ class CboeIntraCleanP1(ClsHelp):
         """Get class variables for cboe intra day."""
         self.verbose = kwargs.get('verbose')
         self.testing = kwargs.get('testing')
+        self.skip_existing = kwargs.get('skip_existing', True)
 
         bpath_cboe = (Path(baseDir().path, 'derivatives', 'cboe_intraday',
                                            '2022'))
@@ -46,7 +47,15 @@ class CboeIntraCleanP1(ClsHelp):
             f_cboe3_clean = (f_cboe_intra.parent.parent
                              .joinpath('cleaned_intra', '2022',
                                        f"{f_cboe_intra.stem}.parquet"))
-            if not self.testing:
+            if self.skip_existing and f_cboe3_clean.exists():
+                # If target f_path exists, skip
+                continue
+
+            if self.testing:
+                (CboeIntraCleanP2(f_cboe_intra=f_cboe_intra,
+                                  f_cboe3_clean=f_cboe3_clean,
+                                  **kwargs))
+            else:
                 try:
                     (CboeIntraCleanP2(f_cboe_intra=f_cboe_intra,
                                       f_cboe3_clean=f_cboe3_clean,
@@ -54,7 +63,3 @@ class CboeIntraCleanP1(ClsHelp):
                 except Exception as e:
                     self.elog(self, e)
                     continue
-            else:
-                (CboeIntraCleanP2(f_cboe_intra=f_cboe_intra,
-                                  f_cboe3_clean=f_cboe3_clean,
-                                  **kwargs))
