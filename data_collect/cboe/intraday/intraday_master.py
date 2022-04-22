@@ -6,11 +6,11 @@ from pathlib import Path
 try:
     from scripts.dev.multiuse.class_methods import ClsHelp
     from scripts.dev.multiuse.help_class import baseDir, help_print_arg
-    from scripts.dev.cboe.intraday.intraday_clean import CboeIntraCleanP2
+    from scripts.dev.data_collect.cboe.intraday.intraday_clean import CboeIntraCleanP2
 except ModuleNotFoundError:
     from multiuse.class_methods import ClsHelp
     from multiuse.help_class import baseDir, help_print_arg
-    from cboe.intraday.intraday_clean import CboeIntraCleanP2
+    from data_collect.cboe.intraday.intraday_clean import CboeIntraCleanP2
 
 
 # %% codecell
