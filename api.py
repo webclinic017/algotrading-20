@@ -29,9 +29,9 @@ def make_url_dict():
         'apca_all': '/data/apca/all',
         'apca_recent_announcements': '/data/apca/announcements',
         'apca_news_realtime': '/data/apca/news/realtime',
-        'analyst_recs_all': '/data/company_stats/analyst_recs/all',  # Obsolete
-        'analyst_recs_mr': '/data/company_stats/analyst_recs/most_recent',  # Obsolete
+        # Analyst price changes
         'analyst_recs_scraped': '/data/company_stats/analyst_recs/scraped',
+        # This is for analyst **EARNINGS** estimates
         'analyst_ests_all': '/data/company_stats/analyst_ests/all',
         'cs_top_vol': '/scans/vol/avg',
         'cboe_mmo_raw': '/cboe/mmo/raw',
@@ -60,6 +60,8 @@ def make_url_dict():
         'ml_training': '/data/ml/subset',
         # ML training data but just my symbols
         'ml_training_mysyms': '/data/ml/training/mysyms',
+        # ML training full
+        'ml_training_full': '/data/ml/training/ml_training_full',
         'my_symbols': '/data/my/symbols',
         'new_syms_today': '/symbols/new/today',
         'new_syms_all': '/symbols/new/all',
@@ -97,6 +99,9 @@ def make_url_dict():
         'telegram_polls': '/data/telegram/polls',
         'tdma_movers': '/data/tdma/movers',
         'tdma_streaming': '/data/tdma/streaming',
+        # TDMA derivatives all combined
+        'tdma_dervs_all_cb': '/data/tdma/dervs/all_combined',
+        'tdma_dervs_cb': '/data/tdma/dervs/most_recent_combined',
         'tdma_logs': '/data/tdma/logs',
         'yoptions_daily': '/data/yfinance/derivs/combined/daily',
         'yoptions_all': '/data/yfinance/derivs/combined/all',

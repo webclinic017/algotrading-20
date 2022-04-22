@@ -28,9 +28,10 @@ class PreProcessAnalystRatings():
     """Pre-process analyst ratings."""
 
     df = None
+    # df=None, df_all=None
 
-    def __init__(self, df=None, df_all=None):
-        car = CleanAnalystRatings()
+    def __init__(self, df=None, df_all=None, **kwargs):
+        car = CleanAnalystRatings(**kwargs)
         rcd = RatingCurrentDist(car.df, preprocess=True)
         df = self._remove_rare_acs(self, rcd.df)
         df = DfHelpers.remove_cats_no_counts(df)

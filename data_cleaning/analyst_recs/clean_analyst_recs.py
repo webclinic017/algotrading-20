@@ -18,7 +18,7 @@ pd.DataFrame.mask = mask
 class CleanAnalystRatings():
     """Clean analyst price target ratings."""
 
-    def __init__(self, df=None):
+    def __init__(self, df=None, **kwargs):
         if not isinstance(df, pd.DataFrame):
             self.df = self._get_df_from_api(self)
         else:
@@ -31,7 +31,7 @@ class CleanAnalystRatings():
     @classmethod
     def _get_df_from_api(cls, self):
         """Get analyst recs df from server."""
-        recs_all = serverAPI('analyst_recs_all').df
+        recs_all = serverAPI('analyst_recs_scraped').df
         cols_to_keep = (['ticker', 'date', 'time', 'action_company',
                          'action_pt', 'analyst', 'analyst_name',
                          'pt_prior', 'pt_current',
