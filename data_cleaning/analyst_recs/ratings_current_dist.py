@@ -21,7 +21,7 @@ class RatingCurrentDist():
     word_dict = {}
     col_dict = {}
 
-    def __init__(self, df, action_company=None, preprocess=False):
+    def __init__(self, df, action_company=None, preprocess=False, **kwargs):
         self.df = df.copy()
         self._make_word_dict(self, self.word_dict)
         self._get_rating_current(self, self.df, action_company)
