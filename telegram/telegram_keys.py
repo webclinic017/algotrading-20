@@ -13,11 +13,11 @@ def return_telegram_keys(method, **kwargs):
     testing = kwargs.get('testing', False)
     bot_id, chat_id = False, False
 
-    if testing:
-        bot_id = os.environ.get('telegram_test_bot')
-        chat_id = os.environ.get('telegram_test_chat_id')
-
     bot_dict = ({
+            'testing': [
+                os.environ.get('telegram_test_bot'),
+                os.environ.get('telegram_test_chat_id')
+            ],
             'trades': [
                 os.environ.get('telegram_trade_bot'),
                 os.environ.get('telegram_chat_of_id')
@@ -28,10 +28,10 @@ def return_telegram_keys(method, **kwargs):
             ]
     })
 
-    if not testing:
-        ids = bot_dict[method]
-        bot_id = ids[0]
-        chat_id = ids[1]
+    ids = bot_dict[method]
+    bot_id = ids[0]
+    chat_id = ids[1]
 
     return bot_id, chat_id
+
 # %% codecell
